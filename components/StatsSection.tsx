@@ -314,77 +314,56 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
 
   useEffect(() => {
     const channelSlug = 'iabs';
-    const timestamp = Date.now();
 
-    const endpoints = {
-      leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
-      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
-      videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
-      channel: `https://kick.com/api/v2/channels/${channelSlug}`
-    };
+    // DELAYED PROGRESSIVE LOADING FOR SLOW INTERNET
+    const timer = setTimeout(() => {
+      const endpoints = {
+        leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
+        clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
+        videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
+        channel: `https://kick.com/api/v2/channels/${channelSlug}`
+      };
 
-    // Fetch independently to allow progressive loading
-    kickFetch(endpoints.leaderboard).then(data => {
-      if (data) {
-        // Handle V2 wrapped or direct data
-        const source = data.data || data.leaderboard || data;
+      // 1. Fetch Basic Channel Info First
+      kickFetch(endpoints.channel).then(data => {
+        if (data) {
+          const raw = data.data || data;
+          setChannelInfo({
+            followers_count: raw.followers_count ?? 0,
+            subscriber_badges: Array.isArray(raw.subscriber_badges || raw.badges) ? (raw.subscriber_badges || raw.badges) : []
+          });
+        }
+      }).catch(() => { });
 
-        setLeaderboards({
-          gifts: source.gifts || source.all_time || [],
-          gifts_week: source.gifts_week || source.weekly || [],
-          gifts_month: source.gifts_month || source.monthly || []
-        });
-      } else {
-        setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] });
-      }
-    }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
+      // 2. Stagger secondary data to save bandwidth
+      setTimeout(() => {
+        kickFetch(endpoints.leaderboard).then(data => {
+          if (data) {
+            const source = data.data || data.leaderboard || data;
+            setLeaderboards({
+              gifts: source.gifts || source.all_time || [],
+              gifts_week: source.gifts_week || source.weekly || [],
+              gifts_month: source.gifts_month || source.monthly || []
+            });
+          }
+        }).catch(() => { });
+      }, 1000);
 
-    kickFetch(endpoints.clips).then(data => {
-      if (!data) return;
-      const raw = data.data || data;
-      const clipsData = raw.clips || raw.data || (Array.isArray(raw) ? raw : []);
+      setTimeout(() => {
+        kickFetch(endpoints.clips).then(data => {
+          if (data?.data || data?.clips) setClips((data.data || data.clips).slice(0, 4));
+        }).catch(() => { });
+      }, 2000);
 
-      if (Array.isArray(clipsData) && clipsData.length > 0) {
-        setClips(clipsData.slice(0, 4));
-      }
-    }).catch(e => console.warn("Clips fetch failed", e));
+      setTimeout(() => {
+        kickFetch(endpoints.videos).then(data => {
+          if (data?.data || data?.videos) setVideos((data.data || data.videos).slice(0, 3));
+        }).catch(() => { });
+      }, 2500);
 
-    kickFetch(endpoints.videos).then(data => {
-      if (!data) return;
-      const raw = data.data || data;
-      const videosData = raw.videos || raw.data || (Array.isArray(raw) ? raw : []);
+    }, 2000); // 2 second delay for everything to let main UI breathe
 
-      if (Array.isArray(videosData) && videosData.length > 0) {
-        setVideos(videosData.slice(0, 3));
-      }
-    }).catch(e => console.warn("Videos fetch failed", e));
-
-    // 4. Fetch Channel (V2)
-    kickFetch(endpoints.channel).then(data => {
-      if (data) {
-        const raw = data.data || data;
-
-        // Channel Info in V2
-        const followers = raw.followers_count ?? raw.followersCount ?? 0;
-        const subBadges = raw.subscriber_badges || raw.badges || [];
-
-        setChannelInfo({
-          followers_count: followers,
-          subscriber_badges: Array.isArray(subBadges) ? subBadges : []
-        });
-
-        // VODs fallback for V2
-        setVideos(prev => {
-          if (prev && prev.length > 0) return prev;
-          const fallbackVods = raw.recent_streams || raw.previous_livestreams || [];
-          return Array.isArray(fallbackVods) ? fallbackVods.slice(0, 3) : [];
-        });
-      }
-      else {
-        setChannelInfo({ followers_count: 0, subscriber_badges: [] });
-      }
-    }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
-
+    return () => clearTimeout(timer);
   }, []);
 
   return (
