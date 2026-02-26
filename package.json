@@ -1,5 +1,7 @@
 {
-  "name": "xeid-|-stream-hub",
+  "name": "iabs-hub",
+  "description": "Official Stream Hub for iABS - Real-time statistics and Live streaming updates.",
+  "author": "iABS",
   "private": true,
   "version": "0.0.0",
   "type": "module",

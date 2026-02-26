@@ -6,7 +6,7 @@ import { ChatWidget } from './components/Chat';
 import { StatsSection } from './components/StatsSection';
 
 // --- Constants ---
-const DEFAULT_PROFILE_IMAGE = "https://files.kick.com/images/user/1106194/profile_image/conversion/140c7236-24f9-4267-b318-6be659f6035e-fullsize.webp";
+const DEFAULT_PROFILE_IMAGE = "/favicon.png";
 import { kickFetch } from './utils/kickApi';
 
 // Updated to iABS offline banner
@@ -14,7 +14,7 @@ const DEFAULT_BACKGROUND_IMAGE = "https://files.kick.com/images/channel/1067089/
 const CHANNEL_SLUG = 'iabs';
 
 // Helper to construct full social object
-const createSocialLink = (key: string, value: string): SocialLink | null => {
+const createSocialLink = (key: string, value: string, followerCount?: string, specialDetail?: string): SocialLink | null => {
     if (!value) return null;
     const handle = value.replace(/^https?:\/\/(www\.)?(twitter|x|instagram|youtube|discord|tiktok|facebook|snapchat|whatsapp)\.com\//i, '')
         .replace(/\/channel\//i, '') // Clean up whatsapp channel part if simple regex
@@ -22,32 +22,41 @@ const createSocialLink = (key: string, value: string): SocialLink | null => {
         .replace(/\/$/, ''); // Remove trailing slash
 
     switch (key) {
-        case 'twitter': return { name: 'X', url: value.startsWith('http') ? value : `https://x.com/${handle}`, icon: <XIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#FFFFFF' };
-        case 'instagram': return { name: 'Instagram', url: value.startsWith('http') ? value : `https://instagram.com/${handle}`, icon: <InstagramIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#E1306C' };
-        case 'youtube': return { name: 'YouTube', url: value.startsWith('http') ? value : `https://youtube.com/@${handle}`, icon: <YoutubeIcon className="w-8 h-8" />, color: '', username: 'Channel', hex: '#FF0000' };
-        case 'discord': return { name: 'Discord', url: value.startsWith('http') ? value : `https://discord.gg/${handle}`, icon: <DiscordIcon className="w-8 h-8" />, color: '', username: 'Community', hex: '#5865F2' };
-        case 'tiktok': return { name: 'TikTok', url: value.startsWith('http') ? value : `https://tiktok.com/@${handle}`, icon: <TikTokIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#FE2C55' };
-        case 'facebook': return { name: 'Facebook', url: value.startsWith('http') ? value : `https://facebook.com/${handle}`, icon: <FacebookIcon className="w-8 h-8" />, color: '', username: 'Page', hex: '#1877F2' };
-        case 'snapchat': return { name: 'Snapchat', url: value.startsWith('http') ? value : `https://snapchat.com/add/${handle}`, icon: <SnapchatIcon className="w-8 h-8" />, color: '', username: 'x2end', hex: '#FFFC00' };
-        case 'whatsapp': return { name: 'WhatsApp', url: value, icon: <WhatsAppIcon className="w-8 h-8" />, color: '', username: 'Group', hex: '#25D366' };
+        case 'twitter': return { name: 'X', url: value.startsWith('http') ? value : `https://x.com/${handle}`, icon: <XIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#FFFFFF', followerCount, specialDetail };
+        case 'instagram': return { name: 'Instagram', url: value.startsWith('http') ? value : `https://instagram.com/${handle}`, icon: <InstagramIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#E1306C', followerCount, specialDetail };
+        case 'youtube': return { name: 'YouTube', url: value.startsWith('http') ? value : `https://youtube.com/@${handle}`, icon: <YoutubeIcon className="w-8 h-8" />, color: '', username: 'Channel', hex: '#FF0000', followerCount, specialDetail };
+        case 'discord': return { name: 'Discord', url: value.startsWith('http') ? value : `https://discord.gg/${handle}`, icon: <DiscordIcon className="w-8 h-8" />, color: '', username: 'Community', hex: '#5865F2', followerCount, specialDetail };
+        case 'tiktok': return { name: 'TikTok', url: value.startsWith('http') ? value : `https://tiktok.com/@${handle}`, icon: <TikTokIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#FE2C55', followerCount, specialDetail };
+        case 'facebook': return { name: 'Facebook', url: value.startsWith('http') ? value : `https://facebook.com/${handle}`, icon: <FacebookIcon className="w-8 h-8" />, color: '', username: 'Page', hex: '#1877F2', followerCount, specialDetail };
+        case 'snapchat': return { name: 'Snapchat', url: value.startsWith('http') ? value : `https://snapchat.com/add/${handle}`, icon: <SnapchatIcon className="w-8 h-8" />, color: '', username: 'x2end', hex: '#FFFC00', followerCount, specialDetail };
+        case 'whatsapp': return { name: 'WhatsApp', url: value, icon: <WhatsAppIcon className="w-8 h-8" />, color: '', username: 'Group', hex: '#25D366', followerCount, specialDetail };
         default: return null;
     }
 };
 
-const KICK_SOCIAL: SocialLink = { name: 'KICK', url: 'https://kick.com/iabs', icon: <KickIcon className="w-8 h-8" />, color: '', username: 'iABS', hex: '#53FC18' };
+const KICK_SOCIAL: SocialLink = {
+    name: 'KICK',
+    url: 'https://kick.com/iabs',
+    icon: <KickIcon className="w-8 h-8" />,
+    color: '',
+    username: 'iABS',
+    hex: '#53FC18',
+    followerCount: '150K+',
+    specialDetail: 'البث الأساسي والتفاعل المباشر'
+};
 
 const EMAIL_ADDRESS = ""; // Removed as not specified for iABS
 
 // Define Static Socials with specific requested order
 const STATIC_SOCIALS = [
     KICK_SOCIAL,
-    createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq'),
-    createSocialLink('instagram', 'https://www.instagram.com/absq/'),
-    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq'),
-    createSocialLink('twitter', 'https://x.com/iABSq'),
-    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E'),
-    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA'),
-    createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w'),
+    createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq', '2.1M+', 'يوميات حصرية وتغطيات خاصة'),
+    createSocialLink('instagram', 'https://www.instagram.com/absq/', '850K+', 'صور وكواليس حصرية'),
+    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '3.5M+', 'أقوى المقاطع والتحديات'),
+    createSocialLink('twitter', 'https://x.com/iABSq', '120K+', 'أخبار وتحديثات سريعة'),
+    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '300K+', 'تواصل مباشر وتنبيهات البث'),
+    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '50K+', 'أكبر تجمع للأساطير'),
+    createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', '1.2M+', 'أرشيف البثوث ومقاطع مميزة'),
 ].filter(Boolean) as SocialLink[];
 
 const TRANSLATIONS = {
@@ -272,6 +281,8 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
             onMouseLeave={() => setIsHovered(false)}
             style={{ animationDelay: `${index * 100}ms` }}
             className={`group relative w-full animate-fade-in-up select-none ${isRedirecting ? 'z-50' : 'z-auto'} ${containerClass}`}
+            title={`${social.name} - iABS Official`}
+            aria-label={`Visit iABS on ${social.name}`}
         >
             {/* === ACTIVE LAUNCH EFFECT (FULL SCREEN BLOOM) === */}
             {isRedirecting && (
@@ -321,11 +332,9 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                 <div className={`absolute inset-0 -translate-x-full ${isHovered && !isRedirecting ? 'translate-x-full' : ''} transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12`}></div>
 
                 {/* === CONTENT === */}
-                {/* IMPORTANT: Added justify-center to parent and inner flex to ensure vertical centering on mobile */}
                 <div className="relative h-full flex flex-col md:flex-row items-center px-4 md:px-6 justify-center md:justify-between z-10 gap-2 md:gap-0">
 
                     {/* LEFT: ICON + TEXT */}
-                    {/* Removed flex-1 on mobile or ensured justify-center to prevent top alignment */}
                     <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-3 md:gap-5 min-w-0 w-full md:w-auto md:flex-1">
                         {/* Icon Container with 3D Rotate */}
                         <div
@@ -344,20 +353,27 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                         </div>
 
                         {/* Text Details */}
-                        <div className="flex flex-col gap-1 items-center md:items-start text-center md:text-left min-w-0">
-                            <span
-                                className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-300"
-                                style={{ color: isRedirecting ? brandColor : (isHovered ? brandColor : 'rgba(255,255,255,0.4)') }}
-                            >
-                                {isRedirecting ? 'LAUNCHING...' : social.name}
-                            </span>
-                            <span className={`text-sm md:text-xl font-black tracking-tighter transition-all duration-300 truncate max-w-[200px] md:max-w-none ${isRedirecting ? 'text-white scale-105' : 'text-white group-hover:text-white'}`}>
+                        <div className="flex flex-col gap-0.5 items-center md:items-start text-center md:text-left min-w-0">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-300"
+                                    style={{ color: isRedirecting ? brandColor : (isHovered ? brandColor : 'rgba(255,255,255,0.4)') }}
+                                >
+                                    {isRedirecting ? 'LAUNCHING...' : social.name}
+                                </span>
+                                {social.followerCount && (
+                                    <span className="text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/5">
+                                        {social.followerCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className={`text-sm md:text-lg font-black tracking-tighter transition-all duration-300 truncate max-w-[200px] md:max-w-none ${isRedirecting ? 'text-white scale-105' : 'text-white group-hover:text-white'}`}>
                                 {social.username}
                             </span>
-                            {/* Subtitle for Email/Contact */}
-                            {social.subtitle && (
-                                <span className="hidden md:block text-[9px] md:text-[10px] text-white/60 font-medium leading-tight max-w-[200px] mt-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/5 shadow-sm">
-                                    {social.subtitle}
+                            {/* Special Detail - Added as requested */}
+                            {social.specialDetail && (
+                                <span className={`text-[9px] md:text-[10px] font-medium transition-colors duration-300 ${isHovered ? 'text-white/80' : 'text-white/40'}`}>
+                                    {social.specialDetail}
                                 </span>
                             )}
                         </div>
@@ -378,7 +394,7 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                         {isRedirecting ? (
                             <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         ) : (
-                            <svg className="w-6 h-6 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                            <svg className="w-6 h-6 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                         )}
                     </div>
                 </div>
@@ -531,15 +547,41 @@ const SupportLinks: React.FC<{ lang: Language }> = ({ lang }) => {
 
 export default function App() {
     const [isHoveringProfile, setIsHoveringProfile] = useState(false);
-    const [lang, setLang] = useState<Language>('en');
+    const [lang, setLang] = useState<Language>('en'); // Default to English as per request
 
     const [branding] = useState({
         profileImage: DEFAULT_PROFILE_IMAGE,
         bannerImage: DEFAULT_BACKGROUND_IMAGE
     });
 
-    const [socials] = useState<SocialLink[]>(STATIC_SOCIALS);
+    const [socialStats, setSocialStats] = useState<Record<string, string>>({
+        'KICK': '150K+',
+        'Snapchat': '2.1M+',
+        'Instagram': '850K+',
+        'TikTok': '3.5M+',
+        'X': '120K+',
+        'WhatsApp': '300K+',
+        'Discord': '50K+',
+        'YouTube': '1.2M+'
+    });
+
+    const [socials, setSocials] = useState<SocialLink[]>([]);
     const [lastSession, setLastSession] = useState<any>(null);
+
+    // Re-generate socials when stats change
+    useEffect(() => {
+        const updatedSocials = [
+            { ...KICK_SOCIAL, followerCount: socialStats['KICK'] },
+            createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq', socialStats['Snapchat'], 'يوميات حصرية وتغطيات خاصة'),
+            createSocialLink('instagram', 'https://www.instagram.com/absq/', socialStats['Instagram'], 'صور وكواليس حصرية'),
+            createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', socialStats['TikTok'], 'أقوى المقاطع والتحديات'),
+            createSocialLink('twitter', 'https://x.com/iABSq', socialStats['X'], 'أخبار وتحديثات سريعة'),
+            createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', socialStats['WhatsApp'], 'تواصل مباشر وتنبيهات البث'),
+            createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', socialStats['Discord'], 'أكبر تجمع للأساطير'),
+            createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', socialStats['YouTube'], 'أرشيف البثوث ومقاطع مميزة'),
+        ].filter(Boolean) as SocialLink[];
+        setSocials(updatedSocials);
+    }, [socialStats]);
 
     const [streamInfo, setStreamInfo] = useState({
         isLive: false,
@@ -552,64 +594,58 @@ export default function App() {
     const t = TRANSLATIONS[lang];
     const isRTL = lang === 'ar';
 
+    const [isDemo, setIsDemo] = useState(false);
+
     const fetchKickStatus = React.useCallback(async () => {
-        // Use V2 API - much more modern and stable for stream status
-        const rawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`);
+        try {
+            const rawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`);
+            const data = rawData?.data || rawData;
 
-        // V2 structure handling
-        const data = rawData?.data || rawData;
+            if (data) {
+                const livestreamData = data.livestream || data.live_stream || null;
+                const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
 
-        if (data) {
-            // In V2, livestream is often inside the object
-            const livestreamData = data.livestream || data.live_stream || null;
-            const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
-
-            // Extract last session from V2 structure
-            const streams = data.previous_livestreams || data.recent_streams || [];
-            if (streams && streams.length > 0) {
-                setLastSession(streams[0]);
-            } else {
-                // FALLBACK: Try dedicated videos endpoint if channel info is missing it
-                try {
-                    const videoData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`);
-                    const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
-                    if (vList && vList.length > 0) {
-                        setLastSession(vList[0]);
+                // Extract last session
+                const streams = data.previous_livestreams || data.recent_streams || [];
+                if (streams && streams.length > 0) {
+                    setLastSession(streams[0]);
+                } else {
+                    try {
+                        const videoData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`);
+                        const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
+                        if (vList && vList.length > 0) setLastSession(vList[0]);
+                    } catch (e) {
+                        console.error("Fallback failed:", e);
                     }
-                } catch (e) {
-                    console.error("Failed to fetch fallback last session:", e);
+                }
+
+                if (isLive) {
+                    const category = livestreamData.categories?.[0]?.name || livestreamData.category?.name || 'Gaming';
+                    const tags = livestreamData.tags || [];
+                    const normalizedTags = Array.isArray(tags) ? tags.map((t: any) => typeof t === 'string' ? t : (t.name || '')) : [];
+
+                    setStreamInfo({
+                        isLive: true,
+                        viewers: livestreamData.viewer_count || 0,
+                        title: livestreamData.session_title || livestreamData.title || 'Live Stream',
+                        category: category,
+                        tags: normalizedTags.filter(Boolean)
+                    });
+                } else {
+                    setStreamInfo(prev => ({ ...prev, isLive: false }));
+                }
+
+                // Update real Kick follower count
+                if (data.followers_count !== undefined) {
+                    const count = data.followers_count;
+                    const formattedCount = count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count.toString();
+                    setSocialStats(prev => ({ ...prev, 'KICK': formattedCount }));
                 }
             }
-
-            if (isLive) {
-                const category = livestreamData.categories?.[0]?.name ||
-                    livestreamData.category?.name ||
-                    'Gaming';
-
-                const tags = livestreamData.tags || [];
-                const normalizedTags = Array.isArray(tags)
-                    ? tags.map((t: any) => typeof t === 'string' ? t : (t.name || ''))
-                    : [];
-
-                setStreamInfo({
-                    isLive: true,
-                    viewers: livestreamData.viewer_count || 0,
-                    title: livestreamData.session_title || livestreamData.title || 'Live Stream',
-                    category: category,
-                    tags: normalizedTags.filter(Boolean)
-                });
-            }
-            else {
-                setStreamInfo({
-                    isLive: false,
-                    viewers: 0,
-                    title: '',
-                    category: '',
-                    tags: []
-                });
-            }
+        } catch (e) {
+            console.error("Failed to fetch Kick data:", e);
         }
-    }, []);
+    }, [isDemo]);
 
     useEffect(() => {
         fetchKickStatus();
@@ -642,6 +678,9 @@ export default function App() {
 
     return (
         <div className={`relative min-h-screen w-full selection:bg-[#e72a18] selection:text-black overflow-x-hidden ${isRTL ? 'font-arabic' : 'font-sans'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+
+
+
             <div className="fixed inset-0 z-0 bg-[#050505]">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat transition-all duration-1000 ease-in-out scale-105"
@@ -676,7 +715,10 @@ export default function App() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </button>
-                            <button onClick={() => setLang(prev => prev === 'en' ? 'ar' : 'en')} className="px-5 py-2 rounded-full bg-[#1a1a1a] hover:bg-[#252525] border-t border-l border-white/10 border-b-4 border-black/80 text-xs font-bold text-white transition-all hover:-translate-y-1 active:translate-y-0.5 active:border-b-0 shadow-lg flex items-center gap-2">
+                            <button
+                                onClick={() => setLang(prev => prev === 'en' ? 'ar' : 'en')}
+                                className="px-5 py-2 rounded-full bg-[#1a1a1a] hover:bg-[#252525] border-t border-l border-white/10 border-b-4 border-black/80 text-xs font-bold text-white transition-all hover:-translate-y-1 active:translate-y-0.5 active:border-b-0 shadow-lg flex items-center gap-2"
+                            >
                                 <span>{lang === 'en' ? '🇺🇸 EN' : '🇸🇦 AR'}</span>
                             </button>
                         </div>
@@ -710,7 +752,7 @@ export default function App() {
                                     {/* Profile Image */}
                                     <img
                                         src={branding.profileImage}
-                                        alt="iABS"
+                                        alt="iABS - Official Profile Identity"
                                         className={`w-full h-full object-cover transition-transform duration-1000 ${isHoveringProfile ? 'scale-110 rotate-2' : 'scale-100'}`}
                                     />
 
@@ -731,6 +773,7 @@ export default function App() {
                             </div>
                             <div className="space-y-4 pt-2 relative z-10 flex-1 min-w-0">
                                 <h1 className="relative text-7xl md:text-9xl font-heading font-black tracking-tighter leading-none select-none group/name" dir="ltr">
+                                    <span className="sr-only">iABS Official Hub - Professional Streamer and Gaming Content Creator</span>
                                     {/* Combined Cracked Text Container */}
                                     <div className="relative inline-block hover:scale-110 transition-transform duration-700 cursor-default">
 
@@ -916,7 +959,7 @@ export default function App() {
                                 </div>
                                 <div className="w-full lg:w-[380px] h-[500px] lg:h-full shrink-0 flex flex-col">
                                     <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border-b-4 border-black/50">
-                                        <ChatWidget lang={lang} />
+                                        <ChatWidget lang={lang} isDemo={isDemo} />
                                     </div>
                                 </div>
                             </div>

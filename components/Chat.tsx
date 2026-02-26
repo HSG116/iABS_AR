@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Pusher from 'pusher-js';
 import { Language, ChatMessage } from '../types';
-import { kickFetch } from '../utils/kickApi';
-
+import { chatService } from '../services/chatService';
 
 interface ChatWidgetProps {
   lang: Language;
+  isDemo?: boolean;
 }
-
-// --- Helper: Role Detection ---
-const getRoleFromIdentity = (identity: any): 'owner' | 'moderator' | 'vip' | 'user' => {
-  if (!identity || !identity.badges) return 'user';
-  const badges = identity.badges;
-  if (badges.some((b: any) => b.type === 'broadcaster')) return 'owner';
-  if (badges.some((b: any) => b.type === 'moderator')) return 'moderator';
-  if (badges.some((b: any) => b.type === 'vip')) return 'vip';
-  return 'user';
-};
 
 // --- Icons for Badges ---
 const OwnerBadge = () => (
@@ -44,22 +33,13 @@ const VipBadge = () => (
   </div>
 );
 
-// Initial fallback message
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 'welcome',
-    username: 'System',
-    message: 'Welcome to iABS Stream Hub! 💚',
-    role: 'user',
-    color: '#53FC18',
-    timestamp: Date.now()
-  }
-];
+const INITIAL_MESSAGES: ChatMessage[] = [];
 
-export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
+export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang, isDemo }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const [statusText, setStatusText] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const t = {
@@ -70,107 +50,36 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
     retry: lang === 'en' ? 'Retry' : 'إعادة المحاولة'
   };
 
-  const connectToKick = async () => {
-    setIsConnected(false);
-    setConnectionError(false);
-    let pusher: Pusher | null = null;
-    let channel: any = null;
-
-    try {
-      const channelSlug = 'iabs';
-
-      // 1. Fetch Channel Data to get Chatroom ID using robust kickFetch
-      const data = await kickFetch(`https://kick.com/api/v2/channels/${channelSlug}`);
-
-      if (!data || !data.chatroom || !data.chatroom.id) {
-        throw new Error('Failed to fetch chatroom ID via all proxies');
-      }
-
-      const chatroomId = data.chatroom.id;
-
-      // 2. Fetch Chat History (Best effort)
-      try {
-        // Try to get history, but don't fail connection if this fails
-        const historyData = await kickFetch(`https://kick.com/api/v2/chatrooms/${chatroomId}/messages`);
-
-        if (historyData) {
-          // Safe navigation here to avoid crash
-          const rawMessages = historyData?.data?.messages || [];
-
-          const formattedHistory: ChatMessage[] = rawMessages.map((m: any) => ({
-            id: m.id,
-            username: m.sender.username,
-            message: m.content,
-            role: getRoleFromIdentity(m.sender.identity),
-            color: m.sender.identity.color || '#53FC18',
-            timestamp: new Date(m.created_at).getTime()
-          }));
-
-          setMessages([...INITIAL_MESSAGES, ...formattedHistory.reverse()]);
-        }
-      } catch (histErr) {
-        console.warn("Could not fetch chat history, proceeding to live", histErr);
-      }
-
-      // 3. Initialize Pusher
-      // Handle potential import issues with ESM
-      const PusherClient = (Pusher as any).default || Pusher;
-      pusher = new PusherClient('32cbd69e4b950bf97679', {
-        cluster: 'us2',
-        forceTLS: true
-      });
-
-      channel = pusher.subscribe(`chatrooms.${chatroomId}.v2`);
-
-      // 4. Bind to new message events
-      channel.bind('App\\Events\\ChatMessageEvent', (eventData: any) => {
-        if (!eventData) return;
-
-        const newMessage: ChatMessage = {
-          id: eventData.id || Date.now().toString(),
-          username: eventData.sender?.username || 'Unknown',
-          message: eventData.content || '',
-          role: getRoleFromIdentity(eventData.sender?.identity),
-          color: eventData.sender?.identity?.color || '#53FC18',
-          timestamp: Date.now()
-        };
-
-        setMessages(prev => {
-          const newArr = [...prev, newMessage];
-          if (newArr.length > 75) return newArr.slice(newArr.length - 75);
-          return newArr;
-        });
-      });
-
-      setIsConnected(true);
-
-    } catch (error) {
-      console.error("Failed to connect to Kick Chat:", error);
-      setConnectionError(true);
-      // Keep initial welcome message but indicate offline
-    }
-
-    // Cleanup function needs to access the instance
-    return () => {
-      if (channel && pusher) {
-        channel.unbind_all();
-        channel.unsubscribe();
-      }
-      if (pusher) {
-        pusher.disconnect();
-      }
-    };
-  };
-
   useEffect(() => {
-    const cleanup = connectToKick();
-    // The async function returns a cleanup promise, but useEffect cleanup needs to be a function.
-    // We can't await inside cleanup easily, so we rely on the internal variables if we could, 
-    // but here we just ignore the complex cleanup returning logic and rely on the fact that 
-    // connectToKick creates local variables. 
-    // Actually, connectToKick as written above returns a cleanup function, so this works:
+    // 1. Listen for new messages
+    const unbindMessage = chatService.onMessage((msg) => {
+      setMessages(prev => {
+        const newArr = [...prev, msg];
+        return newArr.slice(-75);
+      });
+    });
+
+    // 2. Listen for deleted messages
+    const unbindDelete = chatService.onDeleteMessage((msgId) => {
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    });
+
+    // 3. Listen for status changes
+    const unbindStatus = chatService.onStatusChange((connected, error, details) => {
+      setIsConnected(connected);
+      setConnectionError(error);
+      setStatusText(details || '');
+    });
+
+    // 4. Connect to iABS channel
+    chatService.connect('iabs');
+
+    // 5. Cleanup
     return () => {
-      cleanup.then(c => c && c());
+      unbindMessage();
+      unbindDelete();
+      unbindStatus();
+      chatService.disconnect();
     };
   }, []);
 
@@ -198,6 +107,46 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
     }
   };
 
+  const renderMessage = (content: string) => {
+    if (!content) return null;
+
+    // Regex to match Kick emotes: [emote:ID:NAME]
+    const emoteRegex = /\[emote:(\d+):([\w\s\-]+)\]/gi;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = emoteRegex.exec(content)) !== null) {
+      // Add text before the emote
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+
+      const emoteId = match[1];
+      const emoteName = match[2];
+      const emoteUrl = `https://files.kick.com/emotes/${emoteId}/fullsize`;
+
+      parts.push(
+        <img
+          key={`${match.index}-${emoteId}`}
+          src={emoteUrl}
+          alt={emoteName}
+          title={emoteName}
+          className="inline-block w-8 h-8 md:w-10 md:h-10 mx-0.5 align-middle object-contain hover:scale-125 transition-transform"
+        />
+      );
+
+      lastIndex = emoteRegex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-[#0b0e0f]/80 backdrop-blur-2xl rounded-3xl overflow-hidden border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative ring-1 ring-white/5 isolate group">
 
@@ -217,16 +166,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-kick shadow-[0_0_8px_#53FC18]' : connectionError ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`}></span>
               <span className="text-[10px] text-white/40 font-mono uppercase">
-                {isConnected ? t.connected : connectionError ? t.error : t.connecting}
+                {isConnected ? t.connected : connectionError ? t.error : (statusText || t.connecting)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Retry Button if Error */}
+        {/* Retry Button */}
         {connectionError && (
           <button
-            onClick={() => connectToKick()} // Retry connection without page reload
+            onClick={() => chatService.connect('iabs')}
             className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs flex items-center gap-1"
             title={t.retry}
           >
@@ -243,7 +192,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-1.5 scrollbar-hide bg-gradient-to-b from-[#0b0e0f]/50 to-transparent"
       >
-        {/* Shadow Mask at top for fade effect */}
         <div className="sticky top-0 h-8 bg-gradient-to-b from-[#0b0e0f] to-transparent z-10 -mt-4 pointer-events-none"></div>
 
         {messages.map((msg) => (
@@ -262,14 +210,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
               {/* Username */}
               <span
                 className="font-bold hover:underline cursor-pointer transition-opacity shrink-0 drop-shadow-sm"
-                style={{ color: msg.color || '#fff' }}
+                style={{ color: msg.user.color || '#fff' }}
               >
-                {msg.username}
+                {msg.user.username}
               </span>
 
-              {/* Text */}
-              <span className={`text-white/80 font-medium group-hover:text-white transition-colors ${lang === 'ar' ? 'font-arabic' : ''}`}>
-                {msg.message}
+              {/* Text / Emotes */}
+              <span className={`text-white/80 font-medium group-hover:text-white transition-colors flex flex-wrap items-center gap-x-1 ${lang === 'ar' ? 'font-arabic' : ''}`}>
+                {renderMessage(msg.content)}
               </span>
             </div>
           </div>

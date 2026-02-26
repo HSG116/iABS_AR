@@ -10,14 +10,23 @@ export interface SocialLink {
   username?: string;
   hex?: string;
   subtitle?: string;
+  followerCount?: string;
+  specialDetail?: string;
 }
 
 export interface ChatMessage {
   id: string;
-  username: string;
-  message: string;
+  username?: string; // Legacy support
+  message?: string;  // Legacy support
+  content: string;   // New field
+  user: {
+    id: string;
+    username: string;
+    color: string;
+    avatar: string;
+  };
   role: 'owner' | 'moderator' | 'vip' | 'user';
-  color?: string; // Hex color for username
+  color?: string; // Legacy support
   timestamp?: number;
 }
 
