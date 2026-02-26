@@ -251,12 +251,20 @@ interface InlinePlayerProps {
 const InlinePlayer: React.FC<InlinePlayerProps> = ({ video, onClose }) => {
   // Kick VODs REQUIRE a UUID for the iframe player.
   // In V2, it can be video.uuid or video.video.uuid
-  const videoId = video.video?.uuid || video.uuid || (typeof video.id === 'string' && video.id.length > 20 ? video.id : null);
+  const videoId = video.uuid || video.video?.uuid || (typeof video.id === 'string' && video.id.length > 20 ? video.id : null);
+
+  // Parent domain is often REQUIRED for embeds to work
+  const [hostname, setHostname] = useState('');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHostname(window.location.hostname);
+    }
+  }, []);
 
   if (!videoId) {
     return (
       <div className="relative w-full aspect-video bg-[#111] rounded-xl flex flex-col items-center justify-center border border-white/10 gap-4 p-6 text-center">
-        <p className="text-white/60 text-sm">Could not generate secure player for this video.</p>
+        <p className="text-white/60 text-sm">Could not find secure playback ID for this video.</p>
         <a
           href={`https://kick.com/video/${video.id || video.uuid}`}
           target="_blank"
@@ -287,11 +295,12 @@ const InlinePlayer: React.FC<InlinePlayerProps> = ({ video, onClose }) => {
       </button>
 
       <iframe
-        src={`https://player.kick.com/video/${videoId}?autoplay=true`}
+        src={`https://player.kick.com/video/${videoId}?autoplay=true${hostname ? `&parent=${hostname}` : ''}`}
         className="w-full h-full border-0"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
         title={video.session_title || video.title}
+        referrerPolicy="no-referrer-when-downgrade"
       />
 
       {/* Ambient Glow */}
