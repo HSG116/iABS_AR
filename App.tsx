@@ -104,8 +104,13 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
     const isRTL = lang === 'ar';
 
     const timeAgo = (date: string) => {
+        if (!date) return '---';
         const now = new Date();
         const past = new Date(date);
+
+        // Check if date is valid
+        if (isNaN(past.getTime())) return '---';
+
         const diff = Math.floor((now.getTime() - past.getTime()) / 1000);
 
         if (diff < 60) return lang === 'en' ? `${diff}s ago` : `منذ ${diff} ثانية`;
@@ -115,6 +120,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
     };
 
     const formatDuration = (val: number) => {
+        if (!val) return '0h 0m';
         // Kick durations are usually in milliseconds
         // If it's suspiciously large (e.g. > 1000000), it's definitely ms
         const totalSeconds = val > 1000000 ? Math.floor(val / 1000) : val;
@@ -810,8 +816,8 @@ export default function App() {
                         {/* Support Section (Dokan, PayPal, ABN) */}
                         <SupportLinks lang={lang} />
 
-                        {/* Last Session Report Section */}
-                        <LastSessionReport lang={lang} data={lastSession} />
+                        {/* Last Session Report Section - Only show when offline */}
+                        {!streamInfo.isLive && <LastSessionReport lang={lang} data={lastSession} />}
                     </div>
 
                     {streamInfo.isLive && (
