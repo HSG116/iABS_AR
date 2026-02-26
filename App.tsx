@@ -178,26 +178,23 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                         </div>
                     </div>
 
-                    <div className="mt-16">
-                        <div className={`flex items-center gap-5 mb-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <div className="w-12 h-12 rounded-2xl bg-[#e72a18]/10 border border-[#e72a18]/20 flex items-center justify-center shadow-[0_0_20px_rgba(231,42,24,0.1)]">
-                                <svg className="w-6 h-6 text-[#e72a18]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                            </div>
-                            <h3 className={`text-2xl font-black text-white uppercase tracking-tight ${isRTL ? 'text-right' : 'text-left'}`}>{t.categoriesSpent}</h3>
+                    {/* Compact Categories Section */}
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <div className={`flex items-center gap-2 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <span className="text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">{t.categoriesSpent}</span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                        <div className={`flex flex-wrap gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             {data.categories?.map((cat: any, i: number) => (
-                                <div key={i} className="group/cat relative aspect-[3/4] rounded-[24px] overflow-hidden border border-white/5 hover:border-[#e72a18]/40 transition-all duration-700 hover:-translate-y-2 shadow-xl">
-                                    <img
-                                        src={cat.responsive_url || (cat.thumbnail ? cat.thumbnail.url : `https://picsum.photos/seed/${cat.name}/400/600`)}
-                                        alt={cat.name}
-                                        className="w-full h-full object-cover transition-transform duration-1000 group-hover/cat:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"></div>
-                                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                                        <p className={`text-sm font-black text-white uppercase tracking-tighter line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>{cat.name}</p>
+                                <div key={i} className="group relative flex items-center gap-2 bg-white/5 border border-white/5 rounded-full pl-1 pr-3 py-1 hover:bg-white/10 transition-colors">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+                                        <img
+                                            src={cat.responsive_url || (cat.thumbnail ? cat.thumbnail.url : DEFAULT_BACKGROUND_IMAGE)}
+                                            alt={cat.name}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
+                                    <span className="text-[10px] font-bold text-white/70">{cat.name}</span>
                                 </div>
                             ))}
                         </div>
