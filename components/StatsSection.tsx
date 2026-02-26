@@ -320,7 +320,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
       const endpoints = {
         leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
         clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
-        videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
+        videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`, // V2 for VODs
         channel: `https://kick.com/api/v2/channels/${channelSlug}`
       };
 
@@ -332,6 +332,12 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
             followers_count: raw.followers_count ?? 0,
             subscriber_badges: Array.isArray(raw.subscriber_badges || raw.badges) ? (raw.subscriber_badges || raw.badges) : []
           });
+
+          // Fallback VODs from channel data if dedicated fails
+          if (raw.previous_livestreams || raw.recent_streams) {
+            const fallback = (raw.recent_streams || raw.previous_livestreams || []).slice(0, 3);
+            setVideos(prev => prev && prev.length > 0 ? prev : fallback);
+          }
         }
       }).catch(() => { });
 
@@ -347,21 +353,25 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
             });
           }
         }).catch(() => { });
-      }, 1000);
+      }, 800);
 
       setTimeout(() => {
         kickFetch(endpoints.clips).then(data => {
-          if (data?.data || data?.clips) setClips((data.data || data.clips).slice(0, 4));
+          const raw = data?.data || data;
+          const list = raw.clips || raw.data || (Array.isArray(raw) ? raw : []);
+          if (Array.isArray(list)) setClips(list.slice(0, 4));
         }).catch(() => { });
-      }, 2000);
+      }, 1500);
 
       setTimeout(() => {
         kickFetch(endpoints.videos).then(data => {
-          if (data?.data || data?.videos) setVideos((data.data || data.videos).slice(0, 3));
+          const raw = data?.data || data;
+          const list = raw.videos || raw.data || (Array.isArray(raw) ? raw : []);
+          if (Array.isArray(list)) setVideos(list.slice(0, 3));
         }).catch(() => { });
-      }, 2500);
+      }, 2000);
 
-    }, 2000); // 2 second delay for everything to let main UI breathe
+    }, 800); // Reduced delay to 800ms to feel faster but still sequential
 
     return () => clearTimeout(timer);
   }, []);
