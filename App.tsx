@@ -526,6 +526,17 @@ export default function App() {
             const streams = data.previous_livestreams || data.recent_streams || [];
             if (streams && streams.length > 0) {
                 setLastSession(streams[0]);
+            } else {
+                // FALLBACK: Try dedicated videos endpoint if channel info is missing it
+                try {
+                    const videoData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`);
+                    const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
+                    if (vList && vList.length > 0) {
+                        setLastSession(vList[0]);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch fallback last session:", e);
+                }
             }
 
             if (isLive) {
