@@ -130,12 +130,24 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
     };
 
     const t = TRANSLATIONS[lang] as any;
+    const thumbnail = data.thumbnail?.url || data.thumbnail?.src || (typeof data.thumbnail === 'string' ? data.thumbnail : '') || (data.responsive_url) || DEFAULT_BACKGROUND_IMAGE;
 
     return (
         <div className="w-full max-w-5xl mx-auto mt-24 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <div className="bg-[#0a0a0a]/60 backdrop-blur-2xl border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+            <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+
+                {/* Background Image Layer */}
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src={thumbnail}
+                        alt="Background"
+                        className="w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-1000 grayscale group-hover:grayscale-0 scale-105 group-hover:scale-100 transition-transform duration-1000"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/80 to-transparent"></div>
+                </div>
+
                 {/* Background Glow */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[#e72a18]/10 blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#e72a18]/10 blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity duration-1000 z-0"></div>
 
                 <div className="relative z-10">
                     <div className={`flex items-center gap-3 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -144,16 +156,16 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                     </div>
 
                     <div className={`flex flex-col md:flex-row md:items-end justify-between gap-10 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
-                        <h2 className={`text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight max-w-2xl ${isRTL ? 'text-right' : 'text-left'}`}>
+                        <h2 className={`text-2xl md:text-3xl font-black text-white tracking-tight leading-tight max-w-2xl ${isRTL ? 'text-right' : 'text-left'} drop-shadow-2xl`}>
                             {data.session_title || data.title}
                         </h2>
 
                         <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <div className="bg-white/5 border border-white/10 rounded-3xl px-8 py-5 min-w-[140px] text-center backdrop-blur-md">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl px-8 py-5 min-w-[140px] text-center backdrop-blur-md hover:bg-white/10 transition-colors">
                                 <p className="text-[10px] font-bold text-white/30 uppercase mb-2 tracking-widest">{t.ago}</p>
                                 <p className="text-2xl font-black text-white">{timeAgo(data.created_at)}</p>
                             </div>
-                            <div className="bg-white/5 border border-white/10 rounded-3xl px-8 py-5 min-w-[140px] text-center backdrop-blur-md">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl px-8 py-5 min-w-[140px] text-center backdrop-blur-md hover:bg-white/10 transition-colors">
                                 <p className="text-[10px] font-bold text-white/30 uppercase mb-2 tracking-widest">{t.duration}</p>
                                 <p className="text-2xl font-black text-kick">{formatDuration(data.duration)}</p>
                             </div>
