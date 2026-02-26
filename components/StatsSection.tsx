@@ -242,72 +242,6 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
   );
 };
 
-// --- INLINE VIDEO PLAYER COMPONENT ---
-interface InlinePlayerProps {
-  video: Video;
-  onClose: () => void;
-}
-
-const InlinePlayer: React.FC<InlinePlayerProps> = ({ video, onClose }) => {
-  // Kick VODs REQUIRE a UUID for the iframe player.
-  // In V2, it can be video.uuid or video.video.uuid
-  const videoId = video.uuid || video.video?.uuid || (typeof video.id === 'string' && video.id.length > 20 ? video.id : null);
-
-  // Parent domain is often REQUIRED for embeds to work
-  const [hostname, setHostname] = useState('');
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setHostname(window.location.hostname);
-    }
-  }, []);
-
-  if (!videoId) {
-    return (
-      <div className="relative w-full aspect-video bg-[#111] rounded-xl flex flex-col items-center justify-center border border-white/10 gap-4 p-6 text-center">
-        <p className="text-white/60 text-sm">Could not find secure playback ID for this video.</p>
-        <a
-          href={`https://kick.com/video/${video.id || video.uuid}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-2 bg-kick text-black font-bold rounded-full hover:scale-105 transition-transform"
-        >
-          Watch on Kick.com
-        </a>
-        <button onClick={onClose} className="text-white/30 hover:text-white text-xs underline mt-2">Close</button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl animate-fade-in-up">
-      {/* Close/Collapse Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="absolute top-3 right-3 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-white/70 hover:text-white hover:bg-black/80 transition-all border border-white/10 shadow-lg group"
-        title="Close Player"
-      >
-        <svg className="w-5 h-5 group-hover:scale-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <iframe
-        src={`https://player.kick.com/video/${videoId}?autoplay=true${hostname ? `&parent=${hostname}` : ''}`}
-        className="w-full h-full border-0"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowFullScreen
-        title={video.session_title || video.title}
-        referrerPolicy="no-referrer-when-downgrade"
-      />
-
-      {/* Ambient Glow */}
-      <div className="absolute inset-0 bg-kick/5 blur-[50px] pointer-events-none -z-10"></div>
-    </div>
-  );
-};
 
 export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
   // Initialize as null to indicate "loading"
@@ -316,8 +250,6 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
   const [videos, setVideos] = useState<Video[] | null>(null);
   const [channelInfo, setChannelInfo] = useState<ChannelInfo | null>(null);
 
-  // State for Video Player (Inline ID)
-  const [activeVideoId, setActiveVideoId] = useState<number | string | null>(null);
 
   const t = {
     followers: lang === 'en' ? 'Followers' : 'متابع',
@@ -601,54 +533,43 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
               videos.length > 0 ? (
                 <div className="space-y-4">
                   {videos.map((video) => (
-                    <div key={video.id} className="animate-fade-in-up">
-                      {activeVideoId === video.id ? (
-                        <div className="space-y-2 p-1 bg-white/5 rounded-2xl border border-white/10">
-                          <div className="flex items-center justify-between px-3 py-2">
-                            <h4 className="text-[10px] font-bold text-kick uppercase tracking-widest flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-kick animate-pulse"></span>
-                              {t.watching}
-                            </h4>
-                          </div>
-                          <InlinePlayer video={video} onClose={() => setActiveVideoId(null)} />
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => setActiveVideoId(video.id)}
-                          className="flex gap-4 p-3 rounded-2xl bg-[#080808] hover:bg-[#111] border border-white/5 hover:border-white/10 transition-all group cursor-pointer shadow-lg hover:shadow-xl"
-                        >
-                          <div className="relative w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner">
-                            <img
-                              src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
-                              alt={video.session_title || video.title}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                              }}
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                              loading="lazy"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
-                              <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                                <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-                            <h4 className="text-sm font-bold text-white truncate group-hover:text-kick transition-colors">
-                              {video.session_title || video.title || 'Past Stream'}
-                            </h4>
-                            <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">
-                              <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Recent'}</span>
-                              <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                              <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                {formatNumber(video.views || video.view_count || 0)}
-                              </span>
-                            </div>
+                    <a
+                      key={video.id}
+                      href={`https://kick.com/iabs/videos/${video.id || video.uuid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex gap-4 p-3 rounded-2xl bg-[#080808] hover:bg-[#111] border border-white/5 hover:border-white/10 transition-all group cursor-pointer shadow-lg hover:shadow-xl animate-fade-in-up"
+                    >
+                      <div className="relative w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner">
+                        <img
+                          src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
+                          alt={video.session_title || video.title}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                          }}
+                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                            <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                      <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
+                        <h4 className="text-sm font-bold text-white truncate group-hover:text-kick transition-colors">
+                          {video.session_title || video.title || 'Past Stream'}
+                        </h4>
+                        <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">
+                          <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Recent'}</span>
+                          <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            {formatNumber(video.views || video.view_count || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </a>
                   ))}
                 </div>
               ) : (
