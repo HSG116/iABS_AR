@@ -579,7 +579,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
             )}
           </div>
 
-          {/* VIDEOS (INLINE PLAYER) */}
+          {/* VIDEOS (DIRECT LINKS) */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-10 h-10 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center text-white shadow-lg">
@@ -592,53 +592,42 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
               videos.length > 0 ? (
                 <div className="space-y-4">
                   {videos.map((video) => (
-                    <div key={video.id} className="animate-fade-in-up">
-                      {activeVideoId === video.id ? (
-                        <div className="space-y-2 p-1 bg-white/5 rounded-2xl border border-white/10">
-                          <div className="flex items-center justify-between px-3 py-2">
-                            <h4 className="text-xs font-bold text-kick uppercase tracking-wider flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                              {t.watching}
-                            </h4>
-                          </div>
-                          <InlinePlayer video={video} onClose={() => setActiveVideoId(null)} />
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => setActiveVideoId(video.id)}
-                          className="flex gap-4 p-3 rounded-2xl bg-[#080808] hover:bg-[#111] border border-white/5 hover:border-white/10 transition-all group cursor-pointer shadow-lg hover:shadow-xl"
-                        >
-                          <div className="relative w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner">
-                            <img
-                              src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
-                              alt={video.session_title || video.title}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                              }}
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
-                              <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                                <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-                            <h4 className="text-sm font-bold text-white truncate group-hover:text-kick transition-colors">
-                              {video.session_title || video.title || 'Past Stream'}
-                            </h4>
-                            <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">
-                              <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Recent'}</span>
-                              <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                              <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                {formatNumber(video.views || video.view_count || 0)}
-                              </span>
-                            </div>
+                    <a
+                      key={video.id}
+                      href={`https://kick.com/video/${video.uuid || video.video?.uuid || video.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex gap-4 p-3 rounded-2xl bg-[#080808] hover:bg-[#111] border border-white/5 hover:border-white/10 transition-all group cursor-pointer shadow-lg hover:shadow-xl animate-fade-in-up"
+                    >
+                      <div className="relative w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner">
+                        <img
+                          src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
+                          alt={video.session_title || video.title}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                          }}
+                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                            <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                      <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
+                        <h4 className="text-sm font-bold text-white truncate group-hover:text-kick transition-colors">
+                          {video.session_title || video.title || 'Past Stream'}
+                        </h4>
+                        <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">
+                          <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Recent'}</span>
+                          <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            {formatNumber(video.views || video.view_count || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </a>
                   ))}
                 </div>
               ) : (
@@ -646,11 +635,18 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
               )
             ) : (
               <div className="space-y-4">
-                {[1, 2, 3].map(i => <div key={i} className="flex gap-4"><Skeleton className="w-32 aspect-video shrink-0 rounded-xl" /><div className="flex-1 space-y-2 py-2"><Skeleton className="w-full h-4 rounded-md" /><Skeleton className="w-2/3 h-3 rounded-md" /></div></div>)}
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex gap-4">
+                    <Skeleton className="w-32 aspect-video shrink-0 rounded-xl" />
+                    <div className="flex-1 space-y-2 py-2">
+                      <Skeleton className="w-full h-4 rounded-md" />
+                      <Skeleton className="w-2/3 h-3 rounded-md" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
         </div>
       </div>
     </>
