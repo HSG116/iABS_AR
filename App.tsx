@@ -186,27 +186,41 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
 
                         <div className={`flex flex-wrap gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             {data.categories?.map((cat: any, i: number) => {
-                                // Enhanced image discovery for Kick categories
-                                const catImg = cat.responsive_url ||
+                                // Extract slug to build official Kick category icon URL
+                                const catName = cat.name || cat.category?.name || 'Just Chatting';
+                                const slug = cat.slug || cat.category?.slug ||
+                                    catName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+
+                                // Build list of potential URLs, prioritizing 'banner' as requested
+                                const catImg = cat.banner?.url ||
+                                    cat.banner?.responsive ||
+                                    cat.category?.banner?.url ||
+                                    cat.category?.banner?.responsive ||
+                                    cat.responsive_url ||
                                     cat.thumbnail?.url ||
-                                    cat.thumbnail?.src ||
-                                    cat.url ||
-                                    (cat.category?.thumbnails?.[0]?.url) ||
-                                    `https://kick.com/api/v2/categories/${cat.name}/thumbnail`;
+                                    cat.category?.responsive_url ||
+                                    cat.category?.thumbnail?.url ||
+                                    `https://files.kick.com/categories/${slug}/fullsize.png`;
 
                                 return (
                                     <div key={i} className="group relative flex items-center gap-2 bg-white/5 border border-white/5 rounded-full pl-1 pr-3 py-1 hover:bg-white/10 transition-colors">
                                         <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-[#111]">
                                             <img
                                                 src={catImg}
-                                                alt={cat.name}
+                                                alt={catName}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = DEFAULT_PROFILE_IMAGE;
+                                                    const target = e.target as HTMLImageElement;
+                                                    // Try dynamic placeholder related to name if official fails
+                                                    if (!target.src.includes('picsum.photos')) {
+                                                        target.src = `https://picsum.photos/seed/${slug}/200/200`;
+                                                    } else {
+                                                        target.src = DEFAULT_PROFILE_IMAGE;
+                                                    }
                                                 }}
                                             />
                                         </div>
-                                        <span className="text-[10px] font-bold text-white/70">{cat.name}</span>
+                                        <span className="text-[10px] font-bold text-white/70">{catName}</span>
                                     </div>
                                 );
                             })}
