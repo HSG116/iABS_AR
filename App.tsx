@@ -28,7 +28,7 @@ const createSocialLink = (key: string, value: string, followerCount?: string, sp
         case 'discord': return { name: 'Discord', url: value.startsWith('http') ? value : `https://discord.gg/${handle}`, icon: <DiscordIcon className="w-8 h-8" />, color: '', username: 'Community', hex: '#5865F2', followerCount, specialDetail };
         case 'tiktok': return { name: 'TikTok', url: value.startsWith('http') ? value : `https://tiktok.com/@${handle}`, icon: <TikTokIcon className="w-8 h-8" />, color: '', username: `@${handle}`, hex: '#FE2C55', followerCount, specialDetail };
         case 'facebook': return { name: 'Facebook', url: value.startsWith('http') ? value : `https://facebook.com/${handle}`, icon: <FacebookIcon className="w-8 h-8" />, color: '', username: 'Page', hex: '#1877F2', followerCount, specialDetail };
-        case 'snapchat': return { name: 'Snapchat', url: value.startsWith('http') ? value : `https://snapchat.com/add/${handle}`, icon: <SnapchatIcon className="w-8 h-8" />, color: '', username: 'x2end', hex: '#FFFC00', followerCount, specialDetail };
+        case 'snapchat': return { name: 'Snapchat', url: value.startsWith('http') ? value : `https://snapchat.com/add/${handle}`, icon: <SnapchatIcon className="w-8 h-8" />, color: '', username: 'iabsq', hex: '#FFFC00', followerCount, specialDetail };
         case 'whatsapp': return { name: 'WhatsApp', url: value, icon: <WhatsAppIcon className="w-8 h-8" />, color: '', username: 'Group', hex: '#25D366', followerCount, specialDetail };
         default: return null;
     }
@@ -41,7 +41,7 @@ const KICK_SOCIAL: SocialLink = {
     color: '',
     username: 'iABS',
     hex: '#53FC18',
-    followerCount: '150K+',
+    followerCount: '+110K',
     specialDetail: 'البث الأساسي والتفاعل المباشر'
 };
 
@@ -50,13 +50,13 @@ const EMAIL_ADDRESS = ""; // Removed as not specified for iABS
 // Define Static Socials with specific requested order
 const STATIC_SOCIALS = [
     KICK_SOCIAL,
-    createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq', '2.1M+', 'يوميات حصرية وتغطيات خاصة'),
-    createSocialLink('instagram', 'https://www.instagram.com/absq/', '850K+', 'صور وكواليس حصرية'),
-    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '3.5M+', 'أقوى المقاطع والتحديات'),
-    createSocialLink('twitter', 'https://x.com/iABSq', '120K+', 'أخبار وتحديثات سريعة'),
-    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '300K+', 'تواصل مباشر وتنبيهات البث'),
-    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '50K+', 'أكبر تجمع للأساطير'),
-    createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', '1.2M+', 'أرشيف البثوث ومقاطع مميزة'),
+    createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq', '1.2M+', 'يوميات حصرية وتغطيات خاصة'),
+    createSocialLink('instagram', 'https://www.instagram.com/absq/', '+21K', 'صور وكواليس حصرية'),
+    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '+20K', 'أقوى المقاطع والتحديات'),
+    createSocialLink('twitter', 'https://x.com/iABSq', '+54K', 'أخبار وتحديثات سريعة'),
+    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '+7K', 'تواصل مباشر وتنبيهات البث'),
+    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '+9K', 'أكبر تجمع للأساطير'),
+    createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', '+37K', 'أرشيف البثوث ومقاطع مميزة'),
 ].filter(Boolean) as SocialLink[];
 
 const TRANSLATIONS = {
@@ -362,7 +362,7 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                                     {isRedirecting ? 'LAUNCHING...' : social.name}
                                 </span>
                                 {social.followerCount && (
-                                    <span className="text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/5">
+                                    <span className={`text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/5 ${social.name === 'Snapchat' ? 'blur-[3px]' : ''}`}>
                                         {social.followerCount}
                                     </span>
                                 )}
@@ -555,14 +555,14 @@ export default function App() {
     });
 
     const [socialStats, setSocialStats] = useState<Record<string, string>>({
-        'KICK': '150K+',
-        'Snapchat': '2.1M+',
-        'Instagram': '850K+',
-        'TikTok': '3.5M+',
-        'X': '120K+',
-        'WhatsApp': '300K+',
-        'Discord': '50K+',
-        'YouTube': '1.2M+'
+        'KICK': '+110K',
+        'Snapchat': '1.2M+',
+        'Instagram': '+21K',
+        'TikTok': '+20K',
+        'X': '+54K',
+        'WhatsApp': '+7K',
+        'Discord': '+9K',
+        'YouTube': '+37K'
     });
 
     const [socials, setSocials] = useState<SocialLink[]>([]);
@@ -636,11 +636,13 @@ export default function App() {
                 }
 
                 // Update real Kick follower count
+                /* 
                 if (data.followers_count !== undefined) {
                     const count = data.followers_count;
                     const formattedCount = count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count.toString();
                     setSocialStats(prev => ({ ...prev, 'KICK': formattedCount }));
                 }
+                */
             }
         } catch (e) {
             console.error("Failed to fetch Kick data:", e);
