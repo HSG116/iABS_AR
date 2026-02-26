@@ -319,25 +319,25 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     const endpoints = {
       leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
       clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
-      videos: `https://kick.com/api/v1/channels/${channelSlug}/videos`, // V1 might be better
-      channel: `https://kick.com/api/v1/channels/${channelSlug}`
+      videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
+      channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };
 
     // Fetch independently to allow progressive loading
     kickFetch(endpoints.leaderboard).then(data => {
       if (data) {
-        // Robust data mapping for various proxy wraps
-        const source = data.leaderboard || data.data || data;
+        // Handle V2 wrapped or direct data
+        const source = data.data || data.leaderboard || data;
 
         setLeaderboards({
-          gifts: source.gifts || source.all_time || (Array.isArray(source) ? source : []),
+          gifts: source.gifts || source.all_time || [],
           gifts_week: source.gifts_week || source.weekly || [],
-          gifts_month: source.gifts_month || source.gifts_monthly || source.monthly || []
+          gifts_month: source.gifts_month || source.monthly || []
         });
       } else {
         setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] });
       }
-    });
+    }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
     kickFetch(endpoints.clips).then(data => {
       if (!data) return;
@@ -347,57 +347,43 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
       if (Array.isArray(clipsData) && clipsData.length > 0) {
         setClips(clipsData.slice(0, 4));
       }
-    });
+    }).catch(e => console.warn("Clips fetch failed", e));
 
     kickFetch(endpoints.videos).then(data => {
       if (!data) return;
-      // In V1, it might be an array directly or { videos: [] }
       const raw = data.data || data;
-      const videosData = raw.videos ||
-        raw.data ||
-        (Array.isArray(raw) ? raw : []);
+      const videosData = raw.videos || raw.data || (Array.isArray(raw) ? raw : []);
 
       if (Array.isArray(videosData) && videosData.length > 0) {
-        setVideos(prev => {
-          // Return fresh data from dedicated endpoint
-          return videosData.slice(0, 3);
-        });
+        setVideos(videosData.slice(0, 3));
       }
-    });
+    }).catch(e => console.warn("Videos fetch failed", e));
 
-    // 4. Fetch Channel (V1) - Very reliable for basic info and fallback for VODs
+    // 4. Fetch Channel (V2)
     kickFetch(endpoints.channel).then(data => {
       if (data) {
         const raw = data.data || data;
 
-        // Channel Info
-        const followers = raw.followers_count ??
-          raw.followersCount ??
-          (raw.user ? raw.user.followers_count : 0) ?? 0;
-
-        const subBadges = raw.subscriber_badges ||
-          (raw.chatroom ? raw.chatroom.subscriber_badges : []) ||
-          raw.badges || [];
+        // Channel Info in V2
+        const followers = raw.followers_count ?? raw.followersCount ?? 0;
+        const subBadges = raw.subscriber_badges || raw.badges || [];
 
         setChannelInfo({
           followers_count: followers,
           subscriber_badges: Array.isArray(subBadges) ? subBadges : []
         });
 
-        // Fallback for Videos (VODs) from previous_livestreams in main channel data
+        // VODs fallback for V2
         setVideos(prev => {
-          // ONLY use fallback if the dedicated videos fetch returned nothing
           if (prev && prev.length > 0) return prev;
-          const fallbackVods = raw.previous_livestreams ||
-            (raw.user ? raw.user.previous_livestreams : []) ||
-            [];
+          const fallbackVods = raw.recent_streams || raw.previous_livestreams || [];
           return Array.isArray(fallbackVods) ? fallbackVods.slice(0, 3) : [];
         });
       }
       else {
         setChannelInfo({ followers_count: 0, subscriber_badges: [] });
       }
-    });
+    }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
 
   }, []);
 

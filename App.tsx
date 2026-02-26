@@ -505,27 +505,27 @@ export default function App() {
     const isRTL = lang === 'ar';
 
     const fetchKickStatus = React.useCallback(async () => {
-        // Use V1 API for status - much more reliable for followers and basic info
-        const rawData = await kickFetch(`https://kick.com/api/v1/channels/${CHANNEL_SLUG}`);
+        // Use V2 API - much more modern and stable for stream status
+        const rawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`);
+
+        // V2 structure handling
         const data = rawData?.data || rawData;
 
         if (data) {
-            // In V1, livestream data is often top-level
-            const livestreamData = data.livestream || (data.data ? data.data.livestream : null);
+            // In V2, livestream is often inside the object
+            const livestreamData = data.livestream || data.live_stream || null;
             const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
 
-            // Extract last session
-            const streams = data.previous_livestreams || (data.data ? data.data.previous_livestreams : []);
+            // Extract last session from V2 structure
+            const streams = data.previous_livestreams || data.recent_streams || [];
             if (streams && streams.length > 0) {
                 setLastSession(streams[0]);
             }
 
             if (isLive) {
-                // Extract Tag & Category with multiple fallbacks
                 const category = livestreamData.categories?.[0]?.name ||
                     livestreamData.category?.name ||
-                    livestreamData.category ||
-                    'Just Chatting';
+                    'Gaming';
 
                 const tags = livestreamData.tags || [];
                 const normalizedTags = Array.isArray(tags)
@@ -534,7 +534,7 @@ export default function App() {
 
                 setStreamInfo({
                     isLive: true,
-                    viewers: livestreamData.viewer_count || livestreamData.viewers || 0,
+                    viewers: livestreamData.viewer_count || 0,
                     title: livestreamData.session_title || livestreamData.title || 'Live Stream',
                     category: category,
                     tags: normalizedTags.filter(Boolean)

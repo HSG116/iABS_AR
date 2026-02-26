@@ -1,6 +1,6 @@
 
-const TIMEOUT_MS = 12000; // Increased to 12 seconds
-const MAX_RETRIES = 2; // Total of 3 attempts
+const TIMEOUT_MS = 15000; // Increased to 15 seconds for slow networks
+const MAX_RETRIES = 2;
 
 interface ProxyConfig {
     name: string;
@@ -10,12 +10,28 @@ interface ProxyConfig {
 
 const PROXIES: ProxyConfig[] = [
     {
-        name: 'corsproxy.io',
+        name: 'CORS-io',
         getUrl: (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
         parse: (res) => res
     },
     {
-        name: 'allorigins-raw',
+        name: 'AllOrigins-Raw',
+        // Using /raw to get direct string which bypasses some JSON wrapping issues
+        getUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        parse: (res) => {
+            if (typeof res === 'string') {
+                try { return JSON.parse(res); } catch (e) { return res; }
+            }
+            return res;
+        }
+    },
+    {
+        name: 'CodeTabs',
+        getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+        parse: (res) => res
+    },
+    {
+        name: 'IsItDown-Proxy',
         getUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
         parse: (res) => {
             if (!res || !res.contents) return null;
@@ -24,20 +40,9 @@ const PROXIES: ProxyConfig[] = [
                 return typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
             } catch (e) { return res.contents; }
         }
-    },
-    {
-        name: 'codetabs',
-        getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    {
-        name: 'thingproxy',
-        getUrl: (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
-        parse: (res) => res
     }
 ];
 
-// Helper to shuffle array
 const shuffle = <T>(array: T[]): T[] => {
     const newArr = [...array];
     for (let i = newArr.length - 1; i > 0; i--) {
@@ -48,7 +53,7 @@ const shuffle = <T>(array: T[]): T[] => {
 };
 
 export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0): Promise<any> {
-    const t = Math.floor(Date.now() / 1000);
+    const t = Math.floor(Date.now() / 3600); // Identical cache for 1 hour to help proxy caching
     const url = cacheBust
         ? `${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${t}`
         : endpoint;
@@ -58,41 +63,50 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
         const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
         try {
+            console.log(`[KickAPI] Trying ${proxy.name} for ${endpoint}...`);
             const response = await fetch(proxy.getUrl(url), {
                 signal: controller.signal,
-                headers: { 'Accept': 'application/json' }
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
             clearTimeout(id);
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const text = await response.text();
-            let json;
+            if (!text || text.length < 10) throw new Error('Empty response');
+
+            let parsedData;
             try {
-                json = JSON.parse(text);
+                parsedData = JSON.parse(text);
             } catch (e) {
+                // If it's not JSON, it might be RAW HTML or direct data from /raw
                 if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
                     throw new Error('Incomplete JSON');
                 }
-                return text;
+                parsedData = text;
             }
 
-            const parsed = proxy.parse(json);
-            if (!parsed) throw new Error('Empty after parse');
+            const final = proxy.parse(parsedData);
 
-            // Check for Cloudflare/Forbidden blocks
+            // Check for Cloudflare blocks
             const isBlocked = (p: any) => {
-                if (!p) return false;
-                if (p.status === 403 || p.message === 'Forbidden') return true;
-                if (typeof p === 'string' && (p.includes('Cloudflare') || p.includes('Just a moment'))) return true;
+                const content = typeof p === 'string' ? p : JSON.stringify(p);
+                if (content.includes('Cloudflare') || content.includes('Just a moment') || content.includes('challenge-running')) {
+                    return true;
+                }
                 return false;
             };
 
-            if (isBlocked(parsed)) {
+            if (isBlocked(final)) {
+                console.warn(`[KickAPI] ${proxy.name} blocked by Cloudflare`);
                 throw new Error('Blocked');
             }
 
-            return parsed;
+            console.log(`[KickAPI] ${proxy.name} SUCCESS!`);
+            return final;
         } catch (err) {
             clearTimeout(id);
             throw err;
@@ -100,10 +114,11 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
     };
 
     try {
-        // 1. Try Parallel Race first (Fastest)
-        return await Promise.any(PROXIES.map(proxy => fetchWithTimeout(proxy)));
+        // Parallel Race for speed
+        const shuffled = shuffle(PROXIES);
+        return await Promise.any(shuffled.map(proxy => fetchWithTimeout(proxy)));
     } catch (err) {
-        // 2. Serial Fallback with shuffled proxies
+        // Serial Fallback with shuffling
         const shuffledProxies = shuffle(PROXIES);
         for (const proxy of shuffledProxies) {
             try {
@@ -112,13 +127,13 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
             } catch (e) { }
         }
 
-        // 3. Retry logic if internet is weak
         if (attempt < MAX_RETRIES) {
-            const delay = 1000 * (attempt + 1); // Exponential backoff
-            await new Promise(resolve => setTimeout(resolve, delay));
+            console.log(`[KickAPI] All proxies failed. Retrying attempt ${attempt + 1}...`);
+            await new Promise(r => setTimeout(r, 2000));
             return kickFetch(endpoint, cacheBust, attempt + 1);
         }
 
+        console.error(`[KickAPI] Critical Failure: No proxy could reach Kick. Check internet or if Kick changed protection.`);
         return null;
     }
 }
