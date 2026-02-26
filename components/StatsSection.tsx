@@ -249,8 +249,26 @@ interface InlinePlayerProps {
 }
 
 const InlinePlayer: React.FC<InlinePlayerProps> = ({ video, onClose }) => {
-  // Extract UUID or ID for the player
-  const videoId = video.uuid || video.slug || video.id;
+  // Kick VODs REQUIRE a UUID for the iframe player.
+  // In V2, it can be video.uuid or video.video.uuid
+  const videoId = video.video?.uuid || video.uuid || (typeof video.id === 'string' && video.id.length > 20 ? video.id : null);
+
+  if (!videoId) {
+    return (
+      <div className="relative w-full aspect-video bg-[#111] rounded-xl flex flex-col items-center justify-center border border-white/10 gap-4 p-6 text-center">
+        <p className="text-white/60 text-sm">Could not generate secure player for this video.</p>
+        <a
+          href={`https://kick.com/video/${video.id || video.uuid}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-6 py-2 bg-kick text-black font-bold rounded-full hover:scale-105 transition-transform"
+        >
+          Watch on Kick.com
+        </a>
+        <button onClick={onClose} className="text-white/30 hover:text-white text-xs underline mt-2">Close</button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl animate-fade-in-up">
@@ -269,7 +287,7 @@ const InlinePlayer: React.FC<InlinePlayerProps> = ({ video, onClose }) => {
       </button>
 
       <iframe
-        src={`https://player.kick.com/video/${videoId}`}
+        src={`https://player.kick.com/video/${videoId}?autoplay=true`}
         className="w-full h-full border-0"
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
