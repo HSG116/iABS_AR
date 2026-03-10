@@ -51,35 +51,39 @@ class ChatService {
       `https://proxy.cors.sh/https://kick.com/api/v2/channels/${slug}`
     ];
 
-    for (const proxyUrl of proxies) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    try {
+      const result = await Promise.any(
+        proxies.map(async (proxyUrl) => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-        const response = await fetch(proxyUrl, { signal: controller.signal });
+          const response = await fetch(proxyUrl, { signal: controller.signal });
 
-        if (!response.ok) {
+          if (!response.ok) {
+            clearTimeout(timeoutId);
+            throw new Error(`Failed with status ${response.status}`);
+          }
+
+          const rawData = await response.json();
           clearTimeout(timeoutId);
-          continue;
-        }
+          const data = proxyUrl.includes('allorigins') ? JSON.parse(rawData.contents) : rawData;
 
-        const rawData = await response.json();
-        clearTimeout(timeoutId);
-        const data = proxyUrl.includes('allorigins') ? JSON.parse(rawData.contents) : rawData;
+          let foundId = null;
+          if (data?.chatroom?.id) foundId = data.chatroom.id;
+          else if (data?.id) foundId = data.id;
 
-        let foundId = null;
-        if (data?.chatroom?.id) foundId = data.chatroom.id;
-        else if (data?.id) foundId = data.id;
-
-        if (foundId) {
-          console.log(`[ChatService] ✅ Found ID: ${foundId}`);
-          // Cache it for future sessions
-          localStorage.setItem(`kick_chatroom_id_${slug}`, foundId.toString());
-          return foundId;
-        }
-      } catch (e) {
-        console.warn(`[ChatService] Proxy failed: ${proxyUrl}`);
-      }
+          if (foundId) {
+            console.log(`[ChatService] ✅ Found ID: ${foundId}`);
+            // Cache it for future sessions
+            localStorage.setItem(`kick_chatroom_id_${slug}`, foundId.toString());
+            return foundId;
+          }
+          throw new Error('No ID found in response');
+        })
+      );
+      if (result) return result;
+    } catch (e) {
+      console.warn(`[ChatService] All proxies failed for ${slug}.`);
     }
 
     return null;
@@ -222,38 +226,42 @@ class ChatService {
         `https://corsproxy.io/?${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
       ];
 
-      for (const proxyUrl of proxies) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      try {
+        const result = await Promise.any(
+          proxies.map(async (proxyUrl) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-          const response = await fetch(proxyUrl, { cache: 'no-store', signal: controller.signal });
-          if (!response.ok) {
+            const response = await fetch(proxyUrl, { cache: 'no-store', signal: controller.signal });
+            if (!response.ok) {
+              clearTimeout(timeoutId);
+              throw new Error(`Failed with status ${response.status}`);
+            }
+
+            const rawData = await response.json();
             clearTimeout(timeoutId);
-            continue;
-          }
+            let data: any;
 
-          const rawData = await response.json();
-          clearTimeout(timeoutId);
-          let data: any;
+            if (proxyUrl.includes('allorigins')) {
+              if (!rawData.contents) throw new Error("No contents");
+              data = JSON.parse(rawData.contents);
+            } else {
+              data = rawData;
+            }
 
-          if (proxyUrl.includes('allorigins')) {
-            if (!rawData.contents) continue;
-            data = JSON.parse(rawData.contents);
-          } else {
-            data = rawData;
-          }
+            // Check all possible locations for avatar in Kick API v2
+            const avatar = data.user?.profile_pic || data.profile_pic || data.user?.profilepic || '';
 
-          // Check all possible locations for avatar in Kick API v2
-          const avatar = data.user?.profile_pic || data.profile_pic || data.user?.profilepic || '';
-
-          if (avatar && avatar.includes('http')) {
-            console.log(`[ChatService] Successfully fetched avatar for ${slug}`);
-            return avatar;
-          }
-        } catch (e) {
-          console.warn(`[ChatService] Failed with proxy: ${proxyUrl.split('?')[0]}`);
-        }
+            if (avatar && avatar.includes('http')) {
+              console.log(`[ChatService] Successfully fetched avatar for ${slug}`);
+              return avatar;
+            }
+            throw new Error("No avatar found");
+          })
+        );
+        if (result) return result;
+      } catch (e) {
+        // All proxies failed
       }
     } catch (e) {
       console.error(`[ChatService] Fatal error fetching avatar for ${username}`, e);

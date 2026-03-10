@@ -9,13 +9,7 @@ interface ProxyConfig {
 
 const PROXIES: ProxyConfig[] = [
     {
-        name: 'CORS-io',
-        getUrl: (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    {
         name: 'AllOrigins-Raw',
-        // Using /raw to get direct string which bypasses some JSON wrapping issues
         getUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
         parse: (res) => {
             if (typeof res === 'string') {
@@ -23,6 +17,16 @@ const PROXIES: ProxyConfig[] = [
             }
             return res;
         }
+    },
+    {
+        name: 'CORS-io',
+        getUrl: (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+        parse: (res) => res
+    },
+    {
+        name: 'ProxyCors',
+        getUrl: (url) => `https://proxy.cors.sh/${url}`, // Add another reliable proxy
+        parse: (res) => res
     },
     {
         name: 'CodeTabs',
@@ -93,18 +97,21 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
         }
     }
 
-    // 2. Sequential search (Gentle on bandwidth)
-    for (let i = 0; i < PROXIES.length; i++) {
-        try {
-            const res = await fetchWithTimeout(PROXIES[i]);
-            if (res) {
-                workingProxyIndex = i; // Store for next time
-                return res;
-            }
-        } catch (e) {
-            // Wait a tiny bit between failures to not hit browser request limits
-            await new Promise(r => setTimeout(r, 200));
-        }
+    // 2. Competitive Proxy Search (Fastest wins)
+    try {
+        const result = await Promise.any(
+            PROXIES.map(async (proxy, index) => {
+                const res = await fetchWithTimeout(proxy);
+                if (res) {
+                    workingProxyIndex = index; // Store for next time
+                    return res;
+                }
+                throw new Error("Empty response");
+            })
+        );
+        if (result) return result;
+    } catch (e) {
+        // All proxies failed in this attempt
     }
 
     if (attempt < MAX_RETRIES) {
