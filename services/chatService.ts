@@ -53,10 +53,18 @@ class ChatService {
 
     for (const proxyUrl of proxies) {
       try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) continue;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+
+        if (!response.ok) {
+          clearTimeout(timeoutId);
+          continue;
+        }
 
         const rawData = await response.json();
+        clearTimeout(timeoutId);
         const data = proxyUrl.includes('allorigins') ? JSON.parse(rawData.contents) : rawData;
 
         let foundId = null;
@@ -216,10 +224,17 @@ class ChatService {
 
       for (const proxyUrl of proxies) {
         try {
-          const response = await fetch(proxyUrl, { cache: 'no-store' });
-          if (!response.ok) continue;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+          const response = await fetch(proxyUrl, { cache: 'no-store', signal: controller.signal });
+          if (!response.ok) {
+            clearTimeout(timeoutId);
+            continue;
+          }
 
           const rawData = await response.json();
+          clearTimeout(timeoutId);
           let data: any;
 
           if (proxyUrl.includes('allorigins')) {

@@ -58,17 +58,25 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
                 signal: controller.signal,
                 headers: { 'Accept': 'application/json' }
             });
-            clearTimeout(id);
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
             const text = await response.text();
-            let parsed = JSON.parse(text);
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch (jsonErr) {
+                // If parsing fails, fall back to text so we don't crash entirely if the proxy sent text
+                parsed = text;
+            }
             const final = proxy.parse(parsed);
 
             // Cloudflare check
             const content = typeof final === 'string' ? final : JSON.stringify(final);
             if (content.includes('Cloudflare') || content.includes('Just a moment')) throw new Error('Blocked');
 
+            clearTimeout(id);
             return final;
         } catch (err) {
             clearTimeout(id);
