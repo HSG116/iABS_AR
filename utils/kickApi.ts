@@ -78,10 +78,20 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
                 content.includes('Cloudflare') ||
                 content.includes('Just a moment') ||
                 content.includes('<body>') ||
+                content.includes('Request blocked') || // Specific for CodeTabs block
                 final === null ||
                 typeof final !== 'object'
             ) {
                 throw new Error('Blocked or Invalid Response');
+            }
+
+            // --- DEEP VALIDATION ---
+            // Ensure the data has some expected Kick structure.
+            // A valid Kick response usually contains 'id', 'data', 'followers_count', 'slug', or 'users'
+            const hasData = final.id || final.data || final.followers_count || final.slug || final.users || Array.isArray(final);
+            if (!hasData) {
+                console.warn(`[Proxy:${proxy.name}] Data received but appears invalid:`, final);
+                throw new Error('Valid looking JSON but missing Kick data fields');
             }
 
             clearTimeout(id);
