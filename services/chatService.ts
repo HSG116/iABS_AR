@@ -47,8 +47,7 @@ class ChatService {
     const proxies = [
       `https://kick.com/api/v1/channels/${slug}`, // Direct (if CORS allows or via extension)
       `https://api.allorigins.win/get?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
-      `https://corsproxy.io/?${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
-      `https://proxy.cors.sh/https://kick.com/api/v2/channels/${slug}`
+      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
     ];
 
     try {
@@ -222,8 +221,7 @@ class ChatService {
       // Proxies list in order of reliability
       const proxies = [
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
-        `https://api.allorigins.win/get?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
-        `https://corsproxy.io/?${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
+        `https://api.allorigins.win/get?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
       ];
 
       try {

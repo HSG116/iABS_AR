@@ -19,16 +19,6 @@ const PROXIES: ProxyConfig[] = [
         }
     },
     {
-        name: 'CORS-io',
-        getUrl: (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    {
-        name: 'ProxyCors',
-        getUrl: (url) => `https://proxy.cors.sh/${url}`, // Add another reliable proxy
-        parse: (res) => res
-    },
-    {
         name: 'CodeTabs',
         getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
         parse: (res) => res
