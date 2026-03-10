@@ -22,6 +22,16 @@ const PROXIES: ProxyConfig[] = [
         name: 'CodeTabs',
         getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
         parse: (res) => res
+    },
+    {
+        name: 'AllOrigins-Get',
+        getUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+        parse: (res) => {
+            if (res && res.contents) {
+                try { return JSON.parse(res.contents); } catch (e) { return res.contents; }
+            }
+            return res;
+        }
     }
 ];
 
@@ -66,9 +76,22 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
             }
             const final = proxy.parse(parsed);
 
-            // Cloudflare check
+            // Cloudflare and Error Page Check
             const content = typeof final === 'string' ? final : JSON.stringify(final);
-            if (content.includes('Cloudflare') || content.includes('Just a moment')) throw new Error('Blocked');
+            if (
+                typeof final === 'string' ||
+                content.includes('Cloudflare') ||
+                content.includes('Just a moment') ||
+                content.includes('<body>') ||
+                final === null
+            ) {
+                throw new Error('Blocked or Invalid Response');
+            }
+
+            // Ensure the data has some expected Kick structure like 'id' or 'data' or 'followers_count' or is an array
+            if (typeof final !== 'object') {
+                throw new Error('Not a valid JSON object');
+            }
 
             clearTimeout(id);
             return final;
