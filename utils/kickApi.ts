@@ -9,18 +9,24 @@ interface ProxyConfig {
 
 const PROXIES: ProxyConfig[] = [
     {
-        name: 'AllOrigins-Raw',
-        getUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        name: 'AllOrigins-Get',
+        getUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+        parse: (res) => {
+            if (res && res.contents) {
+                try { return JSON.parse(res.contents); } catch (e) { return res.contents; }
+            }
+            return res;
+        }
+    },
+    {
+        name: 'CodeTabs',
+        getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
         parse: (res) => {
             if (typeof res === 'string') {
                 try { return JSON.parse(res); } catch (e) { return res; }
             }
             return res;
         }
-    {
-        name: 'CodeTabs',
-        getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-        parse: (res) => res
     }
 ];
 
@@ -65,9 +71,18 @@ export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0)
             }
             const final = proxy.parse(parsed);
 
-            // Cloudflare check
+            // Cloudflare and Error Page Check
             const content = typeof final === 'string' ? final : JSON.stringify(final);
-            if (content.includes('Cloudflare') || content.includes('Just a moment')) throw new Error('Blocked');
+            if (
+                typeof final === 'string' ||
+                content.includes('Cloudflare') ||
+                content.includes('Just a moment') ||
+                content.includes('<body>') ||
+                final === null ||
+                typeof final !== 'object'
+            ) {
+                throw new Error('Blocked or Invalid Response');
+            }
 
             clearTimeout(id);
             return final;
