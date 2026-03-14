@@ -133,6 +133,11 @@ async function doFetch(endpoint: string, url: string, attempt: number): Promise<
 
                 const final = proxy.parse(parsedPayload);
 
+                // Identify if Vercel backend returned our friendly 403 block message
+                if (final && typeof final === 'object' && final.error_blocked) {
+                    throw new Error("Blocked by Vercel IP proxy limits");
+                }
+
                 // If the final payload isn't an object, JSON parsing essentially failed on the target data
                 if (!final || typeof final !== 'object') throw new Error("Invalid Format");
 

@@ -22,18 +22,26 @@ export default async function handler(req, res) {
   try {
     const kickUrl = Array.isArray(endpoint) ? endpoint[0] : endpoint;
     
-    // Add realistic User-Agent to avoid Kick blocking
+    // Add realistic User-Agent and headers to avoid Kick/Cloudflare blocking Vercel Datacenter IPs
     const response = await fetch(kickUrl, {
       headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://kick.com/',
+        'Origin': 'https://kick.com',
+        'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
       }
     });
 
     if (!response.ok) {
-      // Forward the error status
-      return res.status(response.status).json({ error: `Kick API responded with status: ${response.status}` });
+        // If Vercel IP gets blocked (403), return an explicit message so the frontend knows to skip this proxy immediately.
+        return res.status(200).json({ error_blocked: true, status: response.status, message: "Blocked by Cloudflare" });
     }
     
     const text = await response.text();
