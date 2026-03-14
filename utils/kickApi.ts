@@ -1,5 +1,5 @@
-const TIMEOUT_MS = 15000;
-const MAX_RETRIES = 1; // Reduced for performance on slow net
+const TIMEOUT_MS = 6000; // 6s timeout for very fast proxy failover
+const MAX_RETRIES = 1;
 
 interface ProxyConfig {
     name: string;
@@ -8,8 +8,27 @@ interface ProxyConfig {
 }
 
 const PROXIES: ProxyConfig[] = [
+    // Primary: Backend API Gateway (Vercel Serverless / Vite Local Proxy)
     {
-        name: 'AllOrigins-Get',
+        name: 'BackendProxy',
+        getUrl: (url) => `/api/kick?endpoint=${encodeURIComponent(url)}`,
+        parse: (res) => res
+    },
+    // Fallback 1: CORS Proxy IO (Very Fast)
+    {
+        name: 'CorsProxy',
+        getUrl: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        parse: (res) => res
+    },
+    // Fallback 2: AllOrigins Raw
+    {
+        name: 'AllOrigins-Raw',
+        getUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        parse: (res) => res
+    },
+    // Fallback 3: AllOrigins Wrapped (Slowest, but reliable)
+    {
+        name: 'AllOrigins',
         getUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
         parse: (res) => {
             if (res && res.contents) {
@@ -17,119 +36,143 @@ const PROXIES: ProxyConfig[] = [
             }
             return res;
         }
-    },
-    {
-        name: 'CodeTabs',
-        getUrl: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-        parse: (res) => {
-            if (typeof res === 'string') {
-                try { return JSON.parse(res); } catch (e) { return res; }
-            }
-            return res;
-        }
     }
 ];
 
-// Memory for the working proxy to avoid re-testing everything
-let workingProxyIndex = -1;
+// Persistent Cache for SWR (Stale-While-Revalidate)
+const CACHE_TTL = 300000; // 5 minutes fresh
+const MAX_STALE = 86400000; // 24 hours stale
 
-const shuffle = <T>(array: T[]): T[] => {
-    const newArr = [...array];
-    for (let i = newArr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-    }
-    return newArr;
+const getCache = () => {
+    try {
+        const saved = localStorage.getItem('kick_api_cache');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { }
+    return {};
 };
 
-export async function kickFetch(endpoint: string, cacheBust = true, attempt = 0): Promise<any> {
-    const t = Math.floor(Date.now() / 300000); // 5-minute cache window
+const apiCache: Record<string, { data: any, timestamp: number }> = (() => {
+    const parsed = getCache();
+    const now = Date.now();
+    Object.keys(parsed).forEach(k => {
+        if (now - parsed[k].timestamp > MAX_STALE) delete parsed[k]; // Clear deeply stale data
+    });
+    return parsed;
+})();
+
+const saveCache = () => {
+    try { localStorage.setItem('kick_api_cache', JSON.stringify(apiCache)); } catch (e) { }
+};
+
+// Deduplicate identical requests running at the same time
+const fetchCache: Record<string, Promise<any>> = {};
+
+export async function kickFetch(
+    endpoint: string,
+    cacheBust = true,
+    attempt = 0,
+    onStaleUpdate?: (data: any) => void
+): Promise<any> {
+    const t = Math.floor(Date.now() / 600000); // 10-min window for proxy cache busting
     const url = cacheBust
         ? `${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${t}`
         : endpoint;
 
-    const fetchWithTimeout = async (proxy: ProxyConfig) => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const now = Date.now();
+    const cachedItem = apiCache[endpoint]; // Key cache by base endpoint
+
+    if (cachedItem) {
+        const age = now - cachedItem.timestamp;
+        
+        // Cache is fresh
+        if (age < CACHE_TTL) {
+            console.log(`[kickFetch] Cache Hit (Fresh): ${endpoint}`);
+            return cachedItem.data;
+        }
+        
+        // Cache is stale -> Return stale immediately, but fetch new data silently
+        if (onStaleUpdate && age < MAX_STALE) {
+            console.log(`[kickFetch] Cache Hit (Stale - Revalidating): ${endpoint}`);
+            doFetch(endpoint, url, attempt).then(newData => {
+                if (newData) onStaleUpdate(newData);
+            }).catch(() => {});
+            return cachedItem.data;
+        }
+    }
+
+    return await doFetch(endpoint, url, attempt);
+}
+
+async function doFetch(endpoint: string, url: string, attempt: number): Promise<any> {
+    if (fetchCache[endpoint]) {
+        console.log(`[kickFetch] Deduplicating request: ${endpoint}`);
+        return fetchCache[endpoint];
+    }
+
+    const fetchTask = async () => {
+        const fetchFromProxy = async (proxy: ProxyConfig) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+            try {
+                const response = await fetch(proxy.getUrl(url), {
+                    signal: controller.signal,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("HTTP Fail");
+                const text = await response.text();
+                
+                // Safe JSON Parsing to avoid unhandled crashes
+                let parsedPayload;
+                try {
+                    parsedPayload = text.length < 5 ? text : JSON.parse(text);
+                } catch (e) {
+                    parsedPayload = text; // Pass as raw string if JSON parsing fails 
+                }
+
+                const final = proxy.parse(parsedPayload);
+
+                // If the final payload isn't an object, JSON parsing essentially failed on the target data
+                if (!final || typeof final !== 'object') throw new Error("Invalid Format");
+
+                const content = JSON.stringify(final);
+                if (content.includes('Cloudflare') || content.includes('Request blocked') || content.includes('needs to review the security')) {
+                    throw new Error("Blocked");
+                }
+
+                clearTimeout(id);
+                return final;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        };
 
         try {
-            const response = await fetch(proxy.getUrl(url), {
-                signal: controller.signal,
-                headers: { 'Accept': 'application/json' }
-            });
+            // Race all proxies to guarantee the fastest delivery
+            const result = await Promise.any(PROXIES.map(p => fetchFromProxy(p)));
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+            if (result) {
+                apiCache[endpoint] = { data: result, timestamp: Date.now() };
+                saveCache();
+                return result;
             }
-            const text = await response.text();
-            let parsed;
-            try {
-                parsed = JSON.parse(text);
-            } catch (jsonErr) {
-                // If parsing fails, fall back to text so we don't crash entirely if the proxy sent text
-                parsed = text;
+        } catch (e) {
+            if (attempt < MAX_RETRIES) {
+                console.warn(`[kickFetch] Proxies failed, retrying once...`);
+                return await doFetch(endpoint, url, attempt + 1);
             }
-            const final = proxy.parse(parsed);
-
-            // Cloudflare and Error Page Check
-            const content = typeof final === 'string' ? final : JSON.stringify(final);
-            if (
-                typeof final === 'string' ||
-                content.includes('Cloudflare') ||
-                content.includes('Just a moment') ||
-                content.includes('<body>') ||
-                content.includes('Request blocked') || // Specific for CodeTabs block
-                final === null ||
-                typeof final !== 'object'
-            ) {
-                throw new Error('Blocked or Invalid Response');
-            }
-
-            // --- DEEP VALIDATION ---
-            // Ensure the data has some expected Kick structure.
-            // A valid Kick response usually contains 'id', 'data', 'followers_count', 'slug', or 'users'
-            const hasData = final.id || final.data || final.followers_count || final.slug || final.users || Array.isArray(final);
-            if (!hasData) {
-                console.warn(`[Proxy:${proxy.name}] Data received but appears invalid:`, final);
-                throw new Error('Valid looking JSON but missing Kick data fields');
-            }
-
-            clearTimeout(id);
-            return final;
-        } catch (err) {
-            clearTimeout(id);
-            throw err;
         }
+
+        console.error(`[kickFetch] ❌ All fetch attempts failed for ${endpoint}`);
+        return null; // Don't throw to prevent unhandled rejections that break UI
     };
 
-    // 1. Try working proxy first if known
-    if (workingProxyIndex !== -1) {
-        try {
-            return await fetchWithTimeout(PROXIES[workingProxyIndex]);
-        } catch (e) {
-            workingProxyIndex = -1; // Reset if it failed
-        }
-    }
-
-    // 2. Competitive Proxy Search (Fastest wins)
-    try {
-        const result = await Promise.any(
-            PROXIES.map(async (proxy, index) => {
-                const res = await fetchWithTimeout(proxy);
-                if (res) {
-                    workingProxyIndex = index; // Store for next time
-                    return res;
-                }
-                throw new Error("Empty response");
-            })
-        );
-        if (result) return result;
-    } catch (e) {
-        // All proxies failed in this attempt
-    }
-
-    if (attempt < MAX_RETRIES) {
-        return kickFetch(endpoint, cacheBust, attempt + 1);
-    }
-    return null;
+    const promise = fetchTask().finally(() => {
+        delete fetchCache[endpoint];
+    });
+    
+    fetchCache[endpoint] = promise;
+    return promise;
 }

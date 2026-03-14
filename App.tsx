@@ -142,7 +142,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
     const thumbnail = data.thumbnail?.url || data.thumbnail?.src || (typeof data.thumbnail === 'string' ? data.thumbnail : '') || (data.responsive_url) || DEFAULT_BACKGROUND_IMAGE;
 
     return (
-        <div className="w-full max-w-5xl mx-auto mt-24 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+        <div className="w-full max-w-5xl mx-auto mt-24 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
 
                 {/* Subtle Glow Backdrop */}
@@ -163,6 +163,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                             <img
                                 src={thumbnail}
                                 alt="Last Session"
+                                loading="lazy"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-105"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -217,6 +218,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                                             <img
                                                 src={catImg}
                                                 alt={catName}
+                                                loading="lazy"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     const target = e.target as HTMLImageElement;
@@ -262,12 +264,11 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
 
         setIsRedirecting(true);
 
-        // Simulate "Charging" or "Launch" time (2 seconds)
+        // Reduce lag feeling: 400ms instead of 2000ms
         setTimeout(() => {
             window.open(social.url, '_blank');
-            // Reset after a short delay so if they come back the button is normal
-            setTimeout(() => setIsRedirecting(false), 1000);
-        }, 2000);
+            setTimeout(() => setIsRedirecting(false), 500);
+        }, 400);
     };
 
     // Adjusted mobile height to h-32 (was h-40) for better proportion and less empty space
@@ -431,12 +432,11 @@ const PaymentCard: React.FC<{
         e.preventDefault();
         if (isRedirecting) return;
 
-        setIsRedirecting(true);
-        // 2 seconds delay before redirect
+        // Reduce lag feeling: 400ms
         setTimeout(() => {
             window.open(url, '_blank');
-            setTimeout(() => setIsRedirecting(false), 1000);
-        }, 2000);
+            setTimeout(() => setIsRedirecting(false), 500);
+        }, 400);
     };
 
     const label = lang === 'en' ? labelEn : labelAr;
@@ -506,7 +506,7 @@ const PaymentCard: React.FC<{
 // --- Support Links Section ---
 const SupportLinks: React.FC<{ lang: Language }> = ({ lang }) => {
     return (
-        <div className="w-full max-w-5xl mx-auto mt-32 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+        <div className="w-full max-w-5xl mx-auto mt-32 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center gap-4 mb-6 px-2 opacity-80">
                 <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
                 <span className={`text-xs font-bold uppercase tracking-[0.3em] text-white/60 ${lang === 'ar' ? 'font-arabic' : ''}`}>{lang === 'en' ? 'SUPPORT & DONATION' : 'الدعم المادي'}</span>
@@ -596,28 +596,14 @@ export default function App() {
 
     const [isDemo, setIsDemo] = useState(false);
 
-    const fetchKickStatus = React.useCallback(async () => {
-        try {
-            const rawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`);
+    const fetchKickStatus = React.useCallback(() => {
+        // 1. Fetch channel data
+        const handleChannelUpdate = (rawData: any) => {
             const data = rawData?.data || rawData;
 
             if (data) {
                 const livestreamData = data.livestream || data.live_stream || null;
                 const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
-
-                // Extract last session
-                const streams = data.previous_livestreams || data.recent_streams || [];
-                if (streams && streams.length > 0) {
-                    setLastSession(streams[0]);
-                } else {
-                    try {
-                        const videoData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`);
-                        const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
-                        if (vList && vList.length > 0) setLastSession(vList[0]);
-                    } catch (e) {
-                        console.error("Fallback failed:", e);
-                    }
-                }
 
                 if (isLive) {
                     const category = livestreamData.categories?.[0]?.name || livestreamData.category?.name || 'Gaming';
@@ -636,18 +622,36 @@ export default function App() {
                 }
 
                 // Update real Kick follower count
-                /* 
                 if (data.followers_count !== undefined) {
                     const count = data.followers_count;
                     const formattedCount = count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count.toString();
                     setSocialStats(prev => ({ ...prev, 'KICK': formattedCount }));
                 }
-                */
+
+                // Extract session redundancy
+                const streams = data.previous_livestreams || data.recent_streams || [];
+                if (streams && streams.length > 0) {
+                    setLastSession(streams[0]);
+                }
             }
-        } catch (e) {
-            console.error("Failed to fetch Kick data:", e);
-        }
-    }, [isDemo]);
+        };
+
+        kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`, true, 0, handleChannelUpdate)
+            .then(handleChannelUpdate)
+            .catch(e => console.error("Failed to fetch channel status:", e));
+
+        // 2. Fetch videos independently
+        const handleVideoUpdate = (videoData: any) => {
+            const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
+            if (vList && vList.length > 0) {
+                setLastSession(vList[0]);
+            }
+        };
+
+        kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true, 0, handleVideoUpdate)
+            .then(handleVideoUpdate)
+            .catch(() => {});
+    }, [CHANNEL_SLUG]);
 
     useEffect(() => {
         fetchKickStatus();
@@ -755,6 +759,7 @@ export default function App() {
                                     <img
                                         src={branding.profileImage}
                                         alt="iABS - Official Profile Identity"
+                                        loading="eager"
                                         className={`w-full h-full object-cover transition-transform duration-1000 ${isHoveringProfile ? 'scale-110 rotate-2' : 'scale-100'}`}
                                     />
 

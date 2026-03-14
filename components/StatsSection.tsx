@@ -273,66 +273,69 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
 
   useEffect(() => {
     const channelSlug = 'iabs';
+    const endpoints = {
+      leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
+      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
+      videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
+      channel: `https://kick.com/api/v2/channels/${channelSlug}`
+    };
 
-    // DELAYED PROGRESSIVE LOADING FOR SLOW INTERNET
-    const timer = setTimeout(() => {
-      const endpoints = {
-        leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
-        clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
-        videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`, // V2 for VODs
-        channel: `https://kick.com/api/v2/channels/${channelSlug}`
-      };
+    // 1. Channel Info
+    const handleChannelUpdate = (data: any) => {
+      if (!data) return;
+      const raw = data.data || data;
+      setChannelInfo({
+        followers_count: raw.followers_count ?? raw.followersCount ?? 0,
+        subscriber_badges: Array.isArray(raw.subscriber_badges || raw.badges) ? (raw.subscriber_badges || raw.badges) : []
+      });
+      const streams = raw.previous_livestreams || raw.recent_streams || [];
+      if (streams.length > 0) setVideos(v => (v && v.length) ? v : streams.slice(0, 3));
+    };
+    kickFetch(endpoints.channel, true, 0, handleChannelUpdate).then(handleChannelUpdate).catch(() => {});
 
-      // 1. Fetch Basic Channel Info First
-      kickFetch(endpoints.channel).then(data => {
-        if (data) {
-          const raw = data.data || data;
-          setChannelInfo({
-            followers_count: raw.followers_count ?? 0,
-            subscriber_badges: Array.isArray(raw.subscriber_badges || raw.badges) ? (raw.subscriber_badges || raw.badges) : []
+    // 2. Leaderboards
+    const handleLeaderboardUpdate = (data: any) => {
+      const source = data?.data || data?.leaderboard || data;
+      if (source && (source.gifts || source.all_time)) {
+        setLeaderboards({
+          gifts: source.gifts || source.all_time || [],
+          gifts_week: source.gifts_week || source.weekly || [],
+          gifts_month: source.gifts_month || source.monthly || []
+        });
+      } else {
+        // Fallback endpoint if V2 changes
+        const handleFallbackUpdate = (d: any) => {
+          const s = d?.data || d?.leaderboard || d;
+          if (s) setLeaderboards({
+            gifts: s.gifts || s.all_time || [],
+            gifts_week: s.gifts_week || s.weekly || [],
+            gifts_month: s.gifts_month || s.monthly || []
           });
+        };
+        kickFetch(`https://kick.com/api/v2/channels/${channelSlug}/leaderboard`, true, 0, handleFallbackUpdate)
+          .then(handleFallbackUpdate)
+          .catch(() => {});
+      }
+    };
+    kickFetch(endpoints.leaderboard, true, 0, handleLeaderboardUpdate).then(handleLeaderboardUpdate).catch(() => {});
 
-          // Fallback VODs from channel data if dedicated fails
-          if (raw.previous_livestreams || raw.recent_streams) {
-            const fallback = (raw.recent_streams || raw.previous_livestreams || []).slice(0, 3);
-            setVideos(prev => prev && prev.length > 0 ? prev : fallback);
-          }
-        }
-      }).catch(() => { });
+    // 3. Clips
+    const handleClipsUpdate = (data: any) => {
+      const raw = data?.data || data;
+      const list = raw?.clips || raw?.data || (Array.isArray(raw) ? raw : []);
+      if (Array.isArray(list)) setClips(list.slice(0, 4));
+    };
+    kickFetch(endpoints.clips, true, 0, handleClipsUpdate).then(handleClipsUpdate).catch(() => {});
 
-      // 2. Stagger secondary data to save bandwidth
-      setTimeout(() => {
-        kickFetch(endpoints.leaderboard).then(data => {
-          if (data) {
-            const source = data.data || data.leaderboard || data;
-            setLeaderboards({
-              gifts: source.gifts || source.all_time || [],
-              gifts_week: source.gifts_week || source.weekly || [],
-              gifts_month: source.gifts_month || source.monthly || []
-            });
-          }
-        }).catch(() => { });
-      }, 800);
+    // 4. Videos
+    const handleVideosUpdate = (data: any) => {
+      const raw = data?.data || data;
+      const list = raw?.videos || raw?.data || (Array.isArray(raw) ? raw : []);
+      if (Array.isArray(list)) setVideos(list.slice(0, 3));
+    };
+    kickFetch(endpoints.videos, true, 0, handleVideosUpdate).then(handleVideosUpdate).catch(() => {});
 
-      setTimeout(() => {
-        kickFetch(endpoints.clips).then(data => {
-          const raw = data?.data || data;
-          const list = raw.clips || raw.data || (Array.isArray(raw) ? raw : []);
-          if (Array.isArray(list)) setClips(list.slice(0, 4));
-        }).catch(() => { });
-      }, 1500);
-
-      setTimeout(() => {
-        kickFetch(endpoints.videos).then(data => {
-          const raw = data?.data || data;
-          const list = raw.videos || raw.data || (Array.isArray(raw) ? raw : []);
-          if (Array.isArray(list)) setVideos(list.slice(0, 3));
-        }).catch(() => { });
-      }, 2000);
-
-    }, 800); // Reduced delay to 800ms to feel faster but still sequential
-
-    return () => clearTimeout(timer);
+    return () => { };
   }, []);
 
   return (
