@@ -41,7 +41,7 @@ const KICK_SOCIAL: SocialLink = {
     icon: <KickIcon className="w-8 h-8" />,
     color: '',
     username: 'iABS',
-    hex: '#FF2D2D', // Updated to Red
+    hex: '#53FC18', // Restored to Green
     followerCount: '+110K',
     specialDetail: 'البث الأساسي والتفاعل المباشر'
 };
@@ -752,7 +752,7 @@ export default function App() {
                                         <div className="absolute inset-0 bg-[#FF2D2D] rounded-full blur-md opacity-40 animate-pulse"></div>
                                         <div className="absolute inset-[-4px] border border-[#FF2D2D]/30 rounded-full animate-spin-slow"></div>
                                         <div className="relative w-full h-full bg-black rounded-full p-2 border border-[#FF2D2D]/50 shadow-[0_0_20px_#FF2D2D] flex items-center justify-center">
-                                            <KickIcon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                                            <KickIcon className="w-5 h-5 md:w-6 md:h-6 text-[#53FC18]" />
                                         </div>
                                     </div>
                                 </div>

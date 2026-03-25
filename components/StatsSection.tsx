@@ -328,7 +328,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         {channelInfo ? (
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-kick/0 via-kick/5 to-kick/0 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-            <div className="relative flex items-center justify-between bg-[#080808]/60 backdrop-blur-md border border-white/5 p-8 rounded-[30px] shadow-2xl overflow-hidden hover:border-white/10 transition-colors">
+            <div className="relative flex flex-col md:flex-row items-center justify-between bg-[#080808]/60 backdrop-blur-md border border-white/5 p-6 md:p-8 rounded-[30px] shadow-2xl overflow-hidden hover:border-white/10 transition-all gap-6 md:gap-0">
 
               {/* Background Noise */}
 
@@ -337,7 +337,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 <div className="relative">
                   <div className="absolute inset-0 bg-[#FF2D2D] blur-xl opacity-20 animate-pulse"></div>
                   <div className="p-4 bg-[#111] text-white rounded-2xl border border-white/10 shadow-lg relative">
-                    <KickIcon className="w-10 h-10 text-[#FF2D2D]" />
+                    <KickIcon className="w-10 h-10 text-[#53FC18]" />
                   </div>
                 </div>
                 <div>
@@ -346,14 +346,14 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-3 relative z-10">
+              <div className="flex flex-col md:flex-row items-center gap-3 relative z-10">
                 {channelInfo.subscriber_badges && channelInfo.subscriber_badges.length > 0 && (
                   <>
-                    <div className="flex flex-col items-end mr-4">
+                    <div className="flex flex-col items-center md:items-end">
                       <span className="text-[10px] text-white/30 font-bold uppercase tracking-[0.25em]">{t.subBadges}</span>
-                      <div className="h-0.5 w-8 bg-[#FF2D2D]/50 rounded-full mt-1"></div>
+                      <div className="h-0.5 w-8 bg-[#FF2D2D]/50 rounded-full mt-1 hidden md:block"></div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-center md:justify-end gap-2">
                       {channelInfo.subscriber_badges.sort((a, b) => a.months - b.months).map((badge) => (
                         <div key={badge.id} className="relative group/badge transition-transform duration-300 hover:-translate-y-2">
                           <div className="absolute -inset-2 bg-white/20 blur-md rounded-full opacity-0 group-hover/badge:opacity-100 transition-opacity"></div>
