@@ -1,48 +1,6 @@
-const TIMEOUT_MS = 6000; // 6s timeout for very fast proxy failover
-const MAX_RETRIES = 1;
+const TIMEOUT_MS = 8000; // 8 ثواني كحد أقصى للطلب
 
-interface ProxyConfig {
-    name: string;
-    getUrl: (url: string) => string;
-    parse: (res: any) => any;
-}
-
-const PROXIES: ProxyConfig[] = [
-    // Primary: Backend API Gateway (Vercel Serverless / Vite Local Proxy)
-    {
-        name: 'BackendProxy',
-        getUrl: (url) => `/api/kick?endpoint=${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    // Fallback 1: CORS Proxy IO (Very Fast)
-    {
-        name: 'CorsProxy',
-        getUrl: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    // Fallback 2: AllOrigins Raw
-    {
-        name: 'AllOrigins-Raw',
-        getUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        parse: (res) => res
-    },
-    // Fallback 3: AllOrigins Wrapped (Slowest, but reliable)
-    {
-        name: 'AllOrigins',
-        getUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-        parse: (res) => {
-            if (res && res.contents) {
-                try { return JSON.parse(res.contents); } catch (e) { return res.contents; }
-            }
-            return res;
-        }
-    }
-];
-
-// Persistent Cache for SWR (Stale-While-Revalidate)
-const CACHE_TTL = 300000; // 5 minutes fresh
-const MAX_STALE = 86400000; // 24 hours stale
-
+// كاش محلي لتسريع الموقع وتخفيف الطلبات
 const getCache = () => {
     try {
         const saved = localStorage.getItem('kick_api_cache');
@@ -54,8 +12,9 @@ const getCache = () => {
 const apiCache: Record<string, { data: any, timestamp: number }> = (() => {
     const parsed = getCache();
     const now = Date.now();
+    // تنظيف الكاش القديم (أقدم من 10 دقائق)
     Object.keys(parsed).forEach(k => {
-        if (now - parsed[k].timestamp > MAX_STALE) delete parsed[k]; // Clear deeply stale data
+        if (now - parsed[k].timestamp > 600000) delete parsed[k]; 
     });
     return parsed;
 })();
@@ -64,120 +23,73 @@ const saveCache = () => {
     try { localStorage.setItem('kick_api_cache', JSON.stringify(apiCache)); } catch (e) { }
 };
 
-// Deduplicate identical requests running at the same time
-const fetchCache: Record<string, Promise<any>> = {};
+// البروكسيات الموثوقة بالترتيب (بدون إرسال طلبات عشوائية)
+const PROXY_URLS = [
+    (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+];
 
-export async function kickFetch(
-    endpoint: string,
-    cacheBust = true,
-    attempt = 0,
-    onStaleUpdate?: (data: any) => void
-): Promise<any> {
-    const t = Math.floor(Date.now() / 600000); // 10-min window for proxy cache busting
-    const url = cacheBust
-        ? `${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${t}`
-        : endpoint;
-
-    const now = Date.now();
-    const cachedItem = apiCache[endpoint]; // Key cache by base endpoint
-
-    if (cachedItem) {
-        const age = now - cachedItem.timestamp;
-        
-        // Cache is fresh
-        if (age < CACHE_TTL) {
-            console.log(`[kickFetch] Cache Hit (Fresh): ${endpoint}`);
-            return cachedItem.data;
-        }
-        
-        // Cache is stale -> Return stale immediately, but fetch new data silently
-        if (onStaleUpdate && age < MAX_STALE) {
-            console.log(`[kickFetch] Cache Hit (Stale - Revalidating): ${endpoint}`);
-            doFetch(endpoint, url, attempt).then(newData => {
-                if (newData) onStaleUpdate(newData);
-            }).catch(() => {});
-            return cachedItem.data;
-        }
+export async function kickFetch(endpoint: string, cacheBust = true): Promise<any> {
+    const cachedItem = apiCache[endpoint];
+    
+    // إذا كان لدينا كاش صالح (أقل من 3 دقائق)، نعرضه فوراً لمنع التعليق
+    if (cachedItem && (Date.now() - cachedItem.timestamp < 180000)) {
+        console.log(`[Cache Hit] ${endpoint}`);
+        return cachedItem.data;
     }
 
-    return await doFetch(endpoint, url, attempt);
-}
+    const t = Math.floor(Date.now() / 60000); 
+    const url = cacheBust ? `${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${t}` : endpoint;
 
-async function doFetch(endpoint: string, url: string, attempt: number): Promise<any> {
-    if (fetchCache[endpoint]) {
-        console.log(`[kickFetch] Deduplicating request: ${endpoint}`);
-        return fetchCache[endpoint];
-    }
-
-    const fetchTask = async () => {
-        const fetchFromProxy = async (proxy: ProxyConfig) => {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-            try {
-                const response = await fetch(proxy.getUrl(url), {
-                    signal: controller.signal,
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                if (!response.ok) throw new Error("HTTP Fail");
-                const text = await response.text();
-                
-                // Safe JSON Parsing to avoid unhandled crashes
-                let parsedPayload;
-                try {
-                    parsedPayload = text.length < 5 ? text : JSON.parse(text);
-                } catch (e) {
-                    parsedPayload = text; // Pass as raw string if JSON parsing fails 
-                }
-
-                const final = proxy.parse(parsedPayload);
-
-                // Identify if Vercel backend returned our friendly 403 block message
-                if (final && typeof final === 'object' && final.error_blocked) {
-                    throw new Error("Blocked by Vercel IP proxy limits");
-                }
-
-                // If the final payload isn't an object, JSON parsing essentially failed on the target data
-                if (!final || typeof final !== 'object') throw new Error("Invalid Format");
-
-                const content = JSON.stringify(final);
-                if (content.includes('Cloudflare') || content.includes('Request blocked') || content.includes('needs to review the security')) {
-                    throw new Error("Blocked");
-                }
-
-                clearTimeout(id);
-                return final;
-            } catch (err) {
-                clearTimeout(id);
-                throw err;
-            }
-        };
+    // سنجرب البروكسيات واحداً تلو الآخر وليس في نفس الوقت لمنع تجمد المتصفح
+    for (let i = 0; i < PROXY_URLS.length; i++) {
+        const proxyUrl = PROXY_URLS[i](url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
         try {
-            // Race all proxies to guarantee the fastest delivery
-            const result = await Promise.any(PROXIES.map(p => fetchFromProxy(p)));
+            const response = await fetch(proxyUrl, {
+                signal: controller.signal,
+                headers: { 'Accept': 'application/json' }
+            });
 
-            if (result) {
-                apiCache[endpoint] = { data: result, timestamp: Date.now() };
-                saveCache();
-                return result;
+            clearTimeout(timeoutId);
+
+            if (!response.ok) continue; // إذا فشل، جرب البروكسي اللي بعده
+
+            const text = await response.text();
+            let data;
+            
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                continue; // إذا لم يكن JSON صحيح، جرب البروكسي اللي بعده
             }
-        } catch (e) {
-            if (attempt < MAX_RETRIES) {
-                console.warn(`[kickFetch] Proxies failed, retrying once...`);
-                return await doFetch(endpoint, url, attempt + 1);
+
+            // AllOrigins يرجع البيانات داخل contents
+            const finalData = proxyUrl.includes('allorigins') && data.contents 
+                ? JSON.parse(data.contents) 
+                : data;
+
+            const contentStr = JSON.stringify(finalData);
+            if (contentStr.includes('Cloudflare') || contentStr.includes('Just a moment')) {
+                continue; // إذا تم حظرنا من كلاود فلير، جرب البروكسي الآخر
             }
+
+            // نجاح! نحفظ في الكاش ونرجع البيانات
+            apiCache[endpoint] = { data: finalData, timestamp: Date.now() };
+            saveCache();
+            return finalData;
+
+        } catch (err) {
+            clearTimeout(timeoutId);
+            // تجاهل الخطأ وانتقل للبروكسي التالي
         }
+    }
 
-        console.error(`[kickFetch] ❌ All fetch attempts failed for ${endpoint}`);
-        return null; // Don't throw to prevent unhandled rejections that break UI
-    };
-
-    const promise = fetchTask().finally(() => {
-        delete fetchCache[endpoint];
-    });
+    // في حال فشل كل شيء، نرجع البيانات القديمة من الكاش إن وجدت (كي لا يظهر Skeleton للأبد)
+    if (cachedItem) return cachedItem.data;
     
-    fetchCache[endpoint] = promise;
-    return promise;
+    // إذا لم يكن هناك كاش وفشل الاتصال، نرجع null لكي تختفي السكيلتون وتظهر كلمة "لا توجد بيانات"
+    return null; 
 }
