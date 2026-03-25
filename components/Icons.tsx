@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const KickIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={`${className} text-[#53FC18]`}>
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
     <path d="M3 3h4.5v6.9l6-6.9H19l-7.5 8.4L20 21h-5.4l-5.1-6.6V21H3V3z" />
   </svg>
 );

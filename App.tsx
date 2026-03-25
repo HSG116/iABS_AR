@@ -272,8 +272,8 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
         }, 400);
     };
 
-    // Adjusted mobile height to h-32 (was h-40) for better proportion and less empty space
-    const containerClass = className.includes('h-') ? className : `h-32 md:h-32 ${className}`;
+    // Adjusted mobile height to h-36 (was h-32) to prevent text clipping after adding icon margins
+    const containerClass = className.includes('h-') ? className : `h-36 md:h-32 ${className}`;
 
     return (
         <a
@@ -286,6 +286,8 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
             title={`${social.name} - iABS Official`}
             aria-label={`Visit iABS on ${social.name}`}
         >
+            {/* === BLACK INNER VIGNETTE EFFECT === */}
+            <div className={`absolute inset-0 rounded-2xl bg-black/20 shadow-[inset_0_0_40px_rgba(0,0,0,0.7)] z-0`}></div>
             {/* === ACTIVE LAUNCH EFFECT (FULL SCREEN BLOOM) === */}
             {isRedirecting && (
                 <div className="absolute inset-0 z-50 rounded-2xl animate-pulse" style={{ boxShadow: `0 0 50px ${brandColor}, inset 0 0 30px ${brandColor}` }}></div>
@@ -341,7 +343,7 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                         {/* Icon Container with 3D Rotate */}
                         <div
                             className={`
-                            relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-2xl bg-[#151515] border shadow-2xl transition-all duration-500 shrink-0
+                            relative w-12 h-12 md:w-16 md:h-16 mt-3 md:mt-0 flex items-center justify-center rounded-2xl bg-[#151515] border shadow-2xl transition-all duration-500 shrink-0
                             ${isRedirecting ? 'rotate-12 scale-110' : 'group-hover:scale-110 group-hover:rotate-6'}
                         `}
                             style={{
@@ -351,7 +353,13 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                                 boxShadow: (isHovered || isRedirecting) ? `0 0 20px ${brandColor}40` : 'none'
                             }}
                         >
-                            {social.icon}
+                            {/* Inner Scanner Shine (Mini HUD Effect) */}
+                            <div className={`absolute inset-0 overflow-hidden rounded-xl opacity-0 ${isHovered ? 'opacity-100' : ''} transition-opacity duration-700 pointer-events-none`}>
+                                <div className="absolute inset-x-0 h-1/3 bg-white/10 blur-md -top-1/3 profile-scanner bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+                            </div>
+                            <div className="transition-colors duration-300">
+                                {social.icon}
+                            </div>
                         </div>
 
                         {/* Text Details */}
@@ -763,21 +771,17 @@ export default function App() {
                                     {/* Combined Cracked Text Container */}
                                     <div className="relative inline-block hover:scale-110 transition-transform duration-700 cursor-default">
 
-                                        {/* Background Aura Glow - Multi-layered */}
-                                        <div className="absolute inset-[-20%] bg-[#FF2D2D]/10 blur-[100px] rounded-full opacity-0 group-hover/name:opacity-100 transition-opacity duration-1000"></div>
-                                        <div className="absolute inset-[-10%] bg-white/5 blur-[60px] rounded-full opacity-0 group-hover/name:opacity-100 transition-opacity duration-700 animate-pulse"></div>
+                                        <div className="absolute inset-[-60%] bg-gradient-to-r from-[#FF2D2D]/0 via-[#FF2D2D]/5 to-[#FF2D2D]/0 blur-[150px] opacity-0 group-hover/name:opacity-100 transition-opacity duration-1000"></div>
+                                        <div className="absolute inset-[-50%] [background:radial-gradient(circle,rgba(255,255,255,0.08),transparent)] blur-[130px] opacity-0 group-hover/name:opacity-100 transition-opacity duration-1000 animate-pulse"></div>
 
                                         {/* Layer 2: Top Half (Split Upwards) */}
                                         <div className="relative z-10 -translate-y-1 -translate-x-1 group-hover/name:animate-glitch group-hover/name:-translate-y-4 group-hover/name:-translate-x-2 transition-transform duration-500"
                                             style={{ clipPath: 'polygon(-10% -10%, 110% -10%, 110% 35%, 90% 48%, 82% 52%, 75% 38%, 68% 32%, 60% 42%, 52% 38%, 45% 45%, 38% 42%, 30% 58%, 22% 55%, 15% 62%, 10% 60%, -10% 65%)' }}>
 
-                                            {/* Text Depth/Shadow */}
-                                            <span className="absolute inset-0 translate-x-1 translate-y-1 text-black/80 select-none pointer-events-none">iABS</span>
-
-                                            {/* Main Text with Heavy Stroke */}
+                                            {/* Main Text with Heavy Stroke - Adjusted for Mobile */}
                                             <span className="relative">
-                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
-                                                <span className="text-white [-webkit-text-stroke:6px_black] [paint-order:stroke_fill] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">ABS</span>
+                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 30px rgba(255, 45, 45, 0.3)' }} className="[-webkit-text-stroke:2px_black] md:[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
+                                                <span className="text-white [-webkit-text-stroke:2px_black] md:[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">ABS</span>
                                             </span>
 
                                             {/* Inner Sheen Effect */}
@@ -788,13 +792,10 @@ export default function App() {
                                         <div className="absolute inset-0 z-10 translate-y-1 translate-x-1 group-hover/name:animate-glitch [animation-delay:0.1s] group-hover/name:translate-y-4 group-hover/name:translate-x-2 transition-transform duration-500"
                                             style={{ clipPath: 'polygon(-10% 65%, 10% 60%, 15% 62%, 22% 55%, 30% 58%, 38% 42%, 45% 45%, 52% 38%, 60% 42%, 68% 32%, 75% 38%, 82% 52%, 90% 48%, 110% 35%, 110% 110%, -10% 110%)' }}>
 
-                                            {/* Text Depth/Shadow */}
-                                            <span className="absolute inset-0 translate-x-1 translate-y-1 text-black/80 select-none pointer-events-none">iABS</span>
-
-                                            {/* Main Text with Heavy Stroke */}
+                                            {/* Main Text with Heavy Stroke - Adjusted for Mobile */}
                                             <span className="relative">
-                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
-                                                <span className="text-white [-webkit-text-stroke:3px_black] [paint-order:stroke_fill] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">ABS</span>
+                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 30px rgba(255, 45, 45, 0.3)' }} className="[-webkit-text-stroke:2px_black] md:[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
+                                                <span className="text-white [-webkit-text-stroke:1px_black] md:[-webkit-text-stroke:3px_black] [paint-order:stroke_fill]">ABS</span>
                                             </span>
                                         </div>
 
@@ -802,51 +803,61 @@ export default function App() {
                                         <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                                             <defs>
                                                 <filter id="crack-glow-heavy">
-                                                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                                                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
                                                     <feMerge>
                                                         <feMergeNode in="coloredBlur" />
                                                         <feMergeNode in="SourceGraphic" />
                                                     </feMerge>
                                                 </filter>
                                                 <linearGradient id="crack-gradient-v2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stopColor="#FF2D2D" />
-                                                    <stop offset="50%" stopColor="#ff0000" />
-                                                    <stop offset="100%" stopColor="#FF2D2D" />
+                                                    <stop offset="0%" stopColor="#FF2D2D" stopOpacity="0" />
+                                                    <stop offset="10%" stopColor="#FF2D2D" stopOpacity="1" />
+                                                    <stop offset="50%" stopColor="#ff0000" stopOpacity="1" />
+                                                    <stop offset="90%" stopColor="#FF2D2D" stopOpacity="1" />
+                                                    <stop offset="100%" stopColor="#FF2D2D" stopOpacity="0" />
                                                 </linearGradient>
+                                                <mask id="crack-mask">
+                                                    <linearGradient id="mask-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stopColor="black" />
+                                                        <stop offset="15%" stopColor="white" />
+                                                        <stop offset="85%" stopColor="white" />
+                                                        <stop offset="100%" stopColor="black" />
+                                                    </linearGradient>
+                                                    <rect width="100" height="100" fill="url(#mask-grad)" />
+                                                </mask>
                                             </defs>
 
-                                            {/* Outer Glow Path */}
-                                            <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
-                                                stroke="#FF2D2D" strokeWidth="4" fill="none" opacity="0.2" filter="url(#crack-glow-heavy)" />
+                                            <g mask="url(#crack-mask)">
+                                                {/* Outer Glow Path */}
+                                                <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
+                                                    stroke="#FF2D2D" strokeWidth="4" fill="none" opacity="0.15" filter="url(#crack-glow-heavy)" />
 
-                                            {/* Main Realistic Jagged Crack */}
-                                            <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
-                                                stroke="url(#crack-gradient-v2)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"
-                                                className="animate-pulse" filter="url(#crack-glow-heavy)" />
+                                                {/* Main Realistic Jagged Crack */}
+                                                <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
+                                                    stroke="url(#crack-gradient-v2)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"
+                                                    className="animate-pulse" filter="url(#crack-glow-heavy)" />
 
-                                            {/* Black Crack Core - Emerging from the red 'i' */}
-                                            <path d="M0 65 L8 62 L12 64 L18 58 L25 61 L32 48 L40 52 L45 45"
-                                                stroke="black" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"
-                                                className="animate-pulse" opacity="0.9" />
-                                            <path d="M12 64 L10 70 M25 61 L28 68 M32 48 L30 40"
-                                                stroke="black" strokeWidth="0.8" fill="none" opacity="0.5" />
+                                                {/* Black Crack Core - Emerging from the red 'i' */}
+                                                <path d="M0 65 L8 62 L12 64 L18 58 L25 61 L32 48 L40 52 L45 45"
+                                                    stroke="black" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"
+                                                    className="animate-pulse" opacity="0.8" />
+                                                
+                                                {/* Inner Energy Core - Hot White */}
+                                                <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
+                                                    stroke="white" strokeWidth="0.3" fill="none" strokeLinecap="round" strokeLinejoin="round"
+                                                    className="animate-pulse [animation-delay:0.2s]" />
 
-                                            {/* Inner Energy Core - Hot White */}
-                                            <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
-                                                stroke="white" strokeWidth="0.4" fill="none" strokeLinecap="round" strokeLinejoin="round"
-                                                className="animate-pulse [animation-delay:0.2s]" />
+                                                {/* Traveling Energy Bolt */}
+                                                <circle r="1.2" fill="white" className="shadow-[0_0_15px_white]">
+                                                    <animateMotion
+                                                        path="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
+                                                        dur="2.5s" repeatCount="indefinite" />
+                                                </circle>
+                                            </g>
 
-                                            {/* Traveling Energy Bolt */}
-                                            <circle r="1.5" fill="white" className="shadow-[0_0_15px_white]">
-                                                <animateMotion
-                                                    path="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
-                                                    dur="2s" repeatCount="indefinite" />
-                                            </circle>
-
-                                            {/* Energy Sparks - Enhanced */}
-                                            <circle cx="38" cy="42" r="2" fill="#FF2D2D" className="animate-ping shadow-[0_0_20px_#FF2D2D]" />
-                                            <circle cx="68" cy="32" r="1.5" fill="white" className="animate-ping [animation-delay:0.4s] shadow-[0_0_20px_white]" />
-                                            <circle cx="82" cy="52" r="2" fill="#FF2D2D" className="animate-ping [animation-delay:0.8s]" />
+                                            {/* Energy Sparks - Responsive */}
+                                            <circle cx="38" cy="42" r="1.5" fill="#FF2D2D" className="animate-ping shadow-[0_0_20px_#FF2D2D]" />
+                                            <circle cx="68" cy="32" r="1" fill="white" className="animate-ping [animation-delay:0.4s] shadow-[0_0_20px_white]" />
                                         </svg>
 
                                         {/* Floating Tech Particles */}
