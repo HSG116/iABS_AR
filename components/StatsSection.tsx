@@ -281,40 +281,42 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
       channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };
 
-    // استخدام kickFetch السريع جداً بدلاً من البروكسي البطيء
-    kickFetch(endpoints.leaderboard, true).then(data => {
+    // جلب معلومات القناة (المتابعين)
+    kickFetch(endpoints.channel).then(rawData => {
+        const data = rawData?.data || rawData; // فك التغليف إن وجد
         if (data) {
-            const source = data.leaderboard || data;
-            setLeaderboards({
-                gifts: source.gifts || source.all_time || [],
-                gifts_week: source.gifts_week || source.weekly || [],
-                gifts_month: source.gifts_month || source.gifts_monthly || source.monthly || [] 
+            setChannelInfo({
+                followers_count: data.followers_count || 0,
+                subscriber_badges: data.subscriber_badges || []
             });
-        } else {
-            setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] });
+        }
+    }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
+
+    // جلب الداعمين
+    kickFetch(endpoints.leaderboard).then(rawData => {
+        const data = rawData?.data || rawData; // فك التغليف
+        if (data) {
+            setLeaderboards({
+                gifts: data.gifts || [],
+                gifts_week: data.gifts_week || [],
+                gifts_month: data.gifts_month || [] 
+            });
         }
     }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
-    kickFetch(endpoints.clips, true).then(data => {
-        if (data && data.clips) setClips(data.clips.slice(0, 4));
-        else if (Array.isArray(data)) setClips(data.slice(0, 4));
-        else setClips([]); 
+    // جلب اللقطات
+    kickFetch(endpoints.clips).then(rawData => {
+        const data = rawData?.data || rawData; // فك التغليف
+        const clipsArray = data?.clips || (Array.isArray(data) ? data : []);
+        setClips(clipsArray.slice(0, 4));
     }).catch(() => setClips([]));
 
-    kickFetch(endpoints.videos, true).then(data => {
-        if (data && Array.isArray(data)) setVideos(data.slice(0, 3));
-        else setVideos([]);
+    // جلب الفيديوهات
+    kickFetch(endpoints.videos).then(rawData => {
+        const data = rawData?.data || rawData; // فك التغليف
+        const videosArray = data?.videos || (Array.isArray(data) ? data : []);
+        setVideos(videosArray.slice(0, 3));
     }).catch(() => setVideos([]));
-
-    kickFetch(endpoints.channel, true).then(data => {
-        if (data) {
-            setChannelInfo({
-                followers_count: data.followers_count || data.followersCount || 0,
-                subscriber_badges: data.subscriber_badges || data.badges || []
-            });
-        }
-        else setChannelInfo({ followers_count: 0, subscriber_badges: [] });
-    }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
 
   }, []);
 
