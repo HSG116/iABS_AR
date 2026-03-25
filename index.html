@@ -18,7 +18,7 @@
   <meta name="author" content="iABS">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="language" content="English, Arabic">
-  <meta name="theme-color" content="#53FC18">
+  <meta name="theme-color" content="#FF2D2D">
   <link rel="canonical" href="https://kick.com/iabs" />
 
   <!-- Open Graph / Facebook / Discord / WhatsApp -->
@@ -79,7 +79,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&family=Tajawal:wght@400;500;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&family=Tajawal:wght@400;500;700;800&family=Bangers&display=swap"
     rel="stylesheet">
   <script>
     tailwind.config = {
@@ -89,12 +89,17 @@
             sans: ['"Plus Jakarta Sans"', '"Tajawal"', 'sans-serif'],
             heading: ['"Outfit"', '"Tajawal"', 'sans-serif'],
             arabic: ['"Tajawal"', 'sans-serif'],
+            gaming: ['"Bangers"', 'cursive'],
           },
           colors: {
             kick: {
-              DEFAULT: '#53FC18',
-              dark: '#42ca13',
-              glow: 'rgba(83, 252, 24, 0.5)'
+              DEFAULT: '#FF2D2D', // Updated to Red
+              dark: '#C41E1E',
+              glow: 'rgba(255, 45, 45, 0.5)'
+            },
+            accent: {
+              red: '#FF2D2D',
+              deep: '#1A0000'
             }
           },
           animation: {
@@ -126,8 +131,8 @@
               '100%': { transform: 'translate(0)' },
             },
             'pulse-red': {
-              '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 5px #e72a18)' },
-              '50%': { opacity: '0.8', filter: 'drop-shadow(0 0 20px #e72a18)' },
+              '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 5px #FF2D2D)' },
+              '50%': { opacity: '0.8', filter: 'drop-shadow(0 0 20px #FF2D2D)' },
             },
             float: {
               '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
@@ -178,6 +183,19 @@
     }
   </script>
   <style>
+    .responsive-bg {
+      background-image: url('/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    @media (min-width: 768px) {
+      .responsive-bg {
+        background-image: url('/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png');
+      }
+    }
+
     .scrollbar-hide::-webkit-scrollbar {
       display: none;
     }

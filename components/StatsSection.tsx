@@ -88,12 +88,12 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       subText: 'text-yellow-200/50'
     },
     rose: {
-      border: 'border-rose-500/20',
-      glow: 'shadow-[0_0_40px_-10px_rgba(225,29,72,0.15)]',
-      text: 'text-rose-400',
-      bgIcon: 'bg-rose-500/10',
-      gradient: 'from-rose-400 to-red-600',
-      subText: 'text-rose-200/50'
+      border: 'border-[#FF2D2D]/20',
+      glow: 'shadow-[0_0_40px_-10px_rgba(255,45,45,0.15)]',
+      text: 'text-[#FF2D2D]',
+      bgIcon: 'bg-[#FF2D2D]/10',
+      gradient: 'from-[#FF2D2D] to-red-800',
+      subText: 'text-red-200/50'
     },
     cyan: {
       border: 'border-cyan-500/20',
@@ -335,9 +335,9 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
 
               <div className="flex items-center gap-6 relative z-10">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-kick blur-xl opacity-20 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-[#FF2D2D] blur-xl opacity-20 animate-pulse"></div>
                   <div className="p-4 bg-[#111] text-white rounded-2xl border border-white/10 shadow-lg relative">
-                    <KickIcon className="w-10 h-10 text-kick" />
+                    <KickIcon className="w-10 h-10 text-[#FF2D2D]" />
                   </div>
                 </div>
                 <div>
@@ -351,7 +351,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                   <>
                     <div className="flex flex-col items-end mr-4">
                       <span className="text-[10px] text-white/30 font-bold uppercase tracking-[0.25em]">{t.subBadges}</span>
-                      <div className="h-0.5 w-8 bg-kick/50 rounded-full mt-1"></div>
+                      <div className="h-0.5 w-8 bg-[#FF2D2D]/50 rounded-full mt-1"></div>
                     </div>
                     <div className="flex gap-2">
                       {channelInfo.subscriber_badges.sort((a, b) => a.months - b.months).map((badge) => (
@@ -448,7 +448,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
           {/* CLIPS */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center text-kick shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center text-[#FF2D2D] shadow-lg">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               </div>
               <span className="text-2xl font-bold text-white tracking-tight">{t.recentClips}</span>
@@ -463,7 +463,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                       href={`https://kick.com/iabs?clip=${clip.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="group relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#050505] cursor-pointer shadow-lg hover:shadow-kick/10 hover:border-kick/30 transition-all duration-500"
+                      className="group relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#050505] cursor-pointer shadow-lg hover:shadow-[#FF2D2D]/10 hover:border-[#FF2D2D]/30 transition-all duration-500"
                     >
                       <img
                         src={clip.thumbnail_url || FALLBACK_IMAGE}
@@ -545,7 +545,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                           </div>
                         </div>
                         <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-                          <h4 className="text-sm font-bold text-white truncate group-hover:text-kick transition-colors">
+                          <h4 className="text-sm font-bold text-white truncate group-hover:text-[#FF2D2D] transition-colors">
                             {video.session_title || video.title || 'Past Stream'}
                           </h4>
                           <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">

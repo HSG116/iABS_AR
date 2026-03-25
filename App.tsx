@@ -9,8 +9,9 @@ import { StatsSection } from './components/StatsSection';
 const DEFAULT_PROFILE_IMAGE = "/favicon.png";
 import { kickFetch } from './utils/kickApi';
 
-// Updated to iABS offline banner
-const DEFAULT_BACKGROUND_IMAGE = "https://files.kick.com/images/channel/1067089/offline_banner/conversion/c37058d0-ad7a-42b0-9c80-5ab180d0e2da-fullsize.jpg";
+// Updated to iABS backgrounds
+const PC_BACKGROUND = "/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png";
+const MOBILE_BACKGROUND = "/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png";
 const CHANNEL_SLUG = 'iabs';
 
 // Helper to construct full social object
@@ -40,7 +41,7 @@ const KICK_SOCIAL: SocialLink = {
     icon: <KickIcon className="w-8 h-8" />,
     color: '',
     username: 'iABS',
-    hex: '#53FC18',
+    hex: '#FF2D2D', // Updated to Red
     followerCount: '+110K',
     specialDetail: 'البث الأساسي والتفاعل المباشر'
 };
@@ -139,19 +140,19 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
     };
 
     const t = TRANSLATIONS[lang] as any;
-    const thumbnail = data.thumbnail?.url || data.thumbnail?.src || (typeof data.thumbnail === 'string' ? data.thumbnail : '') || (data.responsive_url) || DEFAULT_BACKGROUND_IMAGE;
+    const thumbnail = data.thumbnail?.url || data.thumbnail?.src || (typeof data.thumbnail === 'string' ? data.thumbnail : '') || (data.responsive_url) || PC_BACKGROUND;
 
     return (
         <div className="w-full max-w-5xl mx-auto mt-24 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div className="bg-[#0a0a0a]/80 backdrop-blur-lg border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
 
                 {/* Subtle Glow Backdrop */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[#e72a18]/5 blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-50 z-0"></div>
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#FF2D2D]/5 blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-50 z-0"></div>
 
                 <div className="relative z-10">
                     {/* Header Tag */}
                     <div className={`flex items-center gap-3 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#e72a18] shadow-[0_0_15px_#e72a18] animate-pulse"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#FF2D2D] shadow-[0_0_15px_#FF2D2D] animate-pulse"></div>
                         <span className="text-[11px] font-black tracking-[0.4em] text-white/40 uppercase">{t.lastSessionReport}</span>
                     </div>
 
@@ -551,7 +552,7 @@ export default function App() {
 
     const [branding] = useState({
         profileImage: DEFAULT_PROFILE_IMAGE,
-        bannerImage: DEFAULT_BACKGROUND_IMAGE
+        bannerImage: PC_BACKGROUND // Keep this for poster, but main bg uses CSS
     });
 
     const [socialStats, setSocialStats] = useState<Record<string, string>>({
@@ -665,31 +666,27 @@ export default function App() {
     const communitySocials = socials.filter(s => ['Discord', 'YouTube'].includes(s.name));
 
     return (
-        <div className={`relative min-h-screen w-full selection:bg-[#e72a18] selection:text-black overflow-x-hidden ${isRTL ? 'font-arabic' : 'font-sans'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={`relative min-h-screen w-full selection:bg-[#FF2D2D] selection:text-black overflow-x-hidden ${isRTL ? 'font-arabic' : 'font-sans'}`} dir={isRTL ? 'rtl' : 'ltr'}>
 
 
 
             <div className="fixed inset-0 z-0 bg-[#050505]">
-                <div
-                    className="absolute inset-0 bg-cover bg-no-repeat transition-all duration-1000 ease-in-out scale-105"
-                    style={{
-                        backgroundImage: `url(${branding.bannerImage})`,
-                        backgroundPosition: 'center 20%', // Adjusted focus for banner
-                        filter: 'blur(3px)'
-                    }}
-                />
-                <div className="absolute inset-0 bg-black/70"></div>
-
+                <div className="absolute inset-0 responsive-bg transition-all duration-1000 ease-in-out scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black/90"></div>
+                
+                {/* Visual Glows */}
+                <div className="absolute top-0 left-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
+                <div className="absolute bottom-0 right-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
             </div>
 
             <div className="relative z-10 w-full max-w-[1800px] mx-auto p-4 md:p-6 min-h-screen flex flex-col perspective-1000">
                 <header className="flex justify-between items-center mb-8 bg-black/40 backdrop-blur-lg px-6 py-4 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b-4 border-black/60">
                     <div className="flex items-center gap-4">
                         <div className="relative">
-                            <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_#e72a18] ${streamInfo.isLive ? 'bg-[#e72a18] animate-pulse' : 'bg-gray-500'}`}></div>
-                            {streamInfo.isLive && <div className="absolute inset-0 bg-[#e72a18] rounded-full animate-ping opacity-50"></div>}
+                            <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_#FF2D2D] ${streamInfo.isLive ? 'bg-[#FF2D2D] animate-pulse' : 'bg-gray-500'}`}></div>
+                            {streamInfo.isLive && <div className="absolute inset-0 bg-[#FF2D2D] rounded-full animate-ping opacity-50"></div>}
                         </div>
-                        <span className={`font-bold tracking-widest text-xs uppercase ${streamInfo.isLive ? 'text-white text-shadow-glow' : 'text-white/40'}`}>{streamInfo.isLive ? t.status : t.statusOffline}</span>
+                        <span className={`font-black tracking-widest text-[10px] uppercase ${streamInfo.isLive ? 'text-white text-shadow-glow' : 'text-white/40'}`}>{streamInfo.isLive ? t.status : t.statusOffline}</span>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="hidden md:block text-white/30 text-[10px] font-mono tracking-[0.2em] uppercase drop-shadow-md">{t.headerTitle}</div>
@@ -733,9 +730,9 @@ export default function App() {
                                 <div className="tech-corner tech-corner-br group-hover:scale-125 transition-transform duration-500"></div>
 
                                 {/* Main Image Container */}
-                                <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(231,42,24,0.15)] z-10 bg-black transition-all group-hover:border-[#e72a18]/30">
+                                <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(255,45,45,0.25)] z-10 bg-black transition-all group-hover:border-[#FF2D2D]/50 scale-100 group-hover:scale-105">
                                     {/* Scanner Effect */}
-                                    <div className="profile-scanner"></div>
+                                    <div className="profile-scanner bg-gradient-to-b from-[#FF2D2D]/20 via-[#FF2D2D]/40 to-transparent"></div>
 
                                     {/* Profile Image */}
                                     <img
@@ -750,12 +747,12 @@ export default function App() {
                                 </div>
 
                                 {/* Kick Badge with Orbiting Ring */}
-                                <div className="absolute -bottom-1 -right-1 z-30">
+                                <div className="absolute -bottom-1 -right-1 z-30 scale-90 md:scale-100">
                                     <div className="relative w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                        <div className="absolute inset-0 bg-[#e72a18] rounded-full blur-md opacity-40 animate-pulse"></div>
-                                        <div className="absolute inset-[-4px] border border-[#e72a18]/30 rounded-full animate-spin-slow"></div>
-                                        <div className="relative w-full h-full bg-black rounded-full p-2 border border-[#e72a18]/50 shadow-[0_0_20px_#e72a18] flex items-center justify-center">
-                                            <KickIcon className="w-5 h-5 md:w-6 md:h-6 text-kick" />
+                                        <div className="absolute inset-0 bg-[#FF2D2D] rounded-full blur-md opacity-40 animate-pulse"></div>
+                                        <div className="absolute inset-[-4px] border border-[#FF2D2D]/30 rounded-full animate-spin-slow"></div>
+                                        <div className="relative w-full h-full bg-black rounded-full p-2 border border-[#FF2D2D]/50 shadow-[0_0_20px_#FF2D2D] flex items-center justify-center">
+                                            <KickIcon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                                         </div>
                                     </div>
                                 </div>
@@ -767,7 +764,7 @@ export default function App() {
                                     <div className="relative inline-block hover:scale-110 transition-transform duration-700 cursor-default">
 
                                         {/* Background Aura Glow - Multi-layered */}
-                                        <div className="absolute inset-[-20%] bg-[#e72a18]/10 blur-[100px] rounded-full opacity-0 group-hover/name:opacity-100 transition-opacity duration-1000"></div>
+                                        <div className="absolute inset-[-20%] bg-[#FF2D2D]/10 blur-[100px] rounded-full opacity-0 group-hover/name:opacity-100 transition-opacity duration-1000"></div>
                                         <div className="absolute inset-[-10%] bg-white/5 blur-[60px] rounded-full opacity-0 group-hover/name:opacity-100 transition-opacity duration-700 animate-pulse"></div>
 
                                         {/* Layer 2: Top Half (Split Upwards) */}
@@ -779,7 +776,7 @@ export default function App() {
 
                                             {/* Main Text with Heavy Stroke */}
                                             <span className="relative">
-                                                <span style={{ color: '#e72a18', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
+                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
                                                 <span className="text-white [-webkit-text-stroke:6px_black] [paint-order:stroke_fill] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">ABS</span>
                                             </span>
 
@@ -796,7 +793,7 @@ export default function App() {
 
                                             {/* Main Text with Heavy Stroke */}
                                             <span className="relative">
-                                                <span style={{ color: '#e72a18', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
+                                                <span style={{ color: '#FF2D2D', textShadow: '0 0 20px rgba(231, 42, 24, 0.4)' }} className="[-webkit-text-stroke:6px_black] [paint-order:stroke_fill]">i</span>
                                                 <span className="text-white [-webkit-text-stroke:3px_black] [paint-order:stroke_fill] drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">ABS</span>
                                             </span>
                                         </div>
@@ -812,15 +809,15 @@ export default function App() {
                                                     </feMerge>
                                                 </filter>
                                                 <linearGradient id="crack-gradient-v2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stopColor="#e72a18" />
+                                                    <stop offset="0%" stopColor="#FF2D2D" />
                                                     <stop offset="50%" stopColor="#ff0000" />
-                                                    <stop offset="100%" stopColor="#e72a18" />
+                                                    <stop offset="100%" stopColor="#FF2D2D" />
                                                 </linearGradient>
                                             </defs>
 
                                             {/* Outer Glow Path */}
                                             <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
-                                                stroke="#e72a18" strokeWidth="4" fill="none" opacity="0.2" filter="url(#crack-glow-heavy)" />
+                                                stroke="#FF2D2D" strokeWidth="4" fill="none" opacity="0.2" filter="url(#crack-glow-heavy)" />
 
                                             {/* Main Realistic Jagged Crack */}
                                             <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
@@ -847,18 +844,18 @@ export default function App() {
                                             </circle>
 
                                             {/* Energy Sparks - Enhanced */}
-                                            <circle cx="38" cy="42" r="2" fill="#e72a18" className="animate-ping shadow-[0_0_20px_#e72a18]" />
+                                            <circle cx="38" cy="42" r="2" fill="#FF2D2D" className="animate-ping shadow-[0_0_20px_#FF2D2D]" />
                                             <circle cx="68" cy="32" r="1.5" fill="white" className="animate-ping [animation-delay:0.4s] shadow-[0_0_20px_white]" />
-                                            <circle cx="82" cy="52" r="2" fill="#e72a18" className="animate-ping [animation-delay:0.8s]" />
+                                            <circle cx="82" cy="52" r="2" fill="#FF2D2D" className="animate-ping [animation-delay:0.8s]" />
                                         </svg>
 
                                         {/* Floating Tech Particles */}
                                         <div className="absolute inset-0 pointer-events-none overflow-visible">
-                                            <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#e72a18] opacity-0 group-hover/name:opacity-100 transition-all duration-500 translate-x-4 -translate-y-4"></div>
+                                            <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#FF2D2D] opacity-0 group-hover/name:opacity-100 transition-all duration-500 translate-x-4 -translate-y-4"></div>
                                             <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white opacity-0 group-hover/name:opacity-100 transition-all duration-500 -translate-x-4 translate-y-4"></div>
 
                                             {/* Animated Shards */}
-                                            <div className="absolute top-1/4 -right-8 w-8 h-[2px] bg-gradient-to-r from-transparent to-[#e72a18] rotate-45 opacity-0 group-hover/name:opacity-100 transition-all duration-700 delay-100"></div>
+                                            <div className="absolute top-1/4 -right-8 w-8 h-[2px] bg-gradient-to-r from-transparent to-[#FF2D2D] rotate-45 opacity-0 group-hover/name:opacity-100 transition-all duration-700 delay-100"></div>
                                             <div className="absolute bottom-1/4 -left-8 w-8 h-[2px] bg-gradient-to-l from-transparent to-white -rotate-45 opacity-0 group-hover/name:opacity-100 transition-all duration-700 delay-200"></div>
                                         </div>
                                     </div>
@@ -924,11 +921,11 @@ export default function App() {
                                                 <h2 className={`text-xl md:text-2xl font-bold text-white truncate leading-snug ${isRTL ? 'font-arabic' : ''}`} title={displayTitle}>{displayTitle}</h2>
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <span className="font-bold text-sm tracking-wide">
-                                                        <span style={{ color: '#e72a18' }}>i</span>
+                                                        <span style={{ color: '#FF2D2D' }}>i</span>
                                                         <span className="text-white">ABS</span>
                                                     </span>
                                                     <span className="w-1 h-1 rounded-full bg-white/30"></span>
-                                                    <span className="text-white/60 text-sm">{displayCategory}</span>
+                                                    <span className="text-white/60 text-sm font-bold">{displayCategory}</span>
                                                 </div>
                                             </div>
                                             <button onClick={handleShare} className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-white transition-all">
