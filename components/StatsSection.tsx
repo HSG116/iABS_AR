@@ -307,7 +307,12 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     }).catch(() => setVideos([]));
 
     kickFetch(endpoints.channel, true).then(data => {
-        if (data) setChannelInfo(data);
+        if (data) {
+            setChannelInfo({
+                followers_count: data.followers_count || data.followersCount || 0,
+                subscriber_badges: data.subscriber_badges || data.badges || []
+            });
+        }
         else setChannelInfo({ followers_count: 0, subscriber_badges: [] });
     }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
 
