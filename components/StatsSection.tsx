@@ -134,14 +134,14 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
     return (
       <div className={`
                  relative flex flex-col items-center justify-center p-6 text-center rounded-[32px] overflow-hidden
-                 bg-black/60 backdrop-blur-2xl border border-white/5
+                 bg-black/60 backdrop-blur-lg border border-white/5
                  transition-all duration-700 hover:border-white/10 group
                  ${isMain ? 'lg:-mt-4 z-10 min-h-[300px] md:min-h-[440px]' : 'min-h-[250px] md:min-h-[380px]'}
                  ${className}
              `}
         style={{ animationDelay: `${delay}ms` }}>
         {/* Background Noise & Sheen */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay pointer-events-none"></div>
+
 
         <div className={`p-4 md:p-5 rounded-full ${config.bgIcon} mb-4 md:mb-5 opacity-50 group-hover:opacity-100 transition-opacity duration-500 ring-1 ring-white/5`}>
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `w-6 h-6 md:w-8 md:h-8 ${config.text} drop-shadow-lg` })}
@@ -158,7 +158,7 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
     <div
       className={`
                 group relative flex flex-col rounded-[24px] md:rounded-[32px] overflow-hidden transition-all duration-700
-                bg-[#050505]/80 backdrop-blur-2xl border border-white/5
+                bg-[#050505]/80 backdrop-blur-lg border border-white/5
                 ${config.glow} hover:border-white/20
                 ${isMain ? 'md:-mt-8 z-20 md:scale-105 shadow-2xl ring-1 ring-white/10' : 'shadow-xl'}
                 ${className}
@@ -169,7 +169,7 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       <div className={`absolute top-0 left-0 right-0 h-24 md:h-32 bg-gradient-to-b ${config.bgIcon.replace('bg-', 'from-').replace('/10', '/20')} to-transparent pointer-events-none opacity-40 blur-2xl`}></div>
 
       {/* Noise Texture */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay pointer-events-none"></div>
+
 
       {/* Header */}
       <div className="relative p-4 md:p-6 flex flex-col items-center justify-center text-center border-b border-white/5 z-10">
@@ -273,6 +273,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
 
   useEffect(() => {
     const channelSlug = 'iabs';
+    
     const endpoints = {
       leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
       clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
@@ -280,62 +281,36 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
       channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };
 
-    // 1. Channel Info
-    const handleChannelUpdate = (data: any) => {
-      if (!data) return;
-      const raw = data.data || data;
-      setChannelInfo({
-        followers_count: raw.followers_count ?? raw.followersCount ?? 0,
-        subscriber_badges: Array.isArray(raw.subscriber_badges || raw.badges) ? (raw.subscriber_badges || raw.badges) : []
-      });
-      const streams = raw.previous_livestreams || raw.recent_streams || [];
-      if (streams.length > 0) setVideos(v => (v && v.length) ? v : streams.slice(0, 3));
-    };
-    kickFetch(endpoints.channel, true, 0, handleChannelUpdate).then(handleChannelUpdate).catch(() => {});
+    // استخدام kickFetch السريع جداً بدلاً من البروكسي البطيء
+    kickFetch(endpoints.leaderboard, true).then(data => {
+        if (data) {
+            const source = data.leaderboard || data;
+            setLeaderboards({
+                gifts: source.gifts || source.all_time || [],
+                gifts_week: source.gifts_week || source.weekly || [],
+                gifts_month: source.gifts_month || source.gifts_monthly || source.monthly || [] 
+            });
+        } else {
+            setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] });
+        }
+    }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
-    // 2. Leaderboards
-    const handleLeaderboardUpdate = (data: any) => {
-      const source = data?.data || data?.leaderboard || data;
-      if (source && (source.gifts || source.all_time)) {
-        setLeaderboards({
-          gifts: source.gifts || source.all_time || [],
-          gifts_week: source.gifts_week || source.weekly || [],
-          gifts_month: source.gifts_month || source.monthly || []
-        });
-      } else {
-        // Fallback endpoint if V2 changes
-        const handleFallbackUpdate = (d: any) => {
-          const s = d?.data || d?.leaderboard || d;
-          if (s) setLeaderboards({
-            gifts: s.gifts || s.all_time || [],
-            gifts_week: s.gifts_week || s.weekly || [],
-            gifts_month: s.gifts_month || s.monthly || []
-          });
-        };
-        kickFetch(`https://kick.com/api/v2/channels/${channelSlug}/leaderboard`, true, 0, handleFallbackUpdate)
-          .then(handleFallbackUpdate)
-          .catch(() => {});
-      }
-    };
-    kickFetch(endpoints.leaderboard, true, 0, handleLeaderboardUpdate).then(handleLeaderboardUpdate).catch(() => {});
+    kickFetch(endpoints.clips, true).then(data => {
+        if (data && data.clips) setClips(data.clips.slice(0, 4));
+        else if (Array.isArray(data)) setClips(data.slice(0, 4));
+        else setClips([]); 
+    }).catch(() => setClips([]));
 
-    // 3. Clips
-    const handleClipsUpdate = (data: any) => {
-      const raw = data?.data || data;
-      const list = raw?.clips || raw?.data || (Array.isArray(raw) ? raw : []);
-      if (Array.isArray(list)) setClips(list.slice(0, 4));
-    };
-    kickFetch(endpoints.clips, true, 0, handleClipsUpdate).then(handleClipsUpdate).catch(() => {});
+    kickFetch(endpoints.videos, true).then(data => {
+        if (data && Array.isArray(data)) setVideos(data.slice(0, 3));
+        else setVideos([]);
+    }).catch(() => setVideos([]));
 
-    // 4. Videos
-    const handleVideosUpdate = (data: any) => {
-      const raw = data?.data || data;
-      const list = raw?.videos || raw?.data || (Array.isArray(raw) ? raw : []);
-      if (Array.isArray(list)) setVideos(list.slice(0, 3));
-    };
-    kickFetch(endpoints.videos, true, 0, handleVideosUpdate).then(handleVideosUpdate).catch(() => {});
+    kickFetch(endpoints.channel, true).then(data => {
+        if (data) setChannelInfo(data);
+        else setChannelInfo({ followers_count: 0, subscriber_badges: [] });
+    }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
 
-    return () => { };
   }, []);
 
   return (
@@ -349,7 +324,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
             <div className="relative flex items-center justify-between bg-[#080808]/60 backdrop-blur-md border border-white/5 p-8 rounded-[30px] shadow-2xl overflow-hidden hover:border-white/10 transition-colors">
 
               {/* Background Noise */}
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay"></div>
+
 
               <div className="flex items-center gap-6 relative z-10">
                 <div className="relative">

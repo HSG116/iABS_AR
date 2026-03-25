@@ -143,7 +143,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
 
     return (
         <div className="w-full max-w-5xl mx-auto mt-24 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+            <div className="bg-[#0a0a0a]/80 backdrop-blur-lg border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
 
                 {/* Subtle Glow Backdrop */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[#e72a18]/5 blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-50 z-0"></div>
@@ -467,7 +467,7 @@ const PaymentCard: React.FC<{
             ></div>
 
             {/* === LUXURY OVERLAYS === */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+
 
             {/* === CONTENT === */}
             <div className="relative z-10 p-4 md:p-6 flex flex-col justify-between h-full min-h-[120px]">
@@ -596,66 +596,48 @@ export default function App() {
 
     const [isDemo, setIsDemo] = useState(false);
 
-    const fetchKickStatus = React.useCallback(() => {
-        // 1. Fetch channel data
-        const handleChannelUpdate = (rawData: any) => {
-            const data = rawData?.data || rawData;
+    const fetchKickStatus = React.useCallback(async () => {
+        // الكود الحقيقي والسريع باستخدام kickFetch
+        try {
+            const data = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`, true);
 
             if (data) {
-                const livestreamData = data.livestream || data.live_stream || null;
+                const livestreamData = data.livestream || data.live_stream;
                 const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
 
                 if (isLive) {
-                    const category = livestreamData.categories?.[0]?.name || livestreamData.category?.name || 'Gaming';
-                    const tags = livestreamData.tags || [];
-                    const normalizedTags = Array.isArray(tags) ? tags.map((t: any) => typeof t === 'string' ? t : (t.name || '')) : [];
-
                     setStreamInfo({
                         isLive: true,
                         viewers: livestreamData.viewer_count || 0,
                         title: livestreamData.session_title || livestreamData.title || 'Live Stream',
-                        category: category,
-                        tags: normalizedTags.filter(Boolean)
+                        category: livestreamData.categories?.[0]?.name || 'Just Chatting',
+                        tags: livestreamData.tags ? livestreamData.tags.map((t: any) => t.name || t) : []
                     });
                 } else {
                     setStreamInfo(prev => ({ ...prev, isLive: false }));
                 }
 
-                // Update real Kick follower count
+                // Update real Kick follower count (keeping this important detail from previous code)
                 if (data.followers_count !== undefined) {
                     const count = data.followers_count;
                     const formattedCount = count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count.toString();
                     setSocialStats(prev => ({ ...prev, 'KICK': formattedCount }));
                 }
 
-                // Extract session redundancy
+                // Update last session (keeping this important detail from previous code)
                 const streams = data.previous_livestreams || data.recent_streams || [];
                 if (streams && streams.length > 0) {
                     setLastSession(streams[0]);
                 }
             }
-        };
-
-        kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`, true, 0, handleChannelUpdate)
-            .then(handleChannelUpdate)
-            .catch(e => console.error("Failed to fetch channel status:", e));
-
-        // 2. Fetch videos independently
-        const handleVideoUpdate = (videoData: any) => {
-            const vList = videoData?.data?.videos || videoData?.videos || (Array.isArray(videoData) ? videoData : []);
-            if (vList && vList.length > 0) {
-                setLastSession(vList[0]);
-            }
-        };
-
-        kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true, 0, handleVideoUpdate)
-            .then(handleVideoUpdate)
-            .catch(() => {});
+        } catch (e) {
+            console.warn("Failed to fetch status");
+        }
     }, [CHANNEL_SLUG]);
 
     useEffect(() => {
         fetchKickStatus();
-        const interval = setInterval(fetchKickStatus, 60000); // Check every minute
+        const interval = setInterval(fetchKickStatus, 60000); // تحديث كل دقيقة وليس 30 ثانية لتخفيف الضغط
         return () => clearInterval(interval);
     }, [fetchKickStatus]);
 
@@ -697,11 +679,11 @@ export default function App() {
                     }}
                 />
                 <div className="absolute inset-0 bg-black/70"></div>
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+
             </div>
 
             <div className="relative z-10 w-full max-w-[1800px] mx-auto p-4 md:p-6 min-h-screen flex flex-col perspective-1000">
-                <header className="flex justify-between items-center mb-8 bg-black/40 backdrop-blur-2xl px-6 py-4 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b-4 border-black/60">
+                <header className="flex justify-between items-center mb-8 bg-black/40 backdrop-blur-lg px-6 py-4 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b-4 border-black/60">
                     <div className="flex items-center gap-4">
                         <div className="relative">
                             <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_#e72a18] ${streamInfo.isLive ? 'bg-[#e72a18] animate-pulse' : 'bg-gray-500'}`}></div>
