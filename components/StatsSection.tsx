@@ -276,7 +276,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     
     const endpoints = {
       leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
-      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips?sort=view_count&time_range=30d`,
+      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips?sort=view_count&time_range=all`,
       videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
       channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };
@@ -304,11 +304,27 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         }
     }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
-    // جلب اللقطات
+    // جلب اللقطات (أشهر مقاطع الشهر المفلترة يدوياً للأمان)
     kickFetch(endpoints.clips).then(rawData => {
-        const data = rawData?.data || rawData; // فك التغليف
-        const clipsArray = data?.clips || (Array.isArray(data) ? data : []);
-        setClips(clipsArray.slice(0, 4));
+        const data = rawData?.data || rawData; 
+        let clipsArray = data?.clips || (Array.isArray(data) ? data : []);
+        
+        // فلترة الكلبات لآخر 30 يوم وترتيبها حسب المشاهدات
+        const now = Date.now();
+        const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+        
+        let monthlyClips = clipsArray.filter((c: any) => {
+            const createdAt = new Date(c.created_at).getTime();
+            return createdAt >= thirtyDaysAgo;
+        });
+
+        // إذا لم توجد كلبات في آخر شهر، اعرض أشهر الكلبات على الإطلاق كبديل بدلاً من "لا يوجد بيانات"
+        if (monthlyClips.length === 0) {
+            monthlyClips = clipsArray;
+        }
+
+        const sortedClips = monthlyClips.sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0));
+        setClips(sortedClips.slice(0, 4));
     }).catch(() => setClips([]));
 
     // جلب الفيديوهات
