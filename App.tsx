@@ -255,7 +255,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent"></div>
-                                        
+
                                         {/* Play Icon Overlay */}
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-kick/20 backdrop-blur-md border border-kick/50 flex items-center justify-center">
@@ -732,7 +732,7 @@ export default function App() {
             <div className="fixed inset-0 z-0 bg-[#050505]">
                 <div className="absolute inset-0 responsive-bg transition-all duration-1000 ease-in-out scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black/90"></div>
-                
+
                 {/* Visual Glows */}
                 <div className="absolute top-0 left-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
                 <div className="absolute bottom-0 right-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
@@ -892,7 +892,7 @@ export default function App() {
                                                 <path d="M0 65 L8 62 L12 64 L18 58 L25 61 L32 48 L40 52 L45 45"
                                                     stroke="black" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"
                                                     className="animate-pulse" opacity="0.8" />
-                                                
+
                                                 {/* Inner Energy Core - Hot White */}
                                                 <path d="M0 65 L10 60 L15 62 L22 55 L30 58 L38 42 L45 45 L52 38 L60 42 L68 32 L75 38 L82 52 L90 48 L100 35"
                                                     stroke="white" strokeWidth="0.3" fill="none" strokeLinecap="round" strokeLinejoin="round"
