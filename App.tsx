@@ -685,8 +685,9 @@ export default function App() {
                 }
 
                 // Fetch clips (last 3 for the report)
-                const clipsRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=3`, true);
-                const clipsArray = clipsRawData?.clips || (Array.isArray(clipsRawData) ? clipsRawData : []);
+                const clipsRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=5`, true);
+                const clipsData = clipsRawData?.data || clipsRawData;
+                const clipsArray = clipsData?.clips || (Array.isArray(clipsData) ? clipsData : (clipsData?.data && Array.isArray(clipsData.data) ? clipsData.data : []));
                 setClips(clipsArray.slice(0, 3));
             }
         } catch (e) {

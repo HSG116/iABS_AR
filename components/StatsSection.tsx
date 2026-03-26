@@ -257,7 +257,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     allTime: lang === 'en' ? 'All Time' : 'الأفضل',
     monthly: lang === 'en' ? 'Monthly' : 'شهرياً',
     weekly: lang === 'en' ? 'Weekly' : 'أسبوعياً',
-    recentClips: lang === 'en' ? 'Top Monthly Clips' : 'أشهر مقاطع الشهر',
+    recentClips: lang === 'en' ? 'Recent Clips' : 'آخر اللقطات',
     recentVods: lang === 'en' ? 'Past Streams' : 'البثوث السابقة',
     views: lang === 'en' ? 'Views' : 'مشاهدة',
     gift: lang === 'en' ? 'Gifts' : 'هدية',
@@ -276,7 +276,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     
     const endpoints = {
       leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
-      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips?sort=view_count&time_range=all`,
+      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
       videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
       channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };
@@ -304,51 +304,19 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         }
     }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
-    // جلب اللقطات (أشهر مقاطع الشهر المفلترة يدوياً للأمان)
-    const loadClips = async (slug: string) => {
-       try {
-           const rawData = await kickFetch(`https://kick.com/api/v2/channels/${slug.toLowerCase()}/clips?sort=view_count&time_range=all`);
-           const innerData = rawData?.data || rawData;
-           let clipsArray = [];
-           
-           if (Array.isArray(innerData)) {
-               clipsArray = innerData;
-           } else if (innerData?.clips && Array.isArray(innerData.clips)) {
-               clipsArray = innerData.clips;
-           } else if (rawData?.clips && Array.isArray(rawData.clips)) {
-               clipsArray = rawData.clips;
-           }
+    // جلب اللقطات (آخر اللقطات مع منطق استخراج قوي لضمان ظهور البيانات)
+    kickFetch(endpoints.clips).then(rawData => {
+        // فك التغليف لجميع الهياكل المحتملة من Kick API
+        const data = rawData?.data || rawData; 
+        const clipsArray = data?.clips || (Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []));
+        
+        // ترتيب تنازلي حسب التاريخ (الأحدث أولاً)
+        const sortedClips = [...clipsArray].sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
 
-           // إذا لم نجد كلبات بالاسم الصغير، نجرب الاسم الكبير iABS
-           if (clipsArray.length === 0 && slug === 'iabs') {
-               const rawDataUpper = await kickFetch(`https://kick.com/api/v2/channels/iABS/clips?sort=view_count&time_range=all`);
-               const innerDataUpper = rawDataUpper?.data || rawDataUpper;
-               if (innerDataUpper?.clips) clipsArray = innerDataUpper.clips;
-               else if (Array.isArray(innerDataUpper)) clipsArray = innerDataUpper;
-           }
-
-           if (clipsArray.length > 0) {
-              const now = Date.now();
-              const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
-              
-              let monthlyClips = clipsArray.filter((c: any) => {
-                  const createdAt = new Date(c.created_at || c.updated_at).getTime();
-                  return createdAt >= thirtyDaysAgo;
-              });
-
-              let finalClips = monthlyClips.length > 0 ? monthlyClips : clipsArray;
-              const sortedClips = [...finalClips].sort((a: any, b: any) => (b.view_count || b.views || 0) - (a.view_count || a.views || 0));
-              setClips(sortedClips.slice(0, 4));
-           } else {
-              setClips([]);
-           }
-       } catch (e) {
-           console.error("Clips fetch error:", e);
-           setClips([]);
-       }
-    };
-
-    loadClips(channelSlug);
+        setClips(sortedClips.slice(0, 4));
+    }).catch(() => setClips([]));
 
     // جلب الفيديوهات
     kickFetch(endpoints.videos).then(rawData => {
