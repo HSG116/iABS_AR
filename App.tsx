@@ -357,6 +357,16 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
                     borderColor: isRedirecting ? brandColor : (isHovered ? brandColor : 'rgba(255,255,255,0.1)'),
                 }}
             >
+                {/* BRAND BACKGROUND PATTERN (Added per user request) */}
+                <div 
+                    className="absolute inset-0 opacity-[0.03] grayscale pointer-events-none group-hover:opacity-[0.07] transition-opacity duration-700"
+                    style={{ 
+                        backgroundImage: "url('/jkgukj.png')", 
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}
+                ></div>
+
                 {/* === PROGRESS BAR (LAUNCHING) === */}
                 {isRedirecting && (
                     <div className="absolute bottom-0 left-0 h-1.5 bg-white z-40 animate-charge" style={{ backgroundColor: brandColor, boxShadow: `0 0 10px ${brandColor}` }}></div>
