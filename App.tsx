@@ -81,7 +81,8 @@ const TRANSLATIONS = {
         lastSessionReport: 'LAST SESSION REPORT',
         ago: 'AGO',
         duration: 'DURATION',
-        categoriesSpent: 'CATEGORIES SPENT IN STREAM'
+        categoriesSpent: 'CATEGORIES SPENT IN STREAM',
+        highlights: 'STREAM HIGHLIGHTS'
     },
     ar: {
         status: 'متصل الآن',
@@ -103,13 +104,14 @@ const TRANSLATIONS = {
         lastSessionReport: 'تقرير الجلسة الأخيرة',
         ago: 'منذ',
         duration: 'المدة',
-        categoriesSpent: 'الفئات التي تم بثها'
+        categoriesSpent: 'الفئات التي تم بثها',
+        highlights: 'لقطات ممتعة من البث'
     }
 };
 
 // --- Last Session Report Component ---
-const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data }) => {
-    if (!data) return null;
+const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> = ({ lang, data, clips }) => {
+    if (!data && (!clips || clips.length === 0)) return null;
 
     const isRTL = lang === 'ar';
 
@@ -189,6 +191,8 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                         </div>
                     </div>
 
+
+
                     {/* Compact Categories Section */}
                     <div className="mt-8 pt-6 border-t border-white/5">
                         <div className={`flex items-center gap-2 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -197,21 +201,9 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
 
                         <div className={`flex flex-wrap gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             {data.categories?.map((cat: any, i: number) => {
-                                // Extract slug to build official Kick category icon URL
                                 const catName = cat.name || cat.category?.name || 'Just Chatting';
-                                const slug = cat.slug || cat.category?.slug ||
-                                    catName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-
-                                // Build list of potential URLs, prioritizing 'banner' as requested
-                                const catImg = cat.banner?.url ||
-                                    cat.banner?.responsive ||
-                                    cat.category?.banner?.url ||
-                                    cat.category?.banner?.responsive ||
-                                    cat.responsive_url ||
-                                    cat.thumbnail?.url ||
-                                    cat.category?.responsive_url ||
-                                    cat.category?.thumbnail?.url ||
-                                    `https://files.kick.com/categories/${slug}/fullsize.png`;
+                                const slug = cat.slug || cat.category?.slug || catName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                                const catImg = cat.banner?.url || cat.banner?.responsive || cat.category?.banner?.url || cat.category?.banner?.responsive || cat.responsive_url || cat.thumbnail?.url || cat.category?.responsive_url || cat.category?.thumbnail?.url || `https://files.kick.com/categories/${slug}/fullsize.png`;
 
                                 return (
                                     <div key={i} className="group relative flex items-center gap-2 bg-white/5 border border-white/5 rounded-full pl-1 pr-3 py-1 hover:bg-white/10 transition-colors">
@@ -223,7 +215,6 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     const target = e.target as HTMLImageElement;
-                                                    // Try dynamic placeholder related to name if official fails
                                                     if (!target.src.includes('picsum.photos')) {
                                                         target.src = `https://picsum.photos/seed/${slug}/200/200`;
                                                     } else {
@@ -238,6 +229,53 @@ const LastSessionReport: React.FC<{ lang: Language, data: any }> = ({ lang, data
                             })}
                         </div>
                     </div>
+
+                    {/* Highlights Section - Last 3 Clips */}
+                    {clips && clips.length > 0 && (
+                        <div className="mt-12 pt-8 border-t border-white/5">
+                            <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                <div className="w-2 h-2 rounded-full bg-kick shadow-[0_0_10px_#53FC18]"></div>
+                                <span className="text-[12px] font-black tracking-[0.2em] text-white/40 uppercase">{t.highlights}</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {clips.slice(0, 3).map((clip: any, i: number) => (
+                                    <a
+                                        key={clip.id || i}
+                                        href={`https://kick.com/${CHANNEL_SLUG}?clip=${clip.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group relative aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40 hover:border-kick/50 transition-all duration-500 shadow-lg"
+                                        style={{ animationDelay: `${0.4 + i * 0.1}s` }}
+                                    >
+                                        <img
+                                            src={clip.thumbnail_url || (clip.thumbnail?.url) || PC_BACKGROUND}
+                                            alt={clip.title}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                                        
+                                        {/* Play Icon Overlay */}
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="w-10 h-10 rounded-full bg-kick/20 backdrop-blur-md border border-kick/50 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-kick fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                            </div>
+                                        </div>
+
+                                        <div className={`absolute bottom-0 left-0 right-0 p-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                            <p className="text-[11px] font-bold text-white truncate drop-shadow-md">{clip.title}</p>
+                                            <div className={`flex items-center gap-2 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                                <span className="text-[9px] text-white/40 font-medium">
+                                                    {clip.view_count || 0} {lang === 'en' ? 'views' : 'مشاهدة'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -576,6 +614,7 @@ export default function App() {
 
     const [socials, setSocials] = useState<SocialLink[]>([]);
     const [lastSession, setLastSession] = useState<any>(null);
+    const [clips, setClips] = useState<any[]>([]);
 
     // Re-generate socials when stats change
     useEffect(() => {
@@ -633,11 +672,22 @@ export default function App() {
                     setSocialStats(prev => ({ ...prev, 'KICK': formattedCount }));
                 }
 
-                // Update last session (keeping this important detail from previous code)
-                const streams = data.previous_livestreams || data.recent_streams || [];
-                if (streams && streams.length > 0) {
-                    setLastSession(streams[0]);
+                // Update last session (fetching from videos endpoint for better reliability)
+                const videosRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true);
+                const videosArray = videosRawData?.videos || (Array.isArray(videosRawData) ? videosRawData : []);
+                if (videosArray && videosArray.length > 0) {
+                    setLastSession(videosArray[0]);
+                } else {
+                    const streams = data.previous_livestreams || data.recent_streams || [];
+                    if (streams && streams.length > 0) {
+                        setLastSession(streams[0]);
+                    }
                 }
+
+                // Fetch clips (last 3 for the report)
+                const clipsRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=3`, true);
+                const clipsArray = clipsRawData?.clips || (Array.isArray(clipsRawData) ? clipsRawData : []);
+                setClips(clipsArray.slice(0, 3));
             }
         } catch (e) {
             console.warn("Failed to fetch status");
@@ -910,7 +960,7 @@ export default function App() {
                         <SupportLinks lang={lang} />
 
                         {/* Last Session Report Section - Only show when offline */}
-                        {!streamInfo.isLive && <LastSessionReport lang={lang} data={lastSession} />}
+                        {!streamInfo.isLive && <LastSessionReport lang={lang} data={lastSession} clips={clips} />}
                     </div>
 
                     {streamInfo.isLive && (
