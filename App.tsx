@@ -730,12 +730,13 @@ export default function App() {
 
 
             <div className="fixed inset-0 z-0 bg-[#050505]">
-                <div className="absolute inset-0 responsive-bg transition-all duration-1000 ease-in-out scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black/90"></div>
-
-                {/* Visual Glows */}
-                <div className="absolute top-0 left-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-1/4 w-[50%] h-[50%] bg-[#FF2D2D]/10 blur-[150px] opacity-30 pointer-events-none"></div>
+                <div className="absolute inset-0 responsive_bg transition-all duration-1000 ease-in-out scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/60 to-black/95"></div>
+                
+                {/* Powerful Cinematic Glows */}
+                <div className="absolute top-[-10%] left-[-5%] w-[60%] h-[50%] bg-[#FF2D2D]/15 blur-[160px] opacity-40 animate-pulse-slow"></div>
+                <div className="absolute bottom-[-10%] right-[-5%] w-[60%] h-[50%] bg-[#FF2D2D]/10 blur-[160px] opacity-30 animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-white/5 blur-[120px] animate-float"></div>
             </div>
 
             <div className="relative z-10 w-full max-w-[1800px] mx-auto p-4 md:p-6 min-h-screen flex flex-col perspective-1000">
