@@ -257,7 +257,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     allTime: lang === 'en' ? 'All Time' : 'الأفضل',
     monthly: lang === 'en' ? 'Monthly' : 'شهرياً',
     weekly: lang === 'en' ? 'Weekly' : 'أسبوعياً',
-    recentClips: lang === 'en' ? 'Top Clips' : 'أقوى اللقطات',
+    recentClips: lang === 'en' ? 'Top Monthly Clips' : 'أشهر مقاطع الشهر',
     recentVods: lang === 'en' ? 'Past Streams' : 'البثوث السابقة',
     views: lang === 'en' ? 'Views' : 'مشاهدة',
     gift: lang === 'en' ? 'Gifts' : 'هدية',
@@ -276,7 +276,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     
     const endpoints = {
       leaderboard: `https://kick.com/api/v2/channels/${channelSlug}/leaderboards`,
-      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips`,
+      clips: `https://kick.com/api/v2/channels/${channelSlug}/clips?sort=view_count&time_range=30d`,
       videos: `https://kick.com/api/v2/channels/${channelSlug}/videos`,
       channel: `https://kick.com/api/v2/channels/${channelSlug}`
     };

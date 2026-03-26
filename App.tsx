@@ -238,14 +238,14 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                                 <span className="text-[12px] font-black tracking-[0.2em] text-white/40 uppercase">{t.highlights}</span>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-3 gap-2 md:gap-4">
                                 {clips.slice(0, 3).map((clip: any, i: number) => (
                                     <a
                                         key={clip.id || i}
                                         href={`https://kick.com/${CHANNEL_SLUG}?clip=${clip.id}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="group relative aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40 hover:border-kick/50 transition-all duration-500 shadow-lg"
+                                        className="group relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/5 bg-black/40 hover:border-kick/50 transition-all duration-500 shadow-lg"
                                         style={{ animationDelay: `${0.4 + i * 0.1}s` }}
                                     >
                                         <img
@@ -254,19 +254,19 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                                             loading="lazy"
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent"></div>
                                         
                                         {/* Play Icon Overlay */}
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="w-10 h-10 rounded-full bg-kick/20 backdrop-blur-md border border-kick/50 flex items-center justify-center">
-                                                <svg className="w-5 h-5 text-kick fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-kick/20 backdrop-blur-md border border-kick/50 flex items-center justify-center">
+                                                <svg className="w-4 h-4 md:w-5 md:h-5 text-kick fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                                             </div>
                                         </div>
 
-                                        <div className={`absolute bottom-0 left-0 right-0 p-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-                                            <p className="text-[11px] font-bold text-white truncate drop-shadow-md">{clip.title}</p>
-                                            <div className={`flex items-center gap-2 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                <span className="text-[9px] text-white/40 font-medium">
+                                        <div className={`absolute bottom-0 left-0 right-0 p-1.5 md:p-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                            <p className="text-[7px] md:text-[11px] font-bold text-white truncate drop-shadow-md">{clip.title}</p>
+                                            <div className={`flex items-center gap-1 md:gap-2 mt-0.5 md:mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                                <span className="text-[6px] md:text-[9px] text-white/40 font-medium whitespace-nowrap">
                                                     {clip.view_count || 0} {lang === 'en' ? 'views' : 'مشاهدة'}
                                                 </span>
                                             </div>
