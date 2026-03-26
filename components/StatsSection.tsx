@@ -305,27 +305,50 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
     // جلب اللقطات (أشهر مقاطع الشهر المفلترة يدوياً للأمان)
-    kickFetch(endpoints.clips).then(rawData => {
-        const data = rawData?.data || rawData; 
-        let clipsArray = data?.clips || (Array.isArray(data) ? data : []);
-        
-        // فلترة الكلبات لآخر 30 يوم وترتيبها حسب المشاهدات
-        const now = Date.now();
-        const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
-        
-        let monthlyClips = clipsArray.filter((c: any) => {
-            const createdAt = new Date(c.created_at).getTime();
-            return createdAt >= thirtyDaysAgo;
-        });
+    const loadClips = async (slug: string) => {
+       try {
+           const rawData = await kickFetch(`https://kick.com/api/v2/channels/${slug.toLowerCase()}/clips?sort=view_count&time_range=all`);
+           const innerData = rawData?.data || rawData;
+           let clipsArray = [];
+           
+           if (Array.isArray(innerData)) {
+               clipsArray = innerData;
+           } else if (innerData?.clips && Array.isArray(innerData.clips)) {
+               clipsArray = innerData.clips;
+           } else if (rawData?.clips && Array.isArray(rawData.clips)) {
+               clipsArray = rawData.clips;
+           }
 
-        // إذا لم توجد كلبات في آخر شهر، اعرض أشهر الكلبات على الإطلاق كبديل بدلاً من "لا يوجد بيانات"
-        if (monthlyClips.length === 0) {
-            monthlyClips = clipsArray;
-        }
+           // إذا لم نجد كلبات بالاسم الصغير، نجرب الاسم الكبير iABS
+           if (clipsArray.length === 0 && slug === 'iabs') {
+               const rawDataUpper = await kickFetch(`https://kick.com/api/v2/channels/iABS/clips?sort=view_count&time_range=all`);
+               const innerDataUpper = rawDataUpper?.data || rawDataUpper;
+               if (innerDataUpper?.clips) clipsArray = innerDataUpper.clips;
+               else if (Array.isArray(innerDataUpper)) clipsArray = innerDataUpper;
+           }
 
-        const sortedClips = monthlyClips.sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0));
-        setClips(sortedClips.slice(0, 4));
-    }).catch(() => setClips([]));
+           if (clipsArray.length > 0) {
+              const now = Date.now();
+              const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+              
+              let monthlyClips = clipsArray.filter((c: any) => {
+                  const createdAt = new Date(c.created_at || c.updated_at).getTime();
+                  return createdAt >= thirtyDaysAgo;
+              });
+
+              let finalClips = monthlyClips.length > 0 ? monthlyClips : clipsArray;
+              const sortedClips = [...finalClips].sort((a: any, b: any) => (b.view_count || b.views || 0) - (a.view_count || a.views || 0));
+              setClips(sortedClips.slice(0, 4));
+           } else {
+              setClips([]);
+           }
+       } catch (e) {
+           console.error("Clips fetch error:", e);
+           setClips([]);
+       }
+    };
+
+    loadClips(channelSlug);
 
     // جلب الفيديوهات
     kickFetch(endpoints.videos).then(rawData => {
