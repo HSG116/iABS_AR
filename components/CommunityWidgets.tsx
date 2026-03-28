@@ -78,31 +78,31 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(88,101,242,0.1),transparent_50%)]"></div>
       <div className="absolute inset-0 opacity-5 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:30px_30px]"></div>
 
-      {/* 0. TOP BANNER - MATCHED TO YOUTUBE (28%) */}
-      <div className="relative h-[28%] w-full overflow-hidden shrink-0 z-0">
+      {/* 0. TOP BANNER - RECLAIMING SPACE */}
+      <div className="lg:block hidden relative h-[15%] w-full overflow-hidden shrink-0 z-0">
           <img src="/12ab6917-943c-4013-a96f-18156e8ed881.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
           <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#5865F2] to-transparent animate-plasma-flow z-20 top-0"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0b14] to-95%"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - MINIFIED FOR HALF-WIDTH MOBILE */}
-      <div className="absolute top-[22%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 2. LAYERED PROFILE LOGO - TOP-ANCHORED */}
+      <div className="absolute top-[12%] lg:top-[15%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#5865F2] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-10 h-10 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-1 md:p-1.5 bg-[#0a0b14] border-2 md:border-[3px] border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.8)] md:shadow-[0_20px_60px_rgba(0,0,0,1)] overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[8px] md:rounded-[34px]" />
+            <div className="relative w-8 h-8 lg:w-28 lg:h-28 rounded-[8px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#0a0b14] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl lg:shadow-[0_20px_60px_rgba(0,0,0,1)] overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[6px] lg:rounded-[34px]" />
             </div>
          </div>
       </div>
 
-      <div className="relative z-10 p-2 md:p-5 flex-1 flex flex-col items-center overflow-hidden">
+      <div className="relative z-10 p-1 lg:p-5 flex-1 flex flex-col items-center">
         
         {/* HEADER: COMPACT & MATCHED OFFSET */}
-        <div className="text-center mt-4 md:mt-10 mb-1 md:mb-2 w-full">
+        <div className="text-center mt-5 lg:mt-8 mb-0.5 lg:mb-2 w-full">
            <h2 className="text-[10px] md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               ABS COMMUNITY
            </h2>
-           <div className="flex items-center justify-center gap-1 md:gap-2">
+           <div className="lg:flex hidden items-center justify-center gap-1 md:gap-2">
               <div className="px-1.5 py-0.5 md:px-3 md:py-1 bg-[#5865F2]/20 border border-[#5865F2]/30 rounded-md text-[5px] md:text-[10px] font-black text-white/70 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
                  <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                  ELITE
@@ -111,7 +111,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
         </div>
 
         {/* REPLACEMENT: ULTRA COMPACT CENTRALIZED SQUAD & ACTIVITY */}
-        <div className="flex-1 w-full flex flex-col items-center justify-center gap-1 text-center pointer-events-none px-1 md:px-2 mb-0.5 md:mb-1">
+        <div className="lg:flex hidden flex-1 w-full flex-col items-center justify-center gap-1 text-center pointer-events-none px-1 md:px-2 mb-0.5 md:mb-1">
            
            {/* Squad Preview - SHRUNK FOR SPACE */}
            <div className="flex flex-col items-center gap-0.5">
@@ -145,23 +145,21 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
         </div>
 
         {/* FOOTER AREA: ACTION & STATS */}
-        <div className="mt-auto w-full flex flex-col items-center gap-1 md:gap-1.5 pt-1 md:pt-2 border-t border-white/[0.03]">
-           <div className="flex items-center gap-2 md:gap-4">
-              <span className="text-[10px] md:text-lg font-black text-white italic leading-none">{data.presence_count} LIVE</span>
+        <div className="mt-1 md:mt-auto w-full flex flex-col items-center gap-0.5 md:gap-1.5 pt-1 border-t border-white/[0.03]">
+           <div className="flex items-center gap-2 md:gap-4 mb-0.5 md:mb-0">
+              <span className="text-[8px] md:text-lg font-black text-white italic leading-none">{data.presence_count} LIVE</span>
               <div className="w-px h-2 md:h-4 bg-white/10"></div>
-              <span className="text-[6px] md:text-[9px] font-black text-[#5865F2] tracking-widest uppercase">8.6K TOTAL</span>
+              <span className="text-[5px] md:text-[9px] font-black text-[#5865F2] tracking-widest uppercase">8.6K TOTAL</span>
            </div>
 
            {/* ACTION BUTTON: LARGE CENTERED - NOW VISIBLE */}
-           <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50">
-              <div className="relative w-full px-4 py-1 md:px-12 md:py-3 bg-[#5865F2] rounded-[10px] md:rounded-[24px] shadow-[0_10px_30px_rgba(88,101,242,0.3)] hover:scale-[1.03] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-1 md:gap-2">
+           <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50 mb-0.5 md:mb-0">
+              <div className="relative w-full px-4 py-1 md:px-12 md:py-3.5 bg-[#5865F2] rounded-[10px] md:rounded-[24px] shadow-[0_10px_30px_rgba(88,101,242,0.3)] hover:scale-[1.03] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-2 md:gap-3">
                   <div className="absolute inset-x-0 -bottom-10 h-20 bg-white blur-[80px] opacity-0 group-hover/btn:opacity-10 transition-opacity"></div>
                   <span className="text-[6px] md:text-xs font-black text-white uppercase tracking-[0.05em] md:tracking-[0.1em] leading-none">
-                     {lang === 'en' ? 'DEPLOY' : 'انـتـشـر'}
+                     {lang === 'en' ? 'DEPLOY NOW' : 'انـضـم الآن'}
                   </span>
-                  <div className="w-3 h-3 md:w-6 md:h-6 rounded-full bg-white text-[#5865F2] flex items-center justify-center shrink-0">
-                     <svg className={`w-1.5 h-1.5 md:w-4 md:h-4 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={5} d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                  </div>
+                  <svg className={`w-3 h-3 md:w-5 md:h-5 ${isRTL ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </div>
            </div>
         </div>
@@ -220,7 +218,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
   const isRTL = lang === 'ar';
 
   return (
-    <div className="group relative flex flex-col aspect-square w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2">
+    <div className="group relative flex flex-col aspect-square w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-2 md:pb-5">
       {/* BACKGROUND LINK */}
       <a 
         href={channelUrl}
@@ -230,68 +228,86 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
         aria-label="Visit Channel"
       />
 
-      {/* 1. COMPACT TOP BANNER */}
-      <div className="relative h-[28%] w-full overflow-hidden shrink-0 z-0">
+      {/* 1. TOP BANNER - RECLAIMING SPACE */}
+      <div className="lg:block hidden relative h-[15%] w-full overflow-hidden shrink-0 z-0">
           <img src="/channels4_banner.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#050000]"></div>
           <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF0000] to-transparent animate-plasma-flow z-20 top-0"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - MINIFIED FOR HALF-WIDTH MOBILE */}
-      <div className="absolute top-[22%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 2. LAYERED PROFILE LOGO - TOP-ANCHORED ON MOBILE */}
+      <div className="absolute top-[10px] lg:top-[20%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#FF0000] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-10 h-10 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-1 md:p-1.5 bg-[#050000] border-2 md:border-[3px] border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.8)] overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[8px] md:rounded-[34px]" />
+            <div className="relative w-8 h-8 lg:w-28 lg:h-28 rounded-[8px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#050000] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[6px] lg:rounded-[34px]" />
             </div>
          </div>
       </div>
 
-      <div className="relative z-10 p-2 md:p-6 flex-1 flex flex-col items-center overflow-hidden">
+      <div className="relative z-10 p-1 lg:p-6 flex-1 flex flex-col items-center">
         
         {/* 3. CHANNEL INFO & SPACER */}
-        <div className="text-center mt-4 md:mt-10 mb-1 md:mb-2 w-full">
+        <div className="text-center mt-5 lg:mt-10 mb-0.5 lg:mb-2 w-full">
            <h2 className="text-[10px] md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               {lang === 'en' ? 'ABS' : 'قـناة iABS'}
            </h2>
            <div className="flex items-center justify-center gap-1 md:gap-2">
-              <div className="px-1.5 py-0.5 md:px-3 md:py-1 bg-white/[0.03] border border-white/5 rounded-md text-[5px] md:text-[10px] font-black text-white/40 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
+              <div className="px-1.5 py-0.5 md:px-3 md:py-1 bg-white/[0.03] border border-white/5 rounded-md text-[5px] md:text-[8px] font-black text-white/40 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
                  <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#FF0000] animate-pulse"></span>
                  ELITE
               </div>
            </div>
         </div>
 
-        {/* 4. CONTENT CENTER: DYNAMIC TITLES */}
-        <div className="px-1 md:px-2 flex-1 flex flex-col justify-center text-center max-w-[280px] pointer-events-none">
-            <div className="hidden md:block w-10 h-px bg-white/10 mx-auto mb-2 md:mb-4"></div>
-            <h3 className="text-[9px] md:text-xl font-black text-white/95 leading-tight tracking-tight line-clamp-2 drop-shadow-2xl">
+        {/* 4. CONTENT CENTER: DYNAMIC THUMBNAIL & TITLES */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center gap-1 md:gap-2 pointer-events-none px-1 md:px-4 mb-2">
+            
+            {/* Professional Video Preview Frame */}
+            <div className="relative w-full max-w-[120px] md:max-w-[180px] aspect-video rounded-lg md:rounded-2xl overflow-hidden border border-white/10 shadow-lg group/thumb">
+               <img 
+                 src={video?.thumbnail || "/channels4_banner.jpg"} 
+                 className="w-full h-full object-cover opacity-80 transition-all duration-700" 
+                 alt="Latest Video Preview"
+               />
+               
+               {/* Play Button Icon Overlay */}
+               <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-6 h-6 md:w-10 md:h-10 rounded-full bg-[#FF0000]/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                     <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-white fill-current" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                     </svg>
+                  </div>
+               </div>
+            </div>
+
+            <h3 className="text-[9px] md:text-sm lg:text-base font-black text-white/95 leading-tight text-center line-clamp-2 drop-shadow-2xl">
                 {video?.title}
             </h3>
         </div>
 
         {/* 5. FOOTER AREA: ACTION & STATS */}
-        <div className="mt-auto w-full flex flex-col items-center gap-1 md:gap-3 pt-1 md:pt-2 border-t border-white/[0.03]">
-           <div className="flex items-center gap-3 md:gap-5">
-              <span className="text-[10px] md:text-2xl font-black text-white italic leading-none drop-shadow-md">37.9K+</span>
+        <div className="mt-auto w-full flex flex-col items-center gap-0.5 md:gap-3 pt-1 border-t border-white/[0.03]">
+           <div className="flex items-center gap-3 md:gap-5 mb-0.5 md:mb-0">
+              <span className="text-[9px] md:text-2xl font-black text-white italic leading-none drop-shadow-md">37.9K+</span>
               <div className="w-px h-2 md:h-5 bg-white/10"></div>
-              <span className="text-[6px] md:text-sm font-black text-[#FF0000] tracking-widest uppercase">4K-HDR</span>
+              <span className="text-[5px] md:text-sm font-black text-[#FF0000] tracking-widest uppercase">4K-HDR</span>
            </div>
 
             {/* ACTION BUTTON: SPECIFIC VIDEO LINK */}
-            <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50">
+            <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50 mb-0.5 md:mb-1">
                <a 
                  href={video?.link || channelUrl}
                  target="_blank"
                  rel="noopener noreferrer"
-                 className="relative w-full px-4 py-1 md:px-14 md:py-4 bg-[#FF0000] rounded-[10px] md:rounded-[28px] shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-[1.05] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-1 md:gap-3"
+                 className="relative w-full px-4 py-1 md:px-14 md:py-3 bg-[#FF0000] rounded-[10px] md:rounded-[28px] shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-[1.05] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-2 md:gap-3"
                >
                   <div className="absolute inset-x-0 -bottom-10 h-20 bg-white blur-[80px] opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
-                  <span className="text-[6px] md:text-sm font-black text-white uppercase tracking-[0.05em] md:tracking-[0.1em] leading-none">
-                     {lang === 'en' ? 'WATCH' : 'شـاهـد الآن'}
+                  <span className="text-[7px] md:text-sm font-black text-white uppercase tracking-[0.05em] md:tracking-[0.1em] leading-none">
+                     {lang === 'en' ? 'WATCH NOW' : 'شـاهـد الآن'}
                   </span>
-                  <div className="w-3 h-3 md:w-7 md:h-7 rounded-full bg-white text-[#FF0000] flex items-center justify-center shrink-0">
-                     <svg className={`w-1.5 h-1.5 md:w-4.5 md:h-4.5 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={5} d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                  <div className="w-4 h-4 md:w-8 md:h-8 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center shrink-0 border border-white/20">
+                     <svg className={`w-2.5 h-2.5 md:w-4.5 md:h-4.5 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                   </div>
                </a>
             </div>
