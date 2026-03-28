@@ -85,20 +85,20 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0b14] to-95%"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - TOP-ANCHORED */}
+      {/* 2. LAYERED PROFILE LOGO - SHRUNK TO PREVENT OVERLAP */}
       <div className="absolute top-[12%] lg:top-[15%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#5865F2] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-8 h-8 lg:w-28 lg:h-28 rounded-[8px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#0a0b14] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl lg:shadow-[0_20px_60px_rgba(0,0,0,1)] overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[6px] lg:rounded-[34px]" />
+            <div className="relative w-6 h-6 lg:w-28 lg:h-28 rounded-[6px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#0a0b14] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl lg:shadow-[0_20px_60px_rgba(0,0,0,1)] overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[5px] lg:rounded-[34px]" />
             </div>
          </div>
       </div>
 
       <div className="relative z-10 p-1 lg:p-5 flex-1 flex flex-col items-center">
         
-        {/* HEADER: COMPACT & MATCHED OFFSET */}
-        <div className="text-center mt-5 lg:mt-8 mb-0.5 lg:mb-2 w-full">
+        {/* HEADER: PUSHED DOWN TO PREVENT OVERLAP */}
+        <div className="text-center mt-6 lg:mt-8 mb-0.5 lg:mb-2 w-full">
            <h2 className="text-[10px] md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               ABS COMMUNITY
            </h2>
@@ -189,7 +189,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
             title: latest.title,
             link: latest.link,
             date: new Date(latest.pubDate).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-            thumbnail: '/channels4_banner.jpg'
+            thumbnail: latest.thumbnail.replace('hqdefault.jpg', 'maxresdefault.jpg')
           });
         } else {
           throw new Error('No items');
@@ -235,20 +235,20 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
           <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF0000] to-transparent animate-plasma-flow z-20 top-0"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - TOP-ANCHORED ON MOBILE */}
-      <div className="absolute top-[10px] lg:top-[20%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 2. LAYERED PROFILE LOGO - SHRUNK TO PREVENT OVERLAP */}
+      <div className="absolute top-[12%] lg:top-[15%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#FF0000] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-8 h-8 lg:w-28 lg:h-28 rounded-[8px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#050000] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[6px] lg:rounded-[34px]" />
+            <div className="relative w-6 h-6 lg:w-28 lg:h-28 rounded-[6px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#050000] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[5px] lg:rounded-[34px]" />
             </div>
          </div>
       </div>
 
       <div className="relative z-10 p-1 lg:p-6 flex-1 flex flex-col items-center">
         
-        {/* 3. CHANNEL INFO & SPACER */}
-        <div className="text-center mt-5 lg:mt-10 mb-0.5 lg:mb-2 w-full">
+        {/* 3. CHANNEL INFO & SPACER - PUSHED DOWN */}
+        <div className="text-center mt-6 lg:mt-10 mb-0.5 lg:mb-2 w-full">
            <h2 className="text-[10px] md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               {lang === 'en' ? 'ABS' : 'قـناة iABS'}
            </h2>
@@ -269,6 +269,14 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                  src={video?.thumbnail || "/channels4_banner.jpg"} 
                  className="w-full h-full object-cover opacity-80 transition-all duration-700" 
                  alt="Latest Video Preview"
+                 onError={(e) => { 
+                    const target = e.target as HTMLImageElement;
+                    if (target.src.includes('maxresdefault')) {
+                        target.src = target.src.replace('maxresdefault', 'hqdefault');
+                    } else {
+                        target.src = "/channels4_banner.jpg";
+                    }
+                 }}
                />
                
                {/* Play Button Icon Overlay */}
