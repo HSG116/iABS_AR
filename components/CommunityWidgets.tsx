@@ -175,6 +175,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
 
 export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const [video, setVideo] = useState<YoutubeData | null>(null);
+   const [subs, setSubs] = useState<string>('38K+');
    const [loading, setLoading] = useState(true);
    const channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w';
    const channelUrl = 'https://www.youtube.com/@ABS11';
@@ -197,6 +198,22 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                });
             } else {
                throw new Error('No items');
+            }
+
+            // --- FETCH REAL SUBSCRIBER COUNT ---
+            try {
+               const statsRes = await fetch(`https://pipedapi.kavin.rocks/channel/${channelId}`);
+               const statsData = await statsRes.json();
+               if (statsData.subscriberCount) {
+                  const count = statsData.subscriberCount;
+                  if (count >= 1000) {
+                     setSubs(`${(count / 1000).toFixed(1)}K+`);
+                  } else {
+                     setSubs(`${count}`);
+                  }
+               }
+            } catch (err) {
+               console.warn("Subscriber fetch failed, using fallback:", err);
             }
          } catch (err) {
             console.error('YouTube fetch error:', err);
@@ -301,9 +318,9 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
         {/* 5. FOOTER AREA: ACTION & STATS - ANCHORED TO BOTTOM */}
         <div className="mt-auto w-full flex flex-col items-center gap-0.5 md:gap-3 pt-1 border-t border-white/[0.03]">
                <div className="flex items-center gap-3 md:gap-5 mb-0.5 md:mb-0">
-                  <span className="text-[9px] md:text-2xl font-black text-white italic leading-none drop-shadow-md">37.9K+</span>
+                  <span className="text-[9px] md:text-2xl font-black text-white italic leading-none drop-shadow-md">{subs}</span>
                   <div className="w-px h-2 md:h-5 bg-white/10"></div>
-                  <span className="text-[5px] md:text-sm font-black text-[#FF0000] tracking-widest uppercase">4K-HDR</span>
+                  <span className="text-[7px] md:text-[11px] font-black text-[#FF0000] tracking-widest uppercase">4K-HDR</span>
                </div>
 
                {/* ACTION BUTTON: SPECIFIC VIDEO LINK */}
