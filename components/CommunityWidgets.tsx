@@ -63,7 +63,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const squadAvatars = data.members.slice(0, 12);
 
    return (
-    <div className="group relative flex flex-col h-auto min-h-[500px] w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2 pb-6 md:pb-8">
+    <div className="group relative flex flex-col h-auto min-h-[380px] md:min-h-[500px] w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2 pb-4 md:pb-10">
          {/* BACKGROUND LINK */}
          <a
             href={data.instant_invite}
@@ -98,7 +98,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
          <div className="relative z-10 p-4 md:p-5 flex-1 flex flex-col items-center">
 
             {/* HEADER: PUSHED DOWN FOR LOGO */}
-            <div className="text-center mt-10 md:mt-14 mb-3 md:mb-2 w-full">
+            <div className="text-center mt-8 md:mt-14 mb-2 md:mb-2 w-full">
                <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
                   ABS COMMUNITY
                </h2>
@@ -111,7 +111,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
             </div>
 
             {/* CONTENT CENTER: SQUAD PREVIEW & LIVE ACTIVITY */}
-            <div className="flex flex-col items-center justify-center pointer-events-none p-4 w-full flex-1">
+            <div className="flex flex-col items-center justify-center pointer-events-none p-2 md:p-4 w-full flex-1">
                <div className="flex flex-col items-center gap-3 md:gap-6">
                   {/* Squad Avatars */}
                   <div className="flex -space-x-2 md:-space-x-3">
@@ -222,7 +222,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const isRTL = lang === 'ar';
 
    return (
-    <div className="group relative flex flex-col h-auto min-h-[500px] w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-6 md:pb-10">
+    <div className="group relative flex flex-col h-auto min-h-[380px] md:min-h-[500px] w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-4 md:pb-10">
          {/* BACKGROUND LINK */}
          <a
             href={channelUrl}
@@ -252,7 +252,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
          <div className="relative z-10 p-4 lg:p-6 flex-1 flex flex-col items-center">
 
             {/* 3. CHANNEL INFO & SPACER - RESTORED GAP */}
-            <div className="text-center mt-10 md:mt-14 mb-3 lg:mb-2 w-full">
+            <div className="text-center mt-8 md:mt-14 mb-2 lg:mb-2 w-full">
                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
                   {lang === 'en' ? 'ABS' : 'قـناة iABS'}
                </h2>
@@ -265,7 +265,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
             </div>
 
             {/* 4. CONTENT CENTER: DYNAMIC THUMBNAIL */}
-            <div className="w-full flex flex-col items-center justify-center gap-3 pointer-events-none px-4 mb-4">
+            <div className="w-full flex flex-col items-center justify-center gap-2 md:gap-3 pointer-events-none px-4 mb-2 md:mb-4">
 
                {/* Professional Video Preview Frame */}
                <div className="relative w-full max-w-[150px] md:max-w-[180px] aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/10 shadow-2xl group/thumb">
