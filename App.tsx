@@ -957,7 +957,7 @@ export default function App() {
 
                         {/* Community Grid: Discord, YouTube (Side by Side) */}
                         <div className="flex flex-col gap-4 w-full">
-                            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 w-full">
                                 <DiscordWidget lang={lang} />
                                 <YoutubeWidget lang={lang} />
                             </div>

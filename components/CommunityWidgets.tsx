@@ -63,7 +63,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
   const squadAvatars = data.members.slice(0, 12);
 
   return (
-    <div className="group relative flex flex-col aspect-square w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2">
+    <div className="group relative flex flex-col h-auto min-h-[320px] md:aspect-square w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2">
       {/* BACKGROUND LINK */}
       <a 
         href={data.instant_invite}
@@ -78,69 +78,52 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(88,101,242,0.1),transparent_50%)]"></div>
       <div className="absolute inset-0 opacity-5 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:30px_30px]"></div>
 
-      {/* 0. TOP BANNER - RECLAIMING SPACE */}
-      <div className="lg:block hidden relative h-[15%] w-full overflow-hidden shrink-0 z-0">
+      {/* 0. TOP BANNER - RESTORED FOR MOBILE */}
+      <div className="relative h-[25%] w-full overflow-hidden shrink-0 z-0">
           <img src="/12ab6917-943c-4013-a96f-18156e8ed881.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
           <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#5865F2] to-transparent animate-plasma-flow z-20 top-0"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0b14] to-95%"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - SHRUNK TO PREVENT OVERLAP */}
-      <div className="absolute top-[12%] lg:top-[15%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 2. LAYERED PROFILE LOGO - PREMIUM SCALE */}
+      <div className="absolute top-[25%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#5865F2] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-6 h-6 lg:w-28 lg:h-28 rounded-[6px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#0a0b14] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl lg:shadow-[0_20px_60px_rgba(0,0,0,1)] overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[5px] lg:rounded-[34px]" />
+            <div className="relative w-16 h-16 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-0.5 md:p-1.5 bg-[#0a0b14] border-[2px] md:border-[3px] border-white/10 shadow-2xl overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[10px] md:rounded-[34px]" />
             </div>
          </div>
       </div>
 
-      <div className="relative z-10 p-1 lg:p-5 flex-1 flex flex-col items-center">
+      <div className="relative z-10 p-4 md:p-5 flex-1 flex flex-col items-center">
         
-        {/* HEADER: PUSHED DOWN TO PREVENT OVERLAP */}
-        <div className="text-center mt-6 lg:mt-8 mb-0.5 lg:mb-2 w-full">
-           <h2 className="text-[10px] md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
+        {/* HEADER: PUSHED DOWN FOR LOGO */}
+        <div className="text-center mt-10 md:mt-12 mb-3 md:mb-2 w-full">
+           <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               ABS COMMUNITY
            </h2>
-           <div className="lg:flex hidden items-center justify-center gap-1 md:gap-2">
-              <div className="px-1.5 py-0.5 md:px-3 md:py-1 bg-[#5865F2]/20 border border-[#5865F2]/30 rounded-md text-[5px] md:text-[10px] font-black text-white/70 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
-                 <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+           <div className="flex items-center justify-center gap-1 md:gap-2">
+              <div className="px-2 py-0.5 md:px-3 md:py-1 bg-[#5865F2]/20 border border-[#5865F2]/30 rounded-md text-[8px] md:text-[10px] font-black text-white/70 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
+                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                  ELITE
               </div>
            </div>
         </div>
 
-        {/* REPLACEMENT: ULTRA COMPACT CENTRALIZED SQUAD & ACTIVITY */}
-        <div className="lg:flex hidden flex-1 w-full flex-col items-center justify-center gap-1 text-center pointer-events-none px-1 md:px-2 mb-0.5 md:mb-1">
-           
-           {/* Squad Preview - SHRUNK FOR SPACE */}
-           <div className="flex flex-col items-center gap-0.5">
-              <div className="flex -space-x-1.5 md:-space-x-2">
+        {/* CONTENT CENTER: SQUAD PREVIEW - RESTORED */}
+        <div className="flex flex-[3] flex-col items-center justify-center pointer-events-none p-4 w-full">
+           <div className="flex flex-col items-center gap-2 md:gap-4">
+              <div className="flex -space-x-2 md:-space-x-3">
                  {squadAvatars.slice(0, 4).map((m: any, i: number) => (
-                    <img key={i} src={m.avatar_url} className="w-4 h-4 md:w-7 md:h-7 rounded-full border border-[#0a0b14] bg-white/5 shadow-lg" />
+                    <img key={i} src={m.avatar_url} className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-[#0a0b14] bg-white/5 shadow-xl" />
                  ))}
-                 <div className="w-4 h-4 md:w-7 md:h-7 rounded-full border border-[#0a0b14] bg-[#5865F2] flex items-center justify-center text-[4px] md:text-[7px] font-black text-white shadow-lg">
+                 <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-[#0a0b14] bg-[#5865F2] flex items-center justify-center text-[7px] md:text-[10px] font-black text-white shadow-xl">
                     +{data.presence_count - 4}
                  </div>
               </div>
-              <p className="hidden md:block text-[7px] font-black text-white/20 tracking-[0.4em] uppercase">SQUAD ACTIVE</p>
-           </div>
-
-           {/* Current Featured Activity */}
-           <div className="w-full">
-              <div className="hidden md:block w-6 h-px bg-white/10 mx-auto mb-1 opacity-20"></div>
-              {activeMembers.length > 0 ? (
-                 <div className="flex flex-col gap-0.5 items-center">
-                    <span className="text-[7px] md:text-[10px] font-black text-white/80 line-clamp-1 whitespace-nowrap overflow-hidden max-w-full">
-                       {activeMembers[0].username}
-                    </span>
-                    <span className="text-[5px] md:text-[8px] font-bold text-[#5865F2] italic opacity-70 uppercase tracking-widest line-clamp-1">
-                       {activeMembers[0].game.name}
-                    </span>
-                 </div>
-              ) : (
-                 <p className="text-[6px] md:text-[8px] font-black text-white/10 uppercase tracking-[0.2em]">STANDBY</p>
-              )}
+              <div className="text-center">
+                 <div className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">SQUAD ACTIVE</div>
+              </div>
            </div>
         </div>
 
@@ -218,7 +201,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
   const isRTL = lang === 'ar';
 
   return (
-    <div className="group relative flex flex-col aspect-square w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-2 md:pb-5">
+    <div className="group relative flex flex-col h-auto min-h-[320px] md:aspect-square w-full bg-[#050000] border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-5">
       {/* BACKGROUND LINK */}
       <a 
         href={channelUrl}
@@ -228,46 +211,46 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
         aria-label="Visit Channel"
       />
 
-      {/* 1. TOP BANNER - RECLAIMING SPACE */}
-      <div className="lg:block hidden relative h-[15%] w-full overflow-hidden shrink-0 z-0">
+      {/* 1. TOP BANNER - RESTORED FOR MOBILE */}
+      <div className="relative h-[25%] w-full overflow-hidden shrink-0 z-0">
           <img src="/channels4_banner.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#050000]"></div>
           <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF0000] to-transparent animate-plasma-flow z-20 top-0"></div>
       </div>
 
-      {/* 2. LAYERED PROFILE LOGO - SHRUNK TO PREVENT OVERLAP */}
-      <div className="absolute top-[12%] lg:top-[15%] left-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 2. LAYERED PROFILE LOGO - PREMIUM SCALE */}
+      <div className="absolute top-[25%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
          <div className="relative">
             <div className="absolute -inset-10 bg-[#FF0000] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-            <div className="relative w-6 h-6 lg:w-28 lg:h-28 rounded-[6px] lg:rounded-[42px] p-0.5 lg:p-1.5 bg-[#050000] border-[1.5px] lg:border-[3px] border-white/10 shadow-xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
-               <img src="/favicon.png" className="w-full h-full object-cover rounded-[5px] lg:rounded-[34px]" />
+            <div className="relative w-16 h-16 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-0.5 md:p-1.5 bg-[#050000] border-[2px] md:border-[3px] border-white/10 shadow-2xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
+               <img src="/favicon.png" className="w-full h-full object-cover rounded-[10px] md:rounded-[34px]" />
             </div>
          </div>
       </div>
 
-      <div className="relative z-10 p-1 lg:p-6 flex-1 flex flex-col items-center">
+      <div className="relative z-10 p-4 lg:p-6 flex-1 flex flex-col items-center">
         
-        {/* 3. CHANNEL INFO & SPACER - PUSHED DOWN */}
-        <div className="text-center mt-6 lg:mt-10 mb-0.5 lg:mb-2 w-full">
-           <h2 className="text-[10px] md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
+        {/* 3. CHANNEL INFO & SPACER - RESTORED GAP */}
+        <div className="text-center mt-10 md:mt-12 mb-3 lg:mb-2 w-full">
+           <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
               {lang === 'en' ? 'ABS' : 'قـناة iABS'}
            </h2>
            <div className="flex items-center justify-center gap-1 md:gap-2">
-              <div className="px-1.5 py-0.5 md:px-3 md:py-1 bg-white/[0.03] border border-white/5 rounded-md text-[5px] md:text-[8px] font-black text-white/40 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
-                 <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#FF0000] animate-pulse"></span>
+              <div className="px-2 py-0.5 md:px-3 md:py-1 bg-white/[0.03] border border-white/5 rounded-md text-[8px] md:text-[10px] font-black text-white/40 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
+                 <span className="w-1.5 h-1.5 rounded-full bg-[#FF0000] animate-pulse"></span>
                  ELITE
               </div>
            </div>
         </div>
 
-        {/* 4. CONTENT CENTER: DYNAMIC THUMBNAIL & TITLES */}
-        <div className="flex-1 w-full flex flex-col items-center justify-center gap-1 md:gap-2 pointer-events-none px-1 md:px-4 mb-2">
+        {/* 4. CONTENT CENTER: RESTORED FOR MOBILE */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center gap-3 pointer-events-none px-4 mb-4">
             
             {/* Professional Video Preview Frame */}
-            <div className="relative w-full max-w-[120px] md:max-w-[180px] aspect-video rounded-lg md:rounded-2xl overflow-hidden border border-white/10 shadow-lg group/thumb">
+            <div className="relative w-full max-w-[160px] md:max-w-[180px] aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/10 shadow-2xl group/thumb">
                <img 
                  src={video?.thumbnail || "/channels4_banner.jpg"} 
-                 className="w-full h-full object-cover opacity-80 transition-all duration-700" 
+                 className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-all duration-700" 
                  alt="Latest Video Preview"
                  onError={(e) => { 
                     const target = e.target as HTMLImageElement;
@@ -281,15 +264,15 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                
                {/* Play Button Icon Overlay */}
                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-6 h-6 md:w-10 md:h-10 rounded-full bg-[#FF0000]/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                     <svg className="w-2.5 h-2.5 md:w-4 md:h-4 text-white fill-current" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 rounded-full bg-[#FF0000]/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
+                     <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                      </svg>
                   </div>
                </div>
             </div>
 
-            <h3 className="text-[9px] md:text-sm lg:text-base font-black text-white/95 leading-tight text-center line-clamp-2 drop-shadow-2xl">
+            <h3 className="text-xs md:text-sm lg:text-base font-black text-white/95 leading-tight text-center line-clamp-2 drop-shadow-2xl">
                 {video?.title}
             </h3>
         </div>
