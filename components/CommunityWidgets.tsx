@@ -63,7 +63,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const squadAvatars = data.members.slice(0, 12);
 
    return (
-    <div className="group relative flex flex-col h-auto min-h-[500px] w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2 pb-6 md:pb-10">
+    <div className="group relative flex flex-col h-auto min-h-[500px] w-full bg-[#0a0b14] border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2 pb-6 md:pb-8">
          {/* BACKGROUND LINK */}
          <a
             href={data.instant_invite}
@@ -110,9 +110,10 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                </div>
             </div>
 
-            {/* CONTENT CENTER: SQUAD PREVIEW - RESTORED */}
-            <div className="flex flex-col items-center justify-center pointer-events-none p-4 w-full">
-               <div className="flex flex-col items-center gap-2 md:gap-4">
+            {/* CONTENT CENTER: SQUAD PREVIEW & LIVE ACTIVITY */}
+            <div className="flex flex-col items-center justify-center pointer-events-none p-4 w-full flex-1">
+               <div className="flex flex-col items-center gap-3 md:gap-6">
+                  {/* Squad Avatars */}
                   <div className="flex -space-x-2 md:-space-x-3">
                      {squadAvatars.slice(0, 4).map((m: any, i: number) => (
                         <img key={i} src={m.avatar_url} className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-[#0a0b14] bg-white/5 shadow-xl" />
@@ -121,8 +122,28 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                         +{data.presence_count - 4}
                      </div>
                   </div>
-                  <div className="text-center">
-                     <div className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">SQUAD ACTIVE</div>
+
+                  {/* LIVE ACTIVITY - FILLS THE SPACE PROFESSIONALLY */}
+                  <div className="md:flex hidden flex-col items-center text-center">
+                     <div className="w-8 h-px bg-white/10 mb-2 opacity-30"></div>
+                     <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] mb-2">SQUAD ACTIVE</p>
+                     {activeMembers.length > 0 ? (
+                        <div className="flex flex-col gap-1 items-center bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2 backdrop-blur-sm">
+                           <span className="text-xs md:text-sm font-black text-white/90 tracking-wide line-clamp-1">
+                              {activeMembers[0].username}
+                           </span>
+                           <span className="text-[10px] md:text-xs font-bold text-[#5865F2] italic opacity-80 uppercase tracking-widest line-clamp-1">
+                              {activeMembers[0].game.name}
+                           </span>
+                        </div>
+                     ) : (
+                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">SQUAD STANDBY</p>
+                     )}
+                  </div>
+
+                  <div className="md:hidden flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">SQUAD ACTIVE</span>
                   </div>
                </div>
             </div>
