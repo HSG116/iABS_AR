@@ -95,7 +95,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
             </div>
          </div>
 
-         <div className="relative z-10 p-4 md:p-5 flex flex-col items-center">
+         <div className="relative z-10 p-4 md:p-5 flex-1 flex flex-col items-center">
 
             {/* HEADER: PUSHED DOWN FOR LOGO */}
             <div className="text-center mt-10 md:mt-14 mb-3 md:mb-2 w-full">
@@ -228,7 +228,7 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
             </div>
          </div>
 
-         <div className="relative z-10 p-4 lg:p-6 flex flex-col items-center">
+         <div className="relative z-10 p-4 lg:p-6 flex-1 flex flex-col items-center">
 
             {/* 3. CHANNEL INFO & SPACER - RESTORED GAP */}
             <div className="text-center mt-10 md:mt-14 mb-3 lg:mb-2 w-full">
