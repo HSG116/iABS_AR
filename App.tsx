@@ -4,6 +4,7 @@ import { SocialLink, Language } from './types';
 import { StreamPlayer } from './components/StreamPlayer';
 import { ChatWidget } from './components/Chat';
 import { StatsSection } from './components/StatsSection';
+import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
 
 // --- Constants ---
 const DEFAULT_PROFILE_IMAGE = "/favicon.png";
@@ -955,16 +956,10 @@ export default function App() {
                         </div>
 
                         {/* Community Grid: Discord, YouTube (Side by Side) */}
-                        <div className="flex flex-col gap-4">
-                            <div className="grid grid-cols-2 gap-3 md:gap-5 w-full">
-                                {communitySocials.map((social, index) => (
-                                    <SocialCard
-                                        key={social.name}
-                                        social={social}
-                                        index={index + generalSocials.length}
-                                        className="" // They will naturally split 50/50
-                                    />
-                                ))}
+                        <div className="flex flex-col gap-4 w-full">
+                            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full">
+                                <DiscordWidget lang={lang} />
+                                <YoutubeWidget lang={lang} />
                             </div>
                         </div>
 
