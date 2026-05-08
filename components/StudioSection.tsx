@@ -97,6 +97,16 @@ function normalizeTikTok(url: string): string | null {
         const videoId = parts[parts.length - 1];
         return `https://www.tiktok.com/embed/${videoId}`;
       }
+      // Handle short format: tiktok.com/@username/videoID
+      if (parts.length >= 2 && parts[0] === '' && parts[1].startsWith('@')) {
+        const videoId = parts[2];
+        return `https://www.tiktok.com/embed/${videoId}`;
+      }
+      // Handle direct video ID format
+      if (parts.length >= 1 && parts[0] && !parts[0].startsWith('@')) {
+        const videoId = parts[0];
+        return `https://www.tiktok.com/embed/${videoId}`;
+      }
     }
   } catch {
     // ignore
@@ -234,27 +244,30 @@ const VideoEmbed: React.FC<{
 
       {/* Loading State */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-20">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-3"></div>
-            <div className="text-white/60 text-sm font-bold">جاري تحميل الفيديو...</div>
+            <div className="w-16 h-16 border-4 border-white/30 border-t-white/50 rounded-full animate-spin mx-auto mb-4 shadow-2xl"></div>
+            <div className="text-white/80 text-sm font-bold">جاري تحميل الفيديو...</div>
           </div>
         </div>
       )}
 
       {/* Error State */}
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
-          <div className="text-center p-4">
-            <div className="text-red-400 text-2xl mb-3">⚠️</div>
-            <div className="text-white/80 text-sm font-bold mb-3">فشل تحميل الفيديو</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-20">
+          <div className="text-center p-6">
+            <div className="text-red-400 text-3xl mb-4">⚠️</div>
+            <div className="text-white/80 text-sm font-bold mb-4">فشل تحميل الفيديو</div>
             <a
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="text-blue-400 hover:text-blue-300 font-bold text-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors"
               dir="ltr"
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6m0 0h6m-6 6h6m-6-6v6m0 0h6m-6-6v6" />
+              </svg>
               فتح في تبويب جديد
             </a>
           </div>
@@ -263,7 +276,7 @@ const VideoEmbed: React.FC<{
 
       {/* Video Container */}
       <div 
-        className="relative w-full bg-black rounded-xl overflow-hidden"
+        className="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl"
         style={{ aspectRatio }}
       >
         {source === 'youtube_shorts' && embedUrl && (
