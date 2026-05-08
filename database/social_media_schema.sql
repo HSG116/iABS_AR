@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS social_platforms (
 -- Social Media Stats Table
 CREATE TABLE IF NOT EXISTS social_media_stats (
     id SERIAL PRIMARY KEY,
-    platform_id INT NOT NULL,
+    platform_id INT NOT NULL UNIQUE,
     follower_count BIGINT NOT NULL DEFAULT 0,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by VARCHAR(100),
