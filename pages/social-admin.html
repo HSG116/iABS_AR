@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة التواصل الاجتماعي - iABS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-black">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        // React components would be transpiled here
+        // For now, using vanilla JS for simplicity
+        
+        let isAdmin = false;
+        let platforms = [];
+        let history = [];
+        
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/check-auth.php');
+                const data = await response.json();
+                isAdmin = data.authenticated;
+                render();
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                isAdmin = false;
+                render();
+            }
+        }
+        
+        // Fetch social data
+        async function fetchSocialData() {
+            if (!isAdmin) return;
+            
+            try {
+                const response = await fetch('/api/admin/social-stats.php');
+                const data = await response.json();
+                platforms = data.platforms || [];
+                history = data.history || [];
+                render();
+            } catch (error) {
+                console.error('Failed to fetch social data:', error);
+            }
+        }
+        
+        // Login function
+        async function login(username, password) {
+            try {
+                const response = await fetch('/api/admin/login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    isAdmin = true;
+                    await fetchSocialData();
+                    return true;
+                } else {
+                    alert('بيانات الدخول غير صحيحة');
+                    return false;
+                }
+            } catch (error) {
+                alert('حدث خطأ في تسجيل الدخول');
+                return false;
+            }
+        }
+        
+        // Update follower count
+        async function updateFollowerCount(platformKey, newCount) {
+            const count = parseInt(newCount);
+            if (isNaN(count) || count < 0) {
+                alert('الرجاء إدخال رقم صحيح');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/social-stats.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform_key: platformKey,
+                        follower_count: count,
+                        update_source: 'manual',
+                        notes: 'تم التحديث يدوياً من لوحة التحكم'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    await fetchSocialData();
+                    alert('تم تحديث العدد بنجاح');
+                } else {
+                    alert('فشل تحديث العدد: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('حدث خطأ أثناء التحديث');
+            }
+        }
+        
+        // Format number
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        // Get icon HTML
+        function getIcon(platformKey) {
+            const icons = {
+                instagram: '<i class="fab fa-instagram text-pink-500"></i>',
+                tiktok: '<i class="fab fa-tiktok text-black"></i>',
+                x: '<i class="fab fa-x-twitter text-black"></i>',
+                whatsapp: '<i class="fab fa-whatsapp text-green-500"></i>',
+                snapchat: '<i class="fab fa-snapchat text-yellow-400"></i>',
+                discord: '<i class="fab fa-discord text-blue-500"></i>',
+                youtube: '<i class="fab fa-youtube text-red-500"></i>',
+                kick: '<i class="fas fa-kick text-green-400"></i>'
+            };
+            return icons[platformKey] || '<i class="fas fa-question text-gray-500"></i>';
+        }
+        
+        // Render function
+        function render() {
+            const root = document.getElementById('root');
+            
+            if (!isAdmin) {
+                root.innerHTML = `
+                    <div class="min-h-screen bg-black flex items-center justify-center p-4">
+                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md">
+                            <h2 class="text-2xl font-bold text-white mb-6 text-center">تسجيل دخول المدير</h2>
+                            <form onsubmit="handleLogin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-white mb-2">اسم المستخدم</label>
+                                    <input type="text" id="username" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-white mb-2">كلمة المرور</label>
+                                    <input type="password" id="password" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500" required>
+                                </div>
+                                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors">
+                                    دخول
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            } else {
+                root.innerHTML = `
+                    <div class="min-h-screen bg-black p-4">
+                        <!-- Header -->
+                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+                            <div class="flex justify-between items-center">
+                                <h1 class="text-3xl font-bold text-white">إدارة التواصل الاجتماعي</h1>
+                                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                    تسجيل خروج
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Toggle Buttons -->
+                        <div class="flex gap-4 mb-6">
+                            <button onclick="showPlatforms()" id="platformsBtn" class="px-6 py-3 rounded-lg font-bold transition-colors bg-red-600 text-white">
+                                تحديث الأرقام
+                            </button>
+                            <button onclick="showHistory()" id="historyBtn" class="px-6 py-3 rounded-lg font-bold transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700">
+                                سجل التحديثات
+                            </button>
+                        </div>
+                        
+                        <!-- Content Area -->
+                        <div id="contentArea"></div>
+                    </div>
+                `;
+                
+                // Show platforms by default
+                showPlatforms();
+            }
+        }
+        
+        // Show platforms
+        function showPlatforms() {
+            document.getElementById('platformsBtn').className = 'px-6 py-3 rounded-lg font-bold transition-colors bg-red-600 text-white';
+            document.getElementById('historyBtn').className = 'px-6 py-3 rounded-lg font-bold transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700';
+            
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${platforms.map(platform => `
+                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-red-500 transition-colors">
+                            <!-- Platform Header -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background-color: ${platform.color_hex}20">
+                                        ${getIcon(platform.platform_key)}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-white">${platform.platform_name}</h3>
+                                        <p class="text-xs text-gray-400">آخر تحديث: ${new Date(platform.last_updated).toLocaleDateString('ar-SA')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Follower Count Display/Edit -->
+                            <div class="space-y-3">
+                                <div class="text-3xl font-bold text-white mb-2" id="count-${platform.platform_key}">
+                                    ${formatNumber(platform.follower_count)}
+                                </div>
+                                <div class="space-y-2" id="edit-${platform.platform_key}" style="display: none;">
+                                    <input type="number" id="input-${platform.platform_key}" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-center text-2xl font-bold focus:outline-none focus:border-red-500" placeholder="أدخل العدد الجديد" min="0">
+                                    <div class="flex gap-2">
+                                        <button onclick="saveUpdate('${platform.platform_key}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition-colors">
+                                            حفظ
+                                        </button>
+                                        <button onclick="cancelEdit('${platform.platform_key}')" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors">
+                                            إلغاء
+                                        </button>
+                                    </div>
+                                </div>
+                                <button onclick="startEdit('${platform.platform_key}', ${platform.follower_count})" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors" id="editBtn-${platform.platform_key}">
+                                    تعديل العدد
+                                </button>
+                            </div>
+                            
+                            <!-- Platform Link -->
+                            ${platform.profile_url ? `
+                                <div class="mt-4">
+                                    <a href="${platform.profile_url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 text-sm underline">
+                                        فتح الصفحة
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Show history
+        function showHistory() {
+            document.getElementById('platformsBtn').className = 'px-6 py-3 rounded-lg font-bold transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700';
+            document.getElementById('historyBtn').className = 'px-6 py-3 rounded-lg font-bold transition-colors bg-red-600 text-white';
+            
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                    <h2 class="text-2xl font-bold text-white mb-6">سجل التحديثات</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-white">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-right p-3">المنصة</th>
+                                    <th class="text-right p-3">العدد القديم</th>
+                                    <th class="text-right p-3">العدد الجديد</th>
+                                    <th class="text-right p-3">تم التحديث بواسطة</th>
+                                    <th class="text-right p-3">التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${history.map(item => `
+                                    <tr class="border-b border-gray-800 hover:bg-gray-800">
+                                        <td class="p-3">${item.platform_name}</td>
+                                        <td class="p-3">${item.old_count ? formatNumber(item.old_count) : '-'}</td>
+                                        <td class="p-3 font-bold text-green-400">${formatNumber(item.new_count)}</td>
+                                        <td class="p-3">${item.updated_by}</td>
+                                        <td class="p-3">${new Date(item.created_at).toLocaleString('ar-SA')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Start edit
+        function startEdit(platformKey, currentCount) {
+            document.getElementById(`count-${platformKey}`).style.display = 'none';
+            document.getElementById(`editBtn-${platformKey}`).style.display = 'none';
+            document.getElementById(`edit-${platformKey}`).style.display = 'block';
+            document.getElementById(`input-${platformKey}`).value = currentCount;
+        }
+        
+        // Cancel edit
+        function cancelEdit(platformKey) {
+            document.getElementById(`count-${platformKey}`).style.display = 'block';
+            document.getElementById(`editBtn-${platformKey}`).style.display = 'block';
+            document.getElementById(`edit-${platformKey}`).style.display = 'none';
+        }
+        
+        // Save update
+        function saveUpdate(platformKey) {
+            const newCount = document.getElementById(`input-${platformKey}`).value;
+            updateFollowerCount(platformKey, newCount);
+        }
+        
+        // Handle login
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            login(username, password);
+        }
+        
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/api/admin/logout.php', { method: 'POST' });
+                isAdmin = false;
+                render();
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+        
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
