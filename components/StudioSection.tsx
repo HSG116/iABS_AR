@@ -678,7 +678,7 @@ export const StudioSection: React.FC = () => {
           <div>
             <div className="text-[11px] font-black tracking-[0.45em] text-white/40 uppercase">STUDIO</div>
             <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mt-2">استديو الصور والتصميمات</h2>
-            <p className="text-white/50 mt-2 font-medium">أي شخص يقدر يضيف - بس النشر بعد مراجعة الإدارة. كل مستخدم يقدر يضيف 3 فيديوهات يومياً.</p>
+            <p className="text-white/50 mt-2 font-medium">أي شخص يقدر يضيف صورة/فيديو - النشر بعد مراجعة الإدارة. 3 فيديوهات يومياً لكل مستخدم.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
