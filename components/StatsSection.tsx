@@ -400,50 +400,55 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
           </div>
 
           {leaderboards ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start relative px-1">
+            <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-3 md:gap-6 items-start relative px-1">
 
-              {/* All Time - Gold/Yellow Theme */}
-              <LeaderboardCard
-                title={t.allTime}
-                subtitle="Legends"
-                data={leaderboards.gifts}
-                icon={<DiamondIcon />}
-                accentColor="yellow"
-                isMain={true}
-                lang={lang}
-                t={t}
-                delay={0}
-                emptyLabel={t.noDataAllTime}
-                className="order-2"
-              />
+              {/* All Time - Full width on mobile, 1 column on desktop */}
+              <div className="md:col-span-1 order-1 md:order-2">
+                <LeaderboardCard
+                  title={t.allTime}
+                  subtitle="Legends"
+                  data={leaderboards.gifts}
+                  icon={<DiamondIcon />}
+                  accentColor="yellow"
+                  isMain={true}
+                  lang={lang}
+                  t={t}
+                  delay={0}
+                  emptyLabel={t.noDataAllTime}
+                  className=""
+                />
+              </div>
 
-              {/* Weekly - Rose Theme */}
-              <LeaderboardCard
-                title={t.weekly}
-                subtitle="Active"
-                data={leaderboards.gifts_week}
-                icon={<FlameIcon />}
-                accentColor="rose"
-                lang={lang}
-                t={t}
-                delay={100}
-                emptyLabel={t.noDataWeekly}
-                className="order-1"
-              />
+              {/* Weekly and Monthly side-by-side on mobile, separate on desktop */}
+              <div className="grid grid-cols-2 gap-4 md:col-span-1 md:order-1">
+                <LeaderboardCard
+                  title={t.weekly}
+                  subtitle="Active"
+                  data={leaderboards.gifts_week}
+                  icon={<FlameIcon />}
+                  accentColor="rose"
+                  lang={lang}
+                  t={t}
+                  delay={100}
+                  emptyLabel={t.noDataWeekly}
+                  className=""
+                />
+              </div>
 
-              {/* Monthly - Cyan/Blue Theme */}
-              <LeaderboardCard
-                title={t.monthly}
-                subtitle="Stars"
-                data={leaderboards.gifts_month}
-                icon={<StarIcon />}
-                accentColor="cyan"
-                lang={lang}
-                t={t}
-                delay={200}
-                emptyLabel={t.noDataMonthly}
-                className="order-3"
-              />
+              <div className="grid grid-cols-2 gap-4 md:col-span-1 md:order-3">
+                <LeaderboardCard
+                  title={t.monthly}
+                  subtitle="Stars"
+                  data={leaderboards.gifts_month}
+                  icon={<StarIcon />}
+                  accentColor="cyan"
+                  lang={lang}
+                  t={t}
+                  delay={200}
+                  emptyLabel={t.noDataMonthly}
+                  className=""
+                />
+              </div>
 
             </div>
           ) : (
