@@ -45,6 +45,31 @@ CREATE TABLE IF NOT EXISTS admin_users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Fix for existing tables that might be missing username column
+DO $$
+BEGIN
+    -- Check if username column exists, if not add it
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'admin_users' AND column_name = 'username'
+    ) THEN
+        -- If table exists but username column doesn't, drop and recreate
+        DROP TABLE IF EXISTS admin_users;
+        CREATE TABLE admin_users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            full_name VARCHAR(100),
+            role VARCHAR(20) DEFAULT 'editor' CHECK (role IN ('super_admin', 'admin', 'editor')),
+            is_active BOOLEAN DEFAULT TRUE,
+            last_login TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    END IF;
+END $$;
+
 -- Update History Log Table
 CREATE TABLE IF NOT EXISTS update_history (
     id SERIAL PRIMARY KEY,
@@ -75,9 +100,9 @@ ON CONFLICT (platform_name) DO NOTHING;
 
 -- Insert initial stats with current values (PostgreSQL syntax)
 INSERT INTO social_media_stats (platform_id, follower_count, updated_by) VALUES
-((SELECT id FROM social_platforms WHERE platform_key = 'instagram'), 25000, 'admin'),
-((SELECT id FROM social_platforms WHERE platform_key = 'tiktok'), 35000, 'admin'),
-((SELECT id FROM social_platforms WHERE platform_key = 'x'), 75000, 'admin'),
+((SELECT id FROM social_platforms WHERE platform_key = 'instagram'), 21300, 'admin'),
+((SELECT id FROM social_platforms WHERE platform_key = 'tiktok'), 42300, 'admin'),
+((SELECT id FROM social_platforms WHERE platform_key = 'x'), 57200, 'admin'),
 ((SELECT id FROM social_platforms WHERE platform_key = 'whatsapp'), 9100, 'admin'),
 ((SELECT id FROM social_platforms WHERE platform_key = 'snapchat'), 1200000, 'admin'),
 ((SELECT id FROM social_platforms WHERE platform_key = 'discord'), 9000, 'admin'),

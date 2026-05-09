@@ -59,9 +59,9 @@ const EMAIL_ADDRESS = ""; // Removed as not specified for iABS
 const STATIC_SOCIALS = [
     KICK_SOCIAL,
     createSocialLink('snapchat', 'https://www.snapchat.com/@iabsq', '1.2M+', 'يوميات حصرية وتغطيات خاصة'),
-    createSocialLink('instagram', 'https://www.instagram.com/absq/', '25.0K+', 'صور وكواليس حصرية'),
-    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '35.0K+', 'أقوى المقاطع والتحديات'),
-    createSocialLink('twitter', 'https://x.com/iABSq', '75.0K+', 'أخبار وتحديثات سريعة'),
+    createSocialLink('instagram', 'https://www.instagram.com/absq/', '21.3K', 'صور وكواليس حصرية'),
+    createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '42.3K', 'أقوى المقاطع والتحديات'),
+    createSocialLink('twitter', 'https://x.com/iABSq', '57.2K', 'أخبار وتحديثات سريعة'),
     createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '9.1K+', 'تواصل مباشر وتنبيهات البث'),
     createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '+9K', 'أكبر تجمع للأساطير'),
     createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', '+37K', 'أرشيف البثوث ومقاطع مميزة'),
