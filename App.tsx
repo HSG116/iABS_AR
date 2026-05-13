@@ -309,10 +309,8 @@ const SocialCard: React.FC<{ social: SocialLink, index: number, className?: stri
 
         setIsRedirecting(true);
 
-        // Reduce lag feeling: 400ms instead of 2000ms
         setTimeout(() => {
-            window.open(social.url, '_blank');
-            setTimeout(() => setIsRedirecting(false), 500);
+            window.location.href = social.url;
         }, 400);
     };
 
