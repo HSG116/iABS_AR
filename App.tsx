@@ -7,13 +7,13 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { StreamPlayer } from './components/StreamPlayer';
 import { ChatWidget } from './components/Chat';
 import { StatsSection } from './components/StatsSection';
-import { KICKsSection } from './components/KICKsSection';
 import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
 import { StudioSection } from './components/StudioSection';
 
 // --- Constants ---
 const DEFAULT_PROFILE_IMAGE = "/favicon.png";
 import { kickFetch } from './utils/kickApi';
+import { getAllSocialMediaStats, formatFollowerCount } from './utils/socialMediaApi';
 
 // Updated to iABS backgrounds
 const PC_BACKGROUND = "/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png";
@@ -855,6 +855,16 @@ export default function App() {
 
             let { data: faqToggle } = await supabase.from('announcements').select('*').eq('id', 3).single();
             if (faqToggle) setIsFaqActive(faqToggle.is_active === true || faqToggle.is_active === 'true' || faqToggle.is_active === 1 || faqToggle.is_active === '1');
+
+            getAllSocialMediaStats().then(stats => {
+                setSocialStats(prev => ({
+                    ...prev,
+                    'Instagram': formatFollowerCount(stats.instagram || 0),
+                    'TikTok': formatFollowerCount(stats.tiktok || 0),
+                    'X': formatFollowerCount(stats.twitter || 0),
+                    'YouTube': formatFollowerCount(stats.youtube || 0),
+                }));
+            });
         };
 
         fetchLive();
@@ -1445,7 +1455,6 @@ export default function App() {
 
                 <div className="mt-20 w-full max-w-6xl mx-auto space-y-20">
                   <StatsSection lang={lang} />
-                  <KICKsSection lang={lang} />
                 </div>
 
                 {/* Studio at the very bottom */}

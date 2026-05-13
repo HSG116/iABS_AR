@@ -239,7 +239,7 @@ export const KICKsSection: React.FC<KICKsSectionProps> = ({ lang }) => {
   const [kickerData, setKickerData] = useState<KickerData | null>(null);
 
   const t = {
-    kickers: lang === 'en' ? 'Best KICKers' : 'أفضل الكيكرز',
+    kickers: lang === 'en' ? 'Top KICKers' : 'أفضل الكيكرز',
     allTime: lang === 'en' ? 'All Time' : 'الأفضل',
     monthly: lang === 'en' ? 'Monthly' : 'شهرياً',
     weekly: lang === 'en' ? 'Weekly' : 'أسبوعياً',
