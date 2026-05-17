@@ -491,7 +491,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       {/* Chat Panel */}
       <div
         ref={chatRef}
-        className={`fixed bottom-24 right-6 z-[100] w-[420px] max-w-[calc(100vw-2rem)] h-[680px] max-h-[calc(100vh-180px)] rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
+        className={`fixed bottom-20 right-6 z-[100] w-[420px] max-w-[calc(100vw-2rem)] h-[620px] max-h-[calc(100vh-200px)] rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
         style={{ animation: isOpen ? 'slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none' }}
       >
         {/* Background Layer */}
@@ -551,7 +551,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 128px)' }}>
+        <div ref={scrollRef} className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 136px)' }}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-10"></div>
 
           {showQuickActions && messages.length === 1 && (
