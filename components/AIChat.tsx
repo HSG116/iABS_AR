@@ -43,16 +43,47 @@ const SYSTEM_PROMPT = `أنت مساعد iABS الرسمي، تتحدث بالل
   • *كلمة* للنص المائل
   • ***كلمة*** للعريض والمائل معاً
 - وزع التنسيق على ردودك عشان تكون جميلة وواضحة
-- عندما تكتب كلمات إنجليزية مع العربية، اترك مسافة قبل وبعد الكلمة الإنجليزية (مثل: حسابه على **Kick** عنده)`.trim();
+- عندما تكتب كلمات إنجليزية مع العربية، اترك مسافة قبل وبعد الكلمة الإنجليزية (مثل: حسابه على **Kick** عنده)
+
+استخدم الإيموجيز الحصرية لـ iABS في ردودك باستخدام الصيغة [emote:ID:NAME]:
+• [emote:3989626:iABSWave] -> للترحيب والسلام (السلام عليكم، مرحبا، هلا)
+• [emote:3823817:iABSCelebrate] -> للاحتفال والفرح
+• [emote:5447899:iABSStayOne] -> كل ما ذكرت #StayOne، ون، LevelOne، كلان ليفل ون
+• [emote:3329260:iABSWrong] -> لتصحيح خطأ، قبلها اكتب : ثم هذا الإيموجي
+• [emote:5513874:iABSRandom1] -> إيموجي عشوائي إذا ما كان في إيموجي بالرسالة
+• [emote:4937184:iABSRandom2] -> إيموجي عشوائي ثاني
+• [emote:3689147:iABSLaugh] -> للضحك العالي
+• [emote:3109190:iABSDisgust] -> للقرف أو شيء مقزز
+• [emote:2893352:iABSQuestion] -> للسؤال
+• [emote:1078051:iABSCelebrate2] -> للاحتفال أيضاً
+• [emote:3329257:iABSKick] -> للطرد أو "روح اذلف"
+• [emote:3330235:iABSMock] -> للضحك على شخص
+
+وزع الإيموجيز بشكل طبيعي في ردودك عشان تكون تفاعلية وجميلة`.trim();
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
+const EMOTES = {
+  wave: { id: '3989626', name: 'iABSWave', desc: 'ترحيب/سلام' },
+  celebrate: { id: '3823817', name: 'iABSCelebrate', desc: 'احتفال' },
+  stayone: { id: '5447899', name: 'iABSStayOne', desc: '#StayOne' },
+  wrong: { id: '3329260', name: 'iABSWrong', desc: 'خطأ' },
+  random1: { id: '5513874', name: 'iABSRandom1', desc: 'ايموجي عشوائي' },
+  random2: { id: '4937184', name: 'iABSRandom2', desc: 'ايموجي عشوائي' },
+  laugh: { id: '3689147', name: 'iABSLaugh', desc: 'ضحك عالي' },
+  disgust: { id: '3109190', name: 'iABSDisgust', desc: 'قرف' },
+  question: { id: '2893352', name: 'iABSQuestion', desc: 'سؤال' },
+  celebrate2: { id: '1078051', name: 'iABSCelebrate2', desc: 'احتفال' },
+  kick: { id: '3329257', name: 'iABSKick', desc: 'طرد/اذلف' },
+  mock: { id: '3330235', name: 'iABSMock', desc: 'ضحك على شخص' },
+};
+
 const renderFormattedText = (text: string) => {
   const parts: React.ReactNode[] = [];
-  const regex = /(\*\*\*(.*?)\*\*\*|\*\*(.*?)\*\*|\*(.*?)\*)/g;
+  const combinedRegex = /(\[emote:(\d+):([\w\s\-]+)\])|(\*\*\*(.*?)\*\*\*|\*\*(.*?)\*\*|\*(.*?)\*)/g;
   let lastIndex = 0;
   let match;
   let key = 0;
@@ -75,18 +106,28 @@ const renderFormattedText = (text: string) => {
     return plainParts.length > 0 ? plainParts : t;
   };
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = combinedRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push(renderPlain(text.slice(lastIndex, match.index)));
     }
-    if (match[1]?.startsWith('***')) {
-      parts.push(<span key={key++} className="font-bold italic text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]">{match[2]}</span>);
-    } else if (match[1]?.startsWith('**')) {
-      parts.push(<strong key={key++} className="font-black text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.12)]">{match[3]}</strong>);
-    } else if (match[1]?.startsWith('*')) {
-      parts.push(<em key={key++} className="italic text-white/80">{match[4]}</em>);
+    if (match[1]) {
+      parts.push(
+        <img
+          key={`em${key++}`}
+          src={`https://files.kick.com/emotes/${match[2]}/fullsize`}
+          alt={match[3]}
+          title={match[3]}
+          className="inline-block w-8 h-8 md:w-10 md:h-10 mx-0.5 align-middle object-contain hover:scale-125 transition-transform"
+        />
+      );
+    } else if (match[4]?.startsWith('***')) {
+      parts.push(<span key={key++} className="font-bold italic text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]">{match[5]}</span>);
+    } else if (match[4]?.startsWith('**')) {
+      parts.push(<strong key={key++} className="font-black text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.12)]">{match[6]}</strong>);
+    } else if (match[4]?.startsWith('*')) {
+      parts.push(<em key={key++} className="italic text-white/80">{match[7]}</em>);
     }
-    lastIndex = regex.lastIndex;
+    lastIndex = combinedRegex.lastIndex;
   }
   if (lastIndex < text.length) {
     parts.push(renderPlain(text.slice(lastIndex)));
