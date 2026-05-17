@@ -198,6 +198,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottom = useRef(true);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -206,7 +208,20 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const threshold = 80;
+      isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isNearBottom.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isWaiting, isResponding]);
 
   const handleQuickAsk = (query: string) => {
@@ -243,6 +258,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
     const userMsg: Message = { role: 'user', content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
+    isNearBottom.current = true;
     setIsWaiting(true);
     setShowQuickActions(false);
 
@@ -535,7 +551,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         </div>
 
         {/* Messages */}
-        <div className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 128px)' }}>
+        <div ref={scrollRef} className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 128px)' }}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-10"></div>
 
           {showQuickActions && messages.length === 1 && (
