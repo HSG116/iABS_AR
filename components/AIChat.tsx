@@ -321,71 +321,87 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
     <>
       <style>{`
         @keyframes float-glow {
-          0%, 100% { transform: translateY(0px) scale(1); box-shadow: 0 0 30px rgba(255,45,45,0.4); }
-          50% { transform: translateY(-8px) scale(1.05); box-shadow: 0 0 60px rgba(255,45,45,0.7); }
-        }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          0%, 100% { transform: translateY(0px) scale(1); box-shadow: 0 0 30px rgba(255,45,45,0.4), 0 0 60px rgba(255,45,45,0.1); }
+          50% { transform: translateY(-8px) scale(1.05); box-shadow: 0 0 60px rgba(255,45,45,0.7), 0 0 100px rgba(255,45,45,0.2); }
         }
         @keyframes slide-in-right {
-          from { opacity: 0; transform: translateX(100%) scale(0.9); }
-          to { opacity: 1; transform: translateX(0) scale(1); }
+          from { opacity: 0; transform: translateX(120%) scale(0.85); filter: blur(10px); }
+          to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
         }
-        @keyframes message-pop {
-          0% { opacity: 0; transform: scale(0.8) translateY(10px); }
-          50% { transform: scale(1.02) translateY(-2px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes message-in {
+          0% { opacity: 0; transform: translateY(12px) scale(0.93); filter: blur(6px); }
+          60% { transform: translateY(-2px) scale(1.01); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
         @keyframes pulse-ring {
-          0% { transform: scale(0.8); opacity: 0.5; }
-          100% { transform: scale(1.8); opacity: 0; }
+          0% { transform: scale(0.8); opacity: 0.6; }
+          100% { transform: scale(2.2); opacity: 0; }
         }
         @keyframes dot-pulse {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.2; }
           40% { transform: scale(1); opacity: 1; }
         }
         @keyframes gradient-shift {
-          0% { background-position: 0% 50%; opacity: 0.3; }
-          50% { background-position: 100% 50%; opacity: 0.5; }
-          100% { background-position: 0% 50%; opacity: 0.3; }
+          0% { background-position: 0% 50%; opacity: 0.15; }
+          50% { background-position: 100% 50%; opacity: 0.35; }
+          100% { background-position: 0% 50%; opacity: 0.15; }
         }
         @keyframes glow-pulse {
-          0%, 100% { opacity: 0.15; }
-          50% { opacity: 0.35; }
-        }
-        @keyframes border-dance {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+          0%, 100% { opacity: 0.1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.05); }
         }
         @keyframes breathe {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.03); }
+          50% { transform: scale(1.08); }
         }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: translateY(0) scale(0); }
+          50% { opacity: 1; transform: translateY(-20px) scale(1); }
         }
-        @keyframes slide-down {
-          from { opacity: 0; transform: translateY(-12px) scale(0.97); max-height: 0; }
-          to { opacity: 1; transform: translateY(0) scale(1); max-height: 200px; }
+        @keyframes border-glow {
+          0%, 100% { border-color: rgba(255,45,45,0.15); box-shadow: 0 0 15px rgba(255,45,45,0.05); }
+          50% { border-color: rgba(255,45,45,0.4); box-shadow: 0 0 30px rgba(255,45,45,0.15); }
         }
-        @keyframes glow-expand {
-          0% { opacity: 0; transform: scale(0.5); }
-          50% { opacity: 0.4; transform: scale(1.2); }
-          100% { opacity: 0; transform: scale(1.8); }
+        @keyframes send-pulse {
+          0% { box-shadow: 0 0 0 0 rgba(255,45,45,0.4); }
+          100% { box-shadow: 0 0 0 12px rgba(255,45,45,0); }
         }
-        @keyframes message-in {
-          0% { opacity: 0; transform: translateY(8px) scale(0.96); filter: blur(4px); }
-          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        @keyframes ripple {
+          0% { width: 0; height: 0; opacity: 0.4; }
+          100% { width: 200%; height: 200%; opacity: 0; }
         }
-        .scrollbar-ai::-webkit-scrollbar { width: 4px; }
+        @keyframes shimmer-slide {
+          0% { transform: translateX(-200%); }
+          100% { transform: translateX(200%); }
+        }
+        .scrollbar-ai::-webkit-scrollbar { width: 3px; }
         .scrollbar-ai::-webkit-scrollbar-track { background: transparent; }
-        .scrollbar-ai::-webkit-scrollbar-thumb { background: rgba(255,45,45,0.3); border-radius: 10px; }
-        .scrollbar-ai::-webkit-scrollbar-thumb:hover { background: rgba(255,45,45,0.5); }
+        .scrollbar-ai::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #FF2D2D, rgba(255,45,45,0.3)); border-radius: 10px; }
+        .scrollbar-ai::-webkit-scrollbar-thumb:hover { background: #FF2D2D; }
         .msg-enter {
-          animation: message-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: message-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .msg-enter:nth-child(1) { animation-delay: 0s; }
+        .glow-border {
+          position: relative;
+        }
+        .glow-border::after {
+          content: '';
+          position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          background: linear-gradient(135deg, rgba(255,45,45,0.3), transparent, rgba(255,45,45,0.1));
+          z-index: -1;
+          animation: border-glow 3s ease-in-out infinite;
+        }
+        .shimmer-overlay {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+          background-size: 200% 100%;
+          animation: shimmer-slide 3s ease-in-out infinite;
         }
         .ai-chat strong {
           color: #fff;
@@ -459,47 +475,58 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       {/* Chat Panel */}
       <div
         ref={chatRef}
-        className={`fixed bottom-24 right-6 z-[100] w-[400px] max-w-[calc(100vw-2rem)] h-[650px] max-h-[calc(100vh-180px)] rounded-3xl border shadow-[0_30px_80px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'} ${isResponding ? 'border-[#FF2D2D]/30' : 'border-white/10'}`}
-        style={{ animation: isOpen ? 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'none' }}
+        className={`fixed bottom-24 right-6 z-[100] w-[420px] max-w-[calc(100vw-2rem)] h-[680px] max-h-[calc(100vh-180px)] rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
+        style={{ animation: isOpen ? 'slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none' }}
       >
         {/* Background Layer */}
         <div className="absolute inset-0 ai-bg"></div>
-        <div className="absolute inset-0 bg-[#0a0a0f]/70 backdrop-blur-2xl"></div>
+        <div className="absolute inset-0 bg-[#0a0a0f]/75 backdrop-blur-3xl"></div>
 
         {/* Animated Gradient Overlay */}
         <div
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0"
           style={{
-            background: 'linear-gradient(135deg, rgba(255,45,45,0.15) 0%, transparent 50%, rgba(255,45,45,0.05) 100%)',
-            animation: 'gradient-shift 8s ease-in-out infinite',
+            background: 'linear-gradient(135deg, rgba(255,45,45,0.12) 0%, transparent 40%, rgba(255,45,45,0.03) 60%, transparent 100%)',
+            animation: 'gradient-shift 6s ease-in-out infinite',
             backgroundSize: '200% 200%',
           }}
         ></div>
 
         {/* Top Glow */}
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#FF2D2D]/10 blur-[100px] animate-pulse-slow pointer-events-none" style={{ animation: 'glow-pulse 4s ease-in-out infinite' }}></div>
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#FF2D2D]/8 blur-[120px] pointer-events-none" style={{ animation: 'glow-pulse 4s ease-in-out infinite' }}></div>
+
+        {/* Bottom Glow */}
+        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-[#FF2D2D]/5 blur-[100px] pointer-events-none" style={{ animation: 'glow-pulse 5s ease-in-out infinite 2s' }}></div>
 
         {/* Header */}
-        <div className="relative h-16 bg-gradient-to-r from-[#FF2D2D]/20 via-[#FF2D2D]/5 to-transparent border-b border-white/5 flex items-center justify-between px-5 shrink-0 backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FF2D2D]/10 to-transparent opacity-50"></div>
+        <div className={`relative h-[68px] flex items-center justify-between px-5 shrink-0 backdrop-blur-xl transition-all duration-500 ${isResponding ? 'bg-gradient-to-r from-[#FF2D2D]/25 via-[#FF2D2D]/10 to-transparent border-b border-[#FF2D2D]/20' : 'bg-gradient-to-r from-[#FF2D2D]/15 via-[#FF2D2D]/5 to-transparent border-b border-white/5'}`}>
+          <div className={`absolute inset-0 transition-opacity duration-500 ${isResponding ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(90deg, rgba(255,45,45,0.08), transparent)' }}></div>
           <div className="flex items-center gap-3 relative z-10">
-            <div className={`w-12 h-12 flex items-center justify-center transition-all duration-700 ${isResponding ? 'animate-breathe' : ''} hover:rotate-12`}
-              style={isResponding ? { animation: 'breathe 1.5s ease-in-out infinite' } : {}}>
-              <img src="/ai-icon.png" alt="AI" className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(255,45,45,0.4)]" />
+            <div className="relative">
+              <div className={`w-12 h-12 flex items-center justify-center transition-all duration-700 ${isResponding ? 'animate-breathe' : ''} hover:rotate-12 hover:scale-110`}
+                style={isResponding ? { animation: 'breathe 1.5s ease-in-out infinite' } : {}}>
+                <img src="/ai-icon.png" alt="AI" className="w-12 h-12 object-contain drop-shadow-[0_0_20px_rgba(255,45,45,0.5)]" />
+              </div>
+              {isResponding && (
+                <span className="absolute -inset-2 rounded-full border-2 border-[#FF2D2D]/30" style={{ animation: 'pulse-ring 1.5s ease-out infinite' }}></span>
+              )}
             </div>
             <div>
-              <h3 className="text-white font-bold text-sm tracking-wide">iABS AI</h3>
+              <h3 className="text-white font-bold text-sm tracking-wide flex items-center gap-2">
+                iABS AI
+                {isResponding && <span className="w-1.5 h-1.5 rounded-full bg-[#FF2D2D] shadow-[0_0_10px_#FF2D2D]" style={{ animation: 'dot-pulse 1s ease-in-out infinite' }}></span>}
+              </h3>
               <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" style={{ animation: 'glow-pulse 2s ease-in-out infinite' }}></span>
-                <span className="text-[10px] text-green-400/80 font-mono">
-                  {isWaiting ? (lang === 'ar' ? 'يفكر...' : 'Thinking...') : isResponding ? (lang === 'ar' ? 'يكتب...' : 'Typing...') : (lang === 'ar' ? 'متصل' : 'Online')}
+                <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isWaiting ? 'bg-yellow-400 shadow-[0_0_10px_#facc15]' : isResponding ? 'bg-[#FF2D2D] shadow-[0_0_10px_#FF2D2D]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></span>
+                <span className="text-[10px] font-mono tracking-wider text-white/50">
+                  {isWaiting ? (lang === 'ar' ? 'يجيب لك المعلومة...' : 'Fetching...') : isResponding ? (lang === 'ar' ? 'يكتب الرد...' : 'Responding...') : (lang === 'ar' ? 'متصل' : 'Online')}
                 </span>
               </div>
             </div>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="relative z-10 w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-all hover:rotate-90"
+            className="relative z-10 w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white flex items-center justify-center transition-all hover:rotate-90 hover:scale-110 border border-white/5 hover:border-white/10"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -508,38 +535,38 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         </div>
 
         {/* Messages */}
-        <div className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 120px)' }}>
-          <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-10"></div>
+        <div className="relative flex-1 overflow-y-auto scrollbar-ai" style={{ height: 'calc(100% - 128px)' }}>
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none z-10"></div>
 
           {showQuickActions && messages.length === 1 && (
-            <div className="pt-4" style={{ animation: 'slide-up 0.5s ease-out' }}>
+            <div className="pt-5" style={{ animation: 'slide-up 0.6s ease-out' }}>
               <QuickActions lang={lang} onAsk={handleQuickAsk} />
             </div>
           )}
 
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-3 pb-2">
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={`flex msg-enter ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                style={{ animationDelay: `${i * 0.05}s` }}
+                style={{ animationDelay: `${i * 0.04}s` }}
               >
                 <div
-                  className={`max-w-[88%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-lg ${
+                  className={`max-w-[88%] px-4 py-3.5 rounded-2xl text-sm leading-relaxed shadow-lg transition-all duration-300 hover:scale-[1.01] ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] text-white rounded-br-md shadow-[#FF2D2D]/20'
-                      : 'bg-[#0d0d15]/80 border border-white/5 text-white/90 rounded-bl-md backdrop-blur-md'
+                      ? 'bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] text-white rounded-br-md shadow-[0_8px_30px_rgba(255,45,45,0.25)] border border-[#FF2D2D]/20'
+                      : 'bg-[#0d0d15]/90 border border-white/[0.06] text-white/90 rounded-bl-md backdrop-blur-md hover:border-white/[0.1]'
                   }`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 flex items-center justify-center">
-                        <img src="/ai-icon.png" alt="AI" className="w-6 h-6 object-contain" />
+                        <img src="/ai-icon.png" alt="AI" className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(255,45,45,0.3)]" />
                       </div>
-                      <span className="text-[10px] font-bold text-[#FF2D2D]/80 uppercase tracking-wider">iABS AI</span>
+                      <span className="text-[10px] font-black text-[#FF2D2D]/70 uppercase tracking-[0.15em]">iABS AI</span>
                     </div>
                   )}
-                  <span dir="auto" className={`ai-chat ${msg.role === 'user' ? 'text-white user-msg' : 'text-white/90'} whitespace-pre-wrap ${lang === 'ar' ? 'font-arabic' : ''}`}>
+                  <span dir="auto" className={`ai-chat ${msg.role === 'user' ? 'text-white/95 user-msg' : 'text-white/90'} whitespace-pre-wrap ${lang === 'ar' ? 'font-arabic' : ''}`}>
                     {renderFormattedText(msg.content)}
                   </span>
                 </div>
@@ -547,28 +574,28 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
             ))}
 
             {isWaiting && (
-              <div className="flex justify-start" style={{ animation: 'message-pop 0.3s ease-out' }}>
-                <div className="bg-[#151525]/80 border border-white/5 rounded-2xl rounded-bl-md px-5 py-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite' }}></span>
-                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite 0.2s' }}></span>
-                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite 0.4s' }}></span>
+              <div className="flex justify-start" style={{ animation: 'slide-up 0.3s ease-out' }}>
+                <div className="bg-[#151525]/80 border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-4 backdrop-blur-md">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.2s ease-in-out infinite' }}></span>
+                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.2s ease-in-out infinite 0.15s' }}></span>
+                    <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.2s ease-in-out infinite 0.3s' }}></span>
                   </div>
                 </div>
               </div>
             )}
             {isResponding && !isWaiting && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' && (
-              <div className="flex justify-start" style={{ animation: 'message-pop 0.3s ease-out' }}>
-                <div className="bg-[#0d0d15]/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 backdrop-blur-sm">
-                  <div className="flex items-center gap-1.5">
+              <div className="flex justify-start" style={{ animation: 'slide-up 0.3s ease-out' }}>
+                <div className="bg-[#0d0d15]/90 border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
                     <div className="w-5 h-5 flex items-center justify-center">
                       <img src="/ai-icon.png" alt="AI" className="w-5 h-5 object-contain" />
                     </div>
-                    <span className="text-[10px] font-bold text-[#FF2D2D]/80 uppercase tracking-wider">iABS AI</span>
+                    <span className="text-[10px] font-black text-[#FF2D2D]/70 uppercase tracking-[0.15em]">iABS AI</span>
                     <div className="flex items-center gap-1 mr-2">
-                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite' }}></span>
-                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.15s' }}></span>
-                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.3s' }}></span>
+                      <span className="w-1.5 h-1.5 bg-white/30 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite' }}></span>
+                      <span className="w-1.5 h-1.5 bg-white/30 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.15s' }}></span>
+                      <span className="w-1.5 h-1.5 bg-white/30 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.3s' }}></span>
                     </div>
                   </div>
                 </div>
@@ -578,9 +605,18 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
           </div>
         </div>
 
+        {/* Shimmer separator */}
+        <div className="relative h-px overflow-hidden">
+          <div className="absolute inset-0 shimmer-overlay"></div>
+        </div>
+
         {/* Input */}
-        <div className="relative h-[60px] bg-black/60 border-t border-white/5 px-3 flex items-center gap-2 backdrop-blur-xl">
-          <div className="relative flex-1">
+        <div className={`relative h-[68px] px-4 flex items-center gap-2 backdrop-blur-xl transition-all duration-500 ${isResponding ? 'bg-black/70 border-t border-[#FF2D2D]/15' : 'bg-black/50 border-t border-white/5'}`}>
+          {isResponding && (
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF2D2D]/5 to-transparent opacity-50"></div>
+          )}
+          <div className="relative flex-1 z-10">
+            <div className={`absolute inset-0 rounded-2xl transition-opacity duration-500 ${isWaiting ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: '0 0 20px rgba(255,45,45,0.1), inset 0 0 20px rgba(255,45,45,0.05)' }}></div>
             <input
               ref={inputRef}
               type="text"
@@ -589,21 +625,24 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder={lang === 'ar' ? 'اسأل عن iABS...' : 'Ask about iABS...'}
               disabled={isWaiting}
-              className={`w-full h-11 px-4 pr-10 rounded-2xl bg-white/5 border text-white placeholder-white/25 text-sm outline-none transition-all focus:border-[#FF2D2D]/50 focus:bg-white/10 disabled:opacity-50 ${isWaiting ? 'border-[#FF2D2D]/30 shadow-[0_0_15px_rgba(255,45,45,0.15)]' : 'border-white/10'}`}
+              className={`w-full h-11 px-4 rounded-2xl bg-white/[0.04] border text-white/90 placeholder-white/20 text-sm outline-none transition-all duration-300 focus:bg-white/[0.07] disabled:opacity-40 ${isWaiting ? 'border-[#FF2D2D]/30' : 'border-white/[0.08] focus:border-[#FF2D2D]/40'}`}
             />
           </div>
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isWaiting || isResponding}
-            className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shadow-lg shadow-[#FF2D2D]/20 flex-shrink-0"
+            className="relative z-10 w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] text-white flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-25 disabled:hover:scale-100 shadow-lg shadow-[#FF2D2D]/20 flex-shrink-0 group"
           >
+            {!isWaiting && !isResponding && input.trim() && (
+              <span className="absolute inset-0 rounded-2xl" style={{ animation: 'send-pulse 1.5s ease-out infinite' }}></span>
+            )}
             {isWaiting ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
             ) : (
-              <svg className="w-5 h-5 rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 rotate-45 transition-transform group-hover:rotate-[225deg] duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" />
               </svg>
             )}
