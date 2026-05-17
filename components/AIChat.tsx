@@ -37,12 +37,43 @@ const SYSTEM_PROMPT = `أنت مساعد iABS الرسمي، تتحدث بالل
 - اختصر بالردود عشان التوكنز، ما تطول
 - جاوب بمعلومة دقيقة ومختصرة
 - إذا ما تعرف شيء، قول "والله مدري بالضبط بس أقدر أساعدك بشي ثاني"
-- استخدم كلمات سعودية: وش، اقصد، هذاك، كذا، الحين، الخ`.trim();
+- استخدم كلمات سعودية: وش، اقصد، هذاك، كذا، الحين، الخ
+- استخدم تنسيق النصوص لتجميل الردود:
+  • **كلمة** للنص العريض (مهم)
+  • *كلمة* للنص المائل
+  • ***كلمة*** للعريض والمائل معاً
+- وزع التنسيق على ردودك عشان تكون جميلة وواضحة`.trim();
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+const renderFormattedText = (text: string) => {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*\*(.*?)\*\*\*|\*\*(.*?)\*\*|\*(.*?)\*)/g;
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[1]?.startsWith('***')) {
+      parts.push(<span key={key++} className="font-bold italic text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]">{match[2]}</span>);
+    } else if (match[1]?.startsWith('**')) {
+      parts.push(<strong key={key++} className="font-black text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.12)]">{match[3]}</strong>);
+    } else if (match[1]?.startsWith('*')) {
+      parts.push(<em key={key++} className="italic text-white/80">{match[4]}</em>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+};
 
 interface QuickAction {
   name: string;
@@ -337,6 +368,34 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         .msg-enter {
           animation: message-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        .ai-chat strong {
+          color: #fff;
+          font-weight: 900;
+          text-shadow: 0 0 12px rgba(255,255,255,0.15), 0 0 30px rgba(255,45,45,0.1);
+          background: linear-gradient(135deg, #fff 60%, rgba(255,45,45,0.3));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .user-msg strong {
+          color: #fff;
+          font-weight: 900;
+          text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        .ai-chat em {
+          font-style: italic;
+          color: rgba(255,255,255,0.85);
+          text-shadow: 0 0 8px rgba(255,45,45,0.15);
+        }
+        .ai-chat strong em, .ai-chat em strong {
+          font-style: italic;
+          font-weight: 900;
+          background: linear-gradient(135deg, #fff 40%, #FF2D2D 80%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: none;
+        }
         .ai-bg {
           background-image: url('/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png');
           background-size: cover;
@@ -465,8 +524,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
                       <span className="text-[10px] font-bold text-[#FF2D2D]/80 uppercase tracking-wider">iABS AI</span>
                     </div>
                   )}
-                  <span className={`${msg.role === 'user' ? 'text-white' : 'text-white/90'} whitespace-pre-wrap ${lang === 'ar' ? 'font-arabic' : ''}`}>
-                    {msg.content}
+                  <span className={`ai-chat ${msg.role === 'user' ? 'text-white user-msg' : 'text-white/90'} whitespace-pre-wrap ${lang === 'ar' ? 'font-arabic' : ''}`}>
+                    {renderFormattedText(msg.content)}
                   </span>
                 </div>
               </div>
