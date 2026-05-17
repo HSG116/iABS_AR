@@ -141,7 +141,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
     },
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
   const [keyIndex, setKeyIndex] = useState(0);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -156,7 +157,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isWaiting, isResponding]);
 
   const handleQuickAsk = (query: string) => {
     setInput(query);
@@ -185,13 +186,14 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || isLoading) return;
+    if (!text || isWaiting || isResponding) return;
     setInput('');
+    setIsResponding(false);
 
     const userMsg: Message = { role: 'user', content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setIsLoading(true);
+    setIsWaiting(true);
     setShowQuickActions(false);
 
     try {
@@ -214,8 +216,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
 
       const decoder = new TextDecoder();
       let assistantContent = '';
-
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      let started = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -231,6 +232,12 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
             const parsed = JSON.parse(data);
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
+              if (!started) {
+                started = true;
+                setIsWaiting(false);
+                setIsResponding(true);
+                setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+              }
               assistantContent += delta;
               setMessages(prev => {
                 const updated = [...prev];
@@ -243,6 +250,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       }
     } catch (err) {
       console.error('AI Chat Error:', err);
+      setIsWaiting(false);
+      setIsResponding(false);
       setMessages(prev => [
         ...prev,
         {
@@ -253,7 +262,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         },
       ]);
     } finally {
-      setIsLoading(false);
+      setIsWaiting(false);
+      setIsResponding(false);
     }
   };
 
@@ -299,10 +309,34 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes slide-down {
+          from { opacity: 0; transform: translateY(-12px) scale(0.97); max-height: 0; }
+          to { opacity: 1; transform: translateY(0) scale(1); max-height: 200px; }
+        }
+        @keyframes glow-expand {
+          0% { opacity: 0; transform: scale(0.5); }
+          50% { opacity: 0.4; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(1.8); }
+        }
+        @keyframes message-in {
+          0% { opacity: 0; transform: translateY(8px) scale(0.96); filter: blur(4px); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
         .scrollbar-ai::-webkit-scrollbar { width: 4px; }
         .scrollbar-ai::-webkit-scrollbar-track { background: transparent; }
         .scrollbar-ai::-webkit-scrollbar-thumb { background: rgba(255,45,45,0.3); border-radius: 10px; }
         .scrollbar-ai::-webkit-scrollbar-thumb:hover { background: rgba(255,45,45,0.5); }
+        .msg-enter {
+          animation: message-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
         .ai-bg {
           background-image: url('/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png');
           background-size: cover;
@@ -347,7 +381,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       {/* Chat Panel */}
       <div
         ref={chatRef}
-        className={`fixed bottom-24 right-6 z-[100] w-[400px] max-w-[calc(100vw-2rem)] h-[650px] max-h-[calc(100vh-180px)] rounded-3xl border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
+        className={`fixed bottom-24 right-6 z-[100] w-[400px] max-w-[calc(100vw-2rem)] h-[650px] max-h-[calc(100vh-180px)] rounded-3xl border shadow-[0_30px_80px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'} ${isResponding ? 'border-[#FF2D2D]/30' : 'border-white/10'}`}
         style={{ animation: isOpen ? 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'none' }}
       >
         {/* Background Layer */}
@@ -371,7 +405,8 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         <div className="relative h-16 bg-gradient-to-r from-[#FF2D2D]/20 via-[#FF2D2D]/5 to-transparent border-b border-white/5 flex items-center justify-between px-5 shrink-0 backdrop-blur-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-[#FF2D2D]/10 to-transparent opacity-50"></div>
           <div className="flex items-center gap-3 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] flex items-center justify-center shadow-lg shadow-[#FF2D2D]/30 transform transition-transform hover:rotate-12">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] flex items-center justify-center shadow-lg shadow-[#FF2D2D]/30 transition-all duration-700 ${isResponding ? 'animate-breathe' : ''} hover:rotate-12`}
+              style={isResponding ? { animation: 'breathe 1.5s ease-in-out infinite' } : {}}>
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -381,7 +416,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" style={{ animation: 'glow-pulse 2s ease-in-out infinite' }}></span>
                 <span className="text-[10px] text-green-400/80 font-mono">
-                  {isLoading ? (lang === 'ar' ? 'يفكر...' : 'Thinking...') : (lang === 'ar' ? 'متصل' : 'Online')}
+                  {isWaiting ? (lang === 'ar' ? 'يفكر...' : 'Thinking...') : isResponding ? (lang === 'ar' ? 'يكتب...' : 'Typing...') : (lang === 'ar' ? 'متصل' : 'Online')}
                 </span>
               </div>
             </div>
@@ -406,12 +441,12 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
             </div>
           )}
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-3">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                style={{ animation: 'message-pop 0.3s ease-out' }}
+                className={`flex msg-enter ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div
                   className={`max-w-[88%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-lg ${
@@ -437,13 +472,32 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
               </div>
             ))}
 
-            {isLoading && (
+            {isWaiting && (
               <div className="flex justify-start" style={{ animation: 'message-pop 0.3s ease-out' }}>
-                <div className="bg-[#151525]/80 border border-white/5 text-white rounded-2xl rounded-bl-md px-5 py-4 backdrop-blur-sm">
+                <div className="bg-[#151525]/80 border border-white/5 rounded-2xl rounded-bl-md px-5 py-4 backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite' }}></span>
                     <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite 0.2s' }}></span>
                     <span className="w-2 h-2 bg-[#FF2D2D] rounded-full" style={{ animation: 'dot-pulse 1.4s ease-in-out infinite 0.4s' }}></span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {isResponding && !isWaiting && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' && (
+              <div className="flex justify-start" style={{ animation: 'message-pop 0.3s ease-out' }}>
+                <div className="bg-[#0d0d15]/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 backdrop-blur-sm">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-md bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#FF2D2D]/80 uppercase tracking-wider">iABS AI</span>
+                    <div className="flex items-center gap-1 mr-2">
+                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite' }}></span>
+                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.15s' }}></span>
+                      <span className="w-1.5 h-1.5 bg-white/40 rounded-full" style={{ animation: 'dot-pulse 1s ease-in-out infinite 0.3s' }}></span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -462,16 +516,16 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder={lang === 'ar' ? 'اسأل عن iABS...' : 'Ask about iABS...'}
-              disabled={isLoading}
-              className="w-full h-11 px-4 pr-10 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm outline-none transition-all focus:border-[#FF2D2D]/50 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(255,45,45,0.1)] disabled:opacity-50"
+              disabled={isWaiting}
+              className={`w-full h-11 px-4 pr-10 rounded-2xl bg-white/5 border text-white placeholder-white/25 text-sm outline-none transition-all focus:border-[#FF2D2D]/50 focus:bg-white/10 disabled:opacity-50 ${isWaiting ? 'border-[#FF2D2D]/30 shadow-[0_0_15px_rgba(255,45,45,0.15)]' : 'border-white/10'}`}
             />
           </div>
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isWaiting || isResponding}
             className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shadow-lg shadow-[#FF2D2D]/20 flex-shrink-0"
           >
-            {isLoading ? (
+            {isWaiting ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
