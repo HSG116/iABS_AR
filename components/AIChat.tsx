@@ -491,7 +491,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       {/* Chat Panel */}
       <div
         ref={chatRef}
-        className={`fixed bottom-20 right-6 z-[100] w-[420px] max-w-[calc(100vw-2rem)] h-[620px] max-h-[calc(100vh-200px)] rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
+        className={`fixed bottom-24 right-6 z-[100] w-[420px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-130px)] rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden transition-all duration-500 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'}`}
         style={{ animation: isOpen ? 'slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none' }}
       >
         {/* Background Layer */}
