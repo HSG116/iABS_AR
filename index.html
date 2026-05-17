@@ -187,13 +187,21 @@
     .responsive_bg {
       background-image: url('/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png');
       background-size: cover;
-      background-position: center;
+      background-position: center 30%;
       background-repeat: no-repeat;
     }
 
     @media (min-width: 768px) {
       .responsive_bg {
         background-image: url('/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png');
+        background-position: center;
+      }
+    }
+    
+    @media (max-width: 767px) {
+      .responsive_bg {
+        background-size: auto 100%;
+        background-position: 65% 30%;
       }
     }
 
