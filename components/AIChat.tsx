@@ -112,13 +112,14 @@ const renderFormattedText = (text: string) => {
     }
     if (match[1]) {
       parts.push(
-        <img
-          key={`em${key++}`}
-          src={`https://files.kick.com/emotes/${match[2]}/fullsize`}
-          alt={match[3]}
-          title={match[3]}
-          className="inline-block w-8 h-8 md:w-10 md:h-10 mx-0.5 align-middle object-contain hover:scale-125 transition-transform"
-        />
+        <span key={`em${key++}`} className="inline-flex items-center justify-center w-9 h-9 md:w-11 md:h-11 mx-0.5 rounded-lg bg-gradient-to-br from-white/[0.08] to-white/[0.03] border border-white/20 shadow-[inset_0_0_8px_rgba(255,255,255,0.05),0_2px_6px_rgba(0,0,0,0.3)] hover:border-white/40 hover:shadow-[inset_0_0_12px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,45,45,0.2)] transition-all duration-300 hover:scale-125 align-middle overflow-hidden">
+          <img
+            src={`https://files.kick.com/emotes/${match[2]}/fullsize`}
+            alt={match[3]}
+            title={match[3]}
+            className="w-full h-full object-cover"
+          />
+        </span>
       );
     } else if (match[4]?.startsWith('***')) {
       parts.push(<span key={key++} className="font-bold italic text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]">{match[5]}</span>);
@@ -416,6 +417,10 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
           0% { opacity: 0; transform: scale(0.5); }
           50% { opacity: 0.4; transform: scale(1.2); }
           100% { opacity: 0; transform: scale(1.8); }
+        }
+        @keyframes emote-glow {
+          0%, 100% { box-shadow: inset 0 0 10px rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.3); }
+          50% { box-shadow: inset 0 0 15px rgba(255,255,255,0.1), 0 4px 15px rgba(255,45,45,0.2); }
         }
         @keyframes message-in {
           0% { opacity: 0; transform: translateY(8px) scale(0.96); filter: blur(4px); }
