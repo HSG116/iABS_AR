@@ -439,7 +439,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
           )}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
+            className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#FF2D2D] to-[#CC1111] shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/20"
             style={{ animation: 'float-glow 3s ease-in-out infinite' }}
           >
             <div className="absolute inset-0 rounded-full bg-[#FF2D2D] opacity-30" style={{ animation: 'pulse-ring 2s ease-out infinite' }}></div>
@@ -448,7 +448,9 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <img src="/ai-icon.png" alt="AI" className="w-14 h-14 relative z-10 object-contain drop-shadow-[0_0_20px_rgba(0,0,0,0.3)]" />
+              <svg className="w-7 h-7 relative z-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
             )}
           </button>
         </div>
