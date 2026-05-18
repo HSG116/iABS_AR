@@ -10,7 +10,6 @@ import { StatsSection } from './components/StatsSection';
 import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
 import { StudioSection } from './components/StudioSection';
 import { AIChat } from './components/AIChat';
-import BotrixLeaderboard from './components/BotrixLeaderboard';
 
 // --- Constants ---
 const DEFAULT_PROFILE_IMAGE = "/favicon.png";
@@ -1452,10 +1451,6 @@ export default function App() {
                 
                 {isScheduleActive && <ScheduleSection schedule={schedule} />}
                 {isFaqActive && <FAQSection faqs={faqs} />}
-
-                <div className="mt-20 w-full max-w-6xl mx-auto space-y-20">
-                  <BotrixLeaderboard lang={lang} />
-                </div>
 
                 <div className="mt-20 w-full max-w-6xl mx-auto space-y-20">
                   <StatsSection lang={lang} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Hls from 'hls.js';
 import { Language, LeaderboardData, Clip, Video, ChannelInfo, LeaderboardEntry } from '../types';
 import { KickIcon } from './Icons';
+import BotrixLeaderboard from './BotrixLeaderboard';
 import { kickFetch } from '../utils/kickApi';
 
 interface StatsSectionProps {
@@ -453,6 +454,11 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
               <Skeleton className="col-span-1 order-3 md:order-3 h-64 md:h-96 w-full rounded-3xl" />
             </div>
           )}
+        </div>
+
+        {/* --- BOTRIX LEADERBOARD (Most Active Across Streams) --- */}
+        <div className="pt-8 border-t border-white/5">
+          <BotrixLeaderboard lang={lang} />
         </div>
 
         {/* --- CLIPS & VODS GRID --- */}
