@@ -610,7 +610,7 @@ const SupportLinks: React.FC<{ lang: Language }> = ({ lang }) => {
 
                 <div className="flex flex-wrap justify-center gap-2 md:gap-3 max-w-2xl px-2">
                     {[
-                        { amount: '15$', bg: 'from-[#CD7F32]/20 to-[#CD7F32]/5', border: 'border-[#CD7F32]/30', text: 'from-[#CD7F32] to-[#FFE0C2]', glow: 'group-hover:shadow-[0_0_15px_rgba(205,127,50,0.4)]' }, // Bronze
+                        { amount: '25$', bg: 'from-[#CD7F32]/20 to-[#CD7F32]/5', border: 'border-[#CD7F32]/30', text: 'from-[#CD7F32] to-[#FFE0C2]', glow: 'group-hover:shadow-[0_0_15px_rgba(205,127,50,0.4)]' }, // Bronze
                         { amount: '99$', bg: 'from-[#C0C0C0]/20 to-[#C0C0C0]/5', border: 'border-[#C0C0C0]/30', text: 'from-[#C0C0C0] to-[#FFFFFF]', glow: 'group-hover:shadow-[0_0_15px_rgba(192,192,192,0.4)]' }, // Silver
                         { amount: '300$', bg: 'from-[#FFD700]/20 to-[#FFD700]/5', border: 'border-[#FFD700]/30', text: 'from-[#FFD700] to-[#FFF8DC]', glow: 'group-hover:shadow-[0_0_15px_rgba(255,215,0,0.4)]' }, // Gold
                         { amount: '505$', bg: 'from-[#00BFFF]/20 to-[#00BFFF]/5', border: 'border-[#00BFFF]/30', text: 'from-[#00BFFF] to-[#E0FFFF]', glow: 'group-hover:shadow-[0_0_15px_rgba(0,191,255,0.4)]' }, // Diamond
