@@ -55,7 +55,7 @@ const SYSTEM_PROMPT = `معلومات كاملة وشخصية عن iABS:
   • ***كلمة*** للعريض والمائل معاً
 - عندما تكتب كلمات إنجليزية مع العربية، اترك مسافة قبل وبعد الكلمة الإنجليزية (مثل: حسابي في **Kick** طال عمرك).
 
-استخدم الإيموجيز الحصرية لـ iABS في ردودك باستخدام الصيغة [emote:ID:NAME]:
+استخدم الإيموجيز الحصرية حقت iABS فقط (لا تستخدم إيموجيز يونيكود مثل 😂❤️🔥). دايم استخدم صيغة [emote:ID:NAME] عشان تظهر استكرات كيك:
 • [emote:3989626:iABSWave] -> ترحيب (ارحب، هلا)
 • [emote:3689147:iABSLaugh] -> ضحك عالي وطقطقة (استخدمه كثييييير)
 • [emote:5447899:iABSStayOne] -> إذا ذكرت #StayOne، أو LevelOne
@@ -66,6 +66,7 @@ const SYSTEM_PROMPT = `معلومات كاملة وشخصية عن iABS:
 • [emote:3823817:iABSCelebrate] أو [emote:1078051:iABSCelebrate2] -> للاحتفال
 • [emote:2893352:iABSQuestion] -> للسؤال أو الاستغراب (وش تقول انت؟)
 • [emote:5513874:iABSRandom1] أو [emote:4937184:iABSRandom2] -> إيموجي عشوائي للزينة
+- لازم كل رد يحتوي على الأقل استيكر واحد (إيموجي كيك). ما يصير رد بدون استيكر.
 
 لروابط التواصل الاجتماعي استخدم الصيغة [social:الاسم:العدد:الرابط]:
 - حط رابط واحد أو اثنين بالكثير في الرد، ولا تحطها إلا إذا انطلبت.
@@ -101,21 +102,6 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
-
-const EMOTES = {
-  wave: { id: '3989626', name: 'iABSWave', desc: 'ترحيب/سلام' },
-  celebrate: { id: '3823817', name: 'iABSCelebrate', desc: 'احتفال' },
-  stayone: { id: '5447899', name: 'iABSStayOne', desc: '#StayOne' },
-  wrong: { id: '3329260', name: 'iABSWrong', desc: 'خطأ' },
-  random1: { id: '5513874', name: 'iABSRandom1', desc: 'ايموجي عشوائي' },
-  random2: { id: '4937184', name: 'iABSRandom2', desc: 'ايموجي عشوائي' },
-  laugh: { id: '3689147', name: 'iABSLaugh', desc: 'ضحك عالي' },
-  disgust: { id: '3109190', name: 'iABSDisgust', desc: 'قرف' },
-  question: { id: '2893352', name: 'iABSQuestion', desc: 'سؤال' },
-  celebrate2: { id: '1078051', name: 'iABSCelebrate2', desc: 'احتفال' },
-  kick: { id: '3329257', name: 'iABSKick', desc: 'طرد/اذلف' },
-  mock: { id: '3330235', name: 'iABSMock', desc: 'ضحك على شخص' },
-};
 
 const renderFormattedText = (text: string) => {
   const parts: React.ReactNode[] = [];
@@ -421,12 +407,15 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       }
 
       try {
-        await supabase.from('ai_chat_logs').insert({
+        const { error: ie } = await supabase.from('ai_chat_logs').insert([{
           user_message: text,
           ai_response: assistantContent,
           created_at: new Date().toISOString(),
-        });
-      } catch {}
+        }]);
+        if (ie) console.error('[AIChat] Insert error:', ie.message);
+      } catch (e) {
+        console.error('[AIChat] Insert failed:', e);
+      }
     } catch (err) {
       console.error('AI Chat Error:', err);
       setIsWaiting(false);
