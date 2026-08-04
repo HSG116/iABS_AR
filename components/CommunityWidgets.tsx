@@ -175,7 +175,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
 
 export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const [video, setVideo] = useState<YoutubeData | null>(null);
-   const [subs, setSubs] = useState<string>('74.8K');
+   const [subs, setSubs] = useState<string>('100K');
    const [loading, setLoading] = useState(true);
    const channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w';
    const channelUrl = 'https://www.youtube.com/@ABS11';

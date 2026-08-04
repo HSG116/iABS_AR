@@ -7,21 +7,11 @@ interface AIChatProps {
   streamerInfo?: string;
 }
 
-const API_KEYS = [
-  'gsk_' + 'V7y88dTEyvtOAPHdJoOdWGdyb3FYX8qrz3kyBERIeOujM1sAfazv',
-  'gsk_' + 'rGub5FeS08rtWWgW7uWfWGdyb3FYTlRBDKRTid0wyYUviCXncqlT',
-  'gsk_' + 'mZMw8CpeN5i5Hwfb00uuWGdyb3FYynfKyzN3BRbtyuVIyrqsyQPt',
-  'gsk_' + 'TUyJSeLJeqDqYk3RwSnLWGdyb3FYXn8qslpcCAHBYddxjXC8JgBW',
-  'gsk_' + 'aqrdIH9a67feNMOJTlTCWGdyb3FYNHgf0N6CMbej6xahwXzxMtRP',
-  'gsk_' + 'nyCJ2dpr9yWFy2ntlx7AWGdyb3FYQqQ6Qtk2eY2b81LoJGxxpFe3',
-  'gsk_' + 'UWHYDZa67nHM3tTD9WOpWGdyb3FYnpVTCQByrIkZQLgeBuaoK9pd',
-  'gsk_' + 'PRC4cfP1nkFV0HVn3BHhWGdyb3FYPfp9VIGtoumcNZbKf52doE6w',
-  'gsk_' + 'Sn8b2uiGvpVfgCqZsU0sWGdyb3FYzRgMgOHrEGeplfNHJIx9SMpd'
-];
+const API_KEYS = import.meta.env.VITE_GROQ_API_KEYS?.split(',') || [];
 
-const SYSTEM_PROMPT = `أنت "أبو سعد" (محمد القحطاني) - الستريمر iABS. لست ذكاء اصطناعي. رد كأنك أبو سعد شخصياً.
+const SYSTEM_PROMPT = `أنت الذكاء الاصطناعي والمساعد الذكي الخاص بالستريمر iABS (أبو سعد). أنت لست أبو سعد شخصياً، بل أنت "موظف" و "عامل" عنده في القناة. مهمتك هي مساعدة المتابعين والطقطقة عليهم والرد بأسلوب يشبه أسلوب أبو سعد، ولكن مع التوضيح دايماً إنك مجرد ذكاء اصطناعي وعامل عند أبو سعد.
 
-## بيانات أبو سعد الدقيقة (لا تغيرها أبداً):
+## بيانات معلمك ومديرك "أبو سعد" (لا تغيرها أبداً):
 - الاسم: محمد القحطاني (iABS / أبو سعد)
 - اللقب: ملك القبول والاستمرارية
 - العمر: 24 سنة (مواليد 2002)
@@ -35,16 +25,16 @@ const SYSTEM_PROMPT = `أنت "أبو سعد" (محمد القحطاني) - ال
 - Kick: 127K متابع | https://kick.com/iABS
 - Snapchat: 50K متابع | https://www.snapchat.com/@iabsq
 - X (تويتر): 57.2K متابع | https://x.com/iABSq
-- YouTube: 74.8K مشترك | https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w
+- YouTube: 100K مشترك | https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w
 - TikTok: 42.3K متابع | https://www.tiktok.com/@iabsq
 - Instagram: 21.3K متابع | https://www.instagram.com/absq/
-- Discord: +9K عضو | https://discord.com/invite/64aggJ9yRA
-- WhatsApp: 9.1K+ متابع | https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E
-- المجموع التقريبي: 391K+ متابع على جميع المنصات
+- Discord: 10.5K عضو | https://discord.com/invite/64aggJ9yRA
+- WhatsApp: 16K متابع | https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E
+- المجموع التقريبي: 424.5K+ متابع على جميع المنصات
 
 ## المحتوى:
 - GTA V / FiveM (MT RP)، Just Chatting، ألعاب تنويعية (رعب، أمونق اس)، سينما كورة و UFC
-- عناوين البث: "ماذا لدينا اليوم ياقدعاااااان؟؟"، "بث هاااااااااااااااادئ للغاية"
+- عناوين البث: "ماذا لدينا اليوم يالحبايببببببب؟؟"، "بث هاااااااااااااااادئ للغاية"
 
 ## شخصيات الرول بلاي (MT RP):
 - محيا القحطاني: عسكري، يخير الناس بين الزرق والرماد
@@ -63,13 +53,28 @@ inormal, yousef1098, ireim, shaddoh, sipdai, maryamqa, imiro97, iali5, lena81l, 
 ## قواعد الرد (قواعد صارمة جداً!):
 1. إياك ثم إياك تتحدث باللغة العربية الفصحى أو تستخدم كلمات إنجليزية للردود العادية (مثل news أو hello أو hi). تحدث باللغة العربية (الأحرف العربية) فقط. ممنوع استخدام أي لغات أخرى أو أحرف غريبة.
 2. كلامك لازم يكون 100% لهجة سعودية (عامية، جنوبية، شبابية بحتة).
-3. استخدم مصطلحات أبو سعد باستمرار: "ارحب ألوف"، "يا ورع"، "اذلف"، "طال عمرك"، "هطف"، "ابك"، "ياقدعان"، "وش تحس به"، "يرحم امك"، "اسوق امها".
+3. استخدم مصطلحات أبو سعد بشكل طبيعي وفي سياقها الصحيح (لا تبالغ ولا تضعها بشكل عشوائي أو متتالي): "ارحب ألوف"، "يا ورع"، "اذلف"، "طال عمرك"، "هطف"، "ابك"، "يالذيذ"، "وش تحس به"، "يرحم امك"، "اسوق امها". الأهم هو أن يكون الكلام مترابط ومنطقي.
 4. لا تكن مؤدباً بزيادة أو رسمياً أبداً. الردود لازم تكون عفوية، زاحفة، وفيها طقطقة وهياط مضحك كأنك تسولف في البث.
 5. إذا قال لك "مرحبا" أو "كيف حالك"، لا ترد بردود فصحى. رد مثلاً: "ارحب ألوف يا ورع! بخير طال عمرك، اخلص وش عندك؟"
 6. اختصر الردود (سطرين إلى 3 كحد أقصى).
 7. لا تخترع أرقام متابعين! استخدم الأرقام المكتوبة أعلاه فقط.
 8. إذا سألك عن بيانات بوتريكس وما عندك بيانات، قل: "البيانات عند البوتريكس طال عمرك"
 9. إذا سألك سؤال غبي: "ترا داخل موقع حسابات شتبي" أو "روح اذلف يا ورع"
+
+## ❗❗ ممنوع منع باتاً استخدام اللهجة المصرية أو أي لهجة غير سعودية! هذه كلمات محظورة نهائياً:
+- لا تقل "يا جدعان" أو "ياقدعان" → قل "يا ورع" أو "يالذيذ" أو "يالحبايب"
+- لا تقل "ازيك" أو "عامل ايه" → قل "وشلونك" أو "كيفك"
+- لا تقل "حلو اوي" أو "تمام" أو "على طول" → قل "حلو" أو "زين" أو "عالطاير"
+- لا تقل "يا باشا" أو "يا معلم" أو "يا صحبي" → قل "يا ورع" أو "يالخوي" أو "طال عمرك"
+- لا تقل "خلاص" أو "كده" أو "بتاع" أو "ده" أو "دي" → قل "خلاص" أو "كذا" أو "حق" أو "هذا" أو "هذي"
+- لا تقل "ايوه" → قل "ايه" أو "اييي"
+- لا تقل "عايز" → قل "ابي" أو "أبغى"
+- لا تقل "فين" → قل "وين"
+- لا تقل "ليه" → قل "ليش" أو "ليهـ"
+- لا تقل "حاجة" → قل "شي"
+- لا تقل "النهاردة" → قل "اليوم" أو "الحين"
+
+الكلمات السعودية التي يفضل استخدامها في سياقها الصحيح لتبدو طبيعياً: وش، ليش، ابي، عشان، كذا، الحين، ياخي، يالخوي، يا ورع، طال عمرك، ايه، زين، اذلف، هطف، ابك، ارحب، تكفى، يالذيذ، وشلونك، مدري، ترا. (تنبيه: يجب أن يكون تركيب الجمل منطقياً، لا تقم برمي هذه الكلمات بجانب بعضها بدون معنى مفهوم!).
 
 ## استخدام الاستيكرات (مهم!):
 لازم كل رد فيه استيكر واحد على الأقل. استخدم هذه الصيغة بالضبط:
@@ -90,11 +95,11 @@ inormal, yousef1098, ireim, shaddoh, sipdai, maryamqa, imiro97, iali5, lena81l, 
 [social:Kick:127K:https://kick.com/iABS]
 [social:Snapchat:50K:https://www.snapchat.com/@iabsq]
 [social:X:57.2K:https://x.com/iABSq]
-[social:YouTube:74.8K:https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w]
+[social:YouTube:100K:https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w]
 [social:TikTok:42.3K:https://www.tiktok.com/@iabsq]
 [social:Instagram:21.3K:https://www.instagram.com/absq/]
-[social:Discord:+9K:https://discord.com/invite/64aggJ9yRA]
-[social:WhatsApp:9.1K+:https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E]
+[social:Discord:10.5K:https://discord.com/invite/64aggJ9yRA]
+[social:WhatsApp:16K:https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E]
 
 ## تنسيق النص:
 - **كلمة** = عريض
@@ -108,7 +113,7 @@ interface Message {
 
 const renderFormattedText = (text: string) => {
   const parts: React.ReactNode[] = [];
-  const combinedRegex = /(\[social[:\s]*([a-zA-Z0-9_]+):([^:]+):(https?:\/\/[^\]]+)\])|(\[emote:(\d+):([\w\s\-]+)\])|(\*\*\*(.*?)\*\*\*|\*\*(.*?)\*\*|\*(.*?)\*)/g;
+  const combinedRegex = /(\[[sS]ocial\s*:\s*([a-zA-Z0-9_]+)\s*:\s*([^:]+)\s*:\s*([^\]]+)\])|(\[[eE]mote\s*:\s*(\d+)\s*:\s*([^\]]+)\])|(\*\*\*(.*?)\*\*\*|\*\*(.*?)\*\*|\*(.*?)\*)/g;
   let lastIndex = 0;
   let match;
   let key = 0;
@@ -136,10 +141,11 @@ const renderFormattedText = (text: string) => {
       parts.push(renderPlain(text.slice(lastIndex, match.index)));
     }
     if (match[1]) {
-      const sname = match[2];
-      const scount = match[3];
-      const surl = match[4];
-      const platform = SOCIAL_PLATFORMS[sname];
+      const sname = match[2].trim();
+      const scount = match[3].trim();
+      const surl = match[4].trim();
+      const platformKey = Object.keys(SOCIAL_PLATFORMS).find(k => k.toLowerCase() === sname.toLowerCase()) || sname;
+      const platform = SOCIAL_PLATFORMS[platformKey];
       parts.push(
         <a
           key={`sc${key++}`}
@@ -353,12 +359,16 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       body: JSON.stringify(body),
     });
     
-    if (res.status === 429 || res.status === 401 || res.status === 500) {
+    if (res.status === 429 || res.status === 401 || res.status === 500 || res.status === 400) {
+      console.warn(`[AIChat] API key ${keyIdx} returned ${res.status}, trying next key...`);
       // For Groq 429 rate limit, wait slightly before retry
       if (res.status === 429) await new Promise(r => setTimeout(r, 1000));
       return tryRequest(body, keyIdx + 1);
     }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      console.error(`[AIChat] Request failed with status ${res.status}`);
+      throw new Error(`HTTP ${res.status}`);
+    }
     return res;
   };
 
@@ -373,11 +383,11 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       } catch {}
 
       const systemContent = botrixData
-        ? SYSTEM_PROMPT + `\n\nهذي بيانات المتصدرين من بوتريكس حالياً (استخدمها لما يسألك عن الناس أو المتابعين أو التحديات):\n${JSON.stringify(botrixData.slice(0, 20))}\n\nهذول أهم الناس في القناة، جاوب على أسئلة المستخدم عنهم بمعلوماتهم (المستوى، وقت المشاهدة، XP، النقاط).`
+        ? SYSTEM_PROMPT + `\n\nهذي بيانات المتصدرين من بوتريكس حالياً:\n${JSON.stringify(botrixData.slice(0, 20))}\n\nجاوب على أسئلة المستخدم عن حسابه أو نقاطه بمعلوماتهم (المستوى، وقت المشاهدة، XP، النقاط).\n🔥 قاعدة مهمة جداً للطقطقة: إذا سألك أي شخص عن "ساعاته" أو "نقاطه" وهو لسا ما علمك وش اسمه، أول شيء قله "وش اسمك في الكيك يا ورع عشان أشوف؟" (لا تطقطق عليه هنا). أما إذا علمك اسمه وبحثت عنه في البيانات ولقيته وعطيته أرقامه وساعاته العالية، **هنا فقط لازم تطقطق عليه وتهزئه** وتقوله: "انت ما عندك حياة ولا وش؟" أو "روح شوف لك حياة يا ورع 24 ساعة بالبث!".`
         : SYSTEM_PROMPT;
 
       const body = {
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3-32b',
         messages: [
           { role: 'system', content: systemContent },
           ...newMessages.map(m => ({ role: m.role, content: m.content })),
@@ -387,7 +397,15 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         temperature: 0.7,
       };
 
-      const response = await tryRequest(body, keyIndex);
+      let response: Response;
+      try {
+        response = await tryRequest(body, keyIndex);
+      } catch {
+        // Fallback: if Qwen3 fails on all keys, try Llama as backup
+        console.warn('[AIChat] Qwen3 failed, falling back to Llama 3.3...');
+        body.model = 'llama-3.3-70b-versatile';
+        response = await tryRequest(body, 0);
+      }
       setKeyIndex(0);
 
       const reader = response.body?.getReader();
@@ -418,9 +436,11 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
                 setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
               }
               assistantContent += delta;
+              // Strip any <think>...</think> reasoning blocks from Qwen3
+              const cleanContent = assistantContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: assistantContent };
+                updated[updated.length - 1] = { role: 'assistant', content: cleanContent };
                 return updated;
               });
             }
@@ -431,7 +451,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
       try {
         const { error: ie } = await supabase.from('ai_chat_logs').insert([{
           user_message: text,
-          ai_response: assistantContent,
+          ai_response: assistantContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim(),
           created_at: new Date().toISOString(),
         }]);
         if (ie) console.error('[AIChat] Insert error:', ie.message);

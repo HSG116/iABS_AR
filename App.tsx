@@ -62,8 +62,8 @@ const STATIC_SOCIALS = [
     createSocialLink('instagram', 'https://www.instagram.com/absq/', '21.3K', 'صور وكواليس حصرية'),
     createSocialLink('tiktok', 'https://www.tiktok.com/@iabsq', '42.3K', 'أقوى المقاطع والتحديات'),
     createSocialLink('twitter', 'https://x.com/iABSq', '57.2K', 'أخبار وتحديثات سريعة'),
-    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '9.1K+', 'تواصل مباشر وتنبيهات البث'),
-    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '+9K', 'أكبر تجمع للأساطير'),
+    createSocialLink('whatsapp', 'https://www.whatsapp.com/channel/0029VadbqYx5Ui2eInkr7v2E', '16K', 'تواصل مباشر وتنبيهات البث'),
+    createSocialLink('discord', 'https://discord.com/invite/64aggJ9yRA', '10.5K', 'أكبر تجمع للأساطير'),
     createSocialLink('youtube', 'https://www.youtube.com/channel/UCdIM7MB-8G-FgE7ld3XAQ8w', '+37K', 'أرشيف البثوث ومقاطع مميزة'),
 ].filter(Boolean) as SocialLink[];
 
@@ -653,9 +653,9 @@ export default function App() {
         'Instagram': '21.3K',
         'TikTok': '42.3K',
         'X': '57.2K',
-        'WhatsApp': '9.1K+',
-        'Discord': '+9K',
-        'YouTube': '74.8K'
+        'WhatsApp': '16K',
+        'Discord': '10.5K',
+        'YouTube': '100K'
     });
 
     const [socials, setSocials] = useState<SocialLink[]>([]);
@@ -1139,7 +1139,8 @@ export default function App() {
 
                     <div className="flex items-center gap-6">
                         <div className="hidden md:block text-white/30 text-[10px] font-mono tracking-[0.2em] uppercase drop-shadow-md">{t.headerTitle}</div>
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
+
                             <button
                                 onClick={() => fetchKickStatus()}
                                 className="p-2 rounded-full bg-[#1a1a1a] hover:bg-[#252525] border-t border-l border-white/10 border-b-4 border-black/80 text-white/40 hover:text-kick transition-all hover:-translate-y-1 active:translate-y-0.5 active:border-b-0 shadow-lg"
@@ -1468,18 +1469,22 @@ export default function App() {
 
                     <div className="flex flex-col items-center gap-3 opacity-40 hover:opacity-100 transition-opacity duration-500">
                         <div className="flex items-center gap-2"><span className="text-xs font-bold tracking-[0.3em] text-white">{t.poweredBy}</span></div>
-                        <p className="text-[10px] text-white/60">{t.footer}</p>
+                        <div className="flex items-center justify-center gap-2">
+                            <p className="text-[10px] text-white/60">{t.footer}</p>
+                            <button 
+                                onClick={() => {
+                                    if (isAdmin) setShowAdminDashboard(true);
+                                    else setShowAdminLogin(true);
+                                }}
+                                className="text-white/20 hover:text-white/60 transition-colors"
+                                title={lang === 'en' ? 'Admin Login' : 'تسجيل الدخول'}
+                            >
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         
-                        <button
-                            onClick={() => {
-                                if (isAdmin) setShowAdminDashboard(true);
-                                else setShowAdminLogin(true);
-                            }}
-                            className="mt-4 p-2 rounded-full hover:bg-white/10 transition-colors"
-                            title="Admin"
-                        >
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                        </button>
                     </div>
                 </footer>
             </div>
@@ -1487,42 +1492,104 @@ export default function App() {
             {/* AI Chat */}
             <AIChat lang={lang} />
 
-            {/* Admin Login Modal */}
+            {/* Admin Login Modal - Premium Design */}
             {showAdminLogin && !isAdmin && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-[#0a0a0a] border border-[#FF2D2D]/30 rounded-[32px] p-8 w-full max-w-sm shadow-[0_0_50px_rgba(255,45,45,0.2)] animate-fade-in-up">
-                        <div className="flex justify-center mb-6">
-                            <div className="w-12 h-12 rounded-full bg-[#FF2D2D]/10 flex items-center justify-center border border-[#FF2D2D]/30">
-                                <svg className="w-6 h-6 text-[#FF2D2D]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowAdminLogin(false)}>
+                    <div 
+                        className="bg-gradient-to-b from-[#0d0d0d] to-[#080808] border border-[#FF2D2D]/20 rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-[0_0_80px_rgba(255,45,45,0.15)] animate-fade-in-up relative overflow-hidden group"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Animated Background Glows */}
+                        <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#FF2D2D]/20 blur-[60px] rounded-full animate-pulse-slow pointer-events-none"></div>
+                        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#FF2D2D]/10 blur-[60px] rounded-full animate-pulse-slow pointer-events-none" style={{ animationDelay: '1.5s' }}></div>
+                        
+                        {/* Decorative Border Lines */}
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF2D2D]/50 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF2D2D]/30 to-transparent"></div>
+
+                        <div className="relative z-10">
+                            {/* Icon with Premium Ring */}
+                            <div className="flex justify-center mb-8">
+                                <div className="relative">
+                                    <div className="absolute inset-[-8px] border border-[#FF2D2D]/20 rounded-full animate-spin-slow"></div>
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF2D2D]/20 to-[#FF2D2D]/5 flex items-center justify-center border border-[#FF2D2D]/30 shadow-[0_0_30px_rgba(255,45,45,0.2)]">
+                                        <svg className="w-8 h-8 text-[#FF2D2D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <h2 className="text-xl font-black text-white mb-6 text-center">{lang === 'en' ? 'Admin Login' : 'تسجيل دخول الإدارة'}</h2>
-                        <input
-                            type="email"
-                            className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white mb-3 text-center font-bold focus:border-[#FF2D2D]/50 outline-none transition-colors"
-                            placeholder={lang === 'en' ? 'Email' : 'الإيميل'}
-                            value={adminEmail}
-                            onChange={e => setAdminEmail(e.target.value)}
-                            autoComplete="email"
-                        />
-                        <input 
-                            type="password" 
-                            className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white mb-6 text-center font-bold focus:border-[#FF2D2D]/50 outline-none transition-colors" 
-                            placeholder={lang === 'en' ? 'Password' : 'كلمة السر'}
-                            value={adminPassword} 
-                            onChange={e => setAdminPassword(e.target.value)} 
-                            onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
-                            autoFocus
-                        />
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowAdminLogin(false)} className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-2xl transition-colors">{lang === 'en' ? 'Cancel' : 'إلغاء'}</button>
-                            <button
-                                disabled={adminBusy}
-                                onClick={handleAdminLogin}
-                                className={`flex-1 bg-gradient-to-r from-[#FF2D2D] to-[#ff6b6b] hover:from-[#ff4040] hover:to-[#ff8080] text-black font-black py-3 rounded-2xl transition-all shadow-[0_0_20px_rgba(255,45,45,0.4)] ${adminBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            >
-                                {adminBusy ? (lang === 'en' ? 'Signing in…' : 'جاري الدخول…') : (lang === 'en' ? 'Login' : 'دخول')}
-                            </button>
+
+                            {/* Title */}
+                            <h2 className="text-2xl font-black text-white mb-2 text-center tracking-tight">
+                                {lang === 'en' ? 'Welcome Back' : 'مرحباً بعودتك'}
+                            </h2>
+                            <p className="text-white/40 text-sm text-center mb-8 font-medium">
+                                {lang === 'en' ? 'Sign in to access the admin panel' : 'سجل الدخول للوحة التحكم'}
+                            </p>
+
+                            {/* Email Input */}
+                            <div className="relative mb-4 group/input">
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#FF2D2D]/20 to-transparent opacity-0 group-focus-within/input:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                                <input
+                                    type="email"
+                                    className="relative w-full bg-black/60 border border-white/10 rounded-2xl p-4 pr-12 text-white font-bold focus:border-[#FF2D2D]/50 outline-none transition-all duration-300 placeholder:text-white/20"
+                                    placeholder={lang === 'en' ? 'Email address' : 'البريد الإلكتروني'}
+                                    value={adminEmail}
+                                    onChange={e => setAdminEmail(e.target.value)}
+                                    autoComplete="email"
+                                />
+                                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within/input:text-[#FF2D2D] transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+
+                            {/* Password Input */}
+                            <div className="relative mb-8 group/input">
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#FF2D2D]/20 to-transparent opacity-0 group-focus-within/input:opacity-100 transition-opacity duration-500 blur-sm"></div>
+                                <input 
+                                    type="password" 
+                                    className="relative w-full bg-black/60 border border-white/10 rounded-2xl p-4 pr-12 text-white font-bold focus:border-[#FF2D2D]/50 outline-none transition-all duration-300 placeholder:text-white/20" 
+                                    placeholder={lang === 'en' ? 'Password' : 'كلمة المرور'}
+                                    value={adminPassword} 
+                                    onChange={e => setAdminPassword(e.target.value)} 
+                                    onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                                    autoFocus
+                                />
+                                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within/input:text-[#FF2D2D] transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setShowAdminLogin(false)} 
+                                    className="flex-1 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold py-4 rounded-2xl transition-all duration-300 border border-white/5 hover:border-white/20"
+                                >
+                                    {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                                </button>
+                                <button
+                                    disabled={adminBusy}
+                                    onClick={handleAdminLogin}
+                                    className={`flex-1 bg-gradient-to-r from-[#FF2D2D] to-[#ff6b6b] hover:from-[#ff4040] hover:to-[#ff8080] text-black font-black py-4 rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(255,45,45,0.3)] hover:shadow-[0_0_50px_rgba(255,45,45,0.5)] active:scale-[0.98] ${adminBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                    {adminBusy ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            {lang === 'en' ? 'Signing in…' : 'جاري الدخول…'}
+                                        </span>
+                                    ) : (lang === 'en' ? 'Sign In' : 'تسجيل الدخول')}
+                                </button>
+                            </div>
+
+                            {/* Footer Note */}
+                            <p className="text-center text-[10px] text-white/20 mt-6 font-medium tracking-wider uppercase">
+                                {lang === 'en' ? '🔒 Secure Admin Access' : '🔒 دخول آمن للإدارة'}
+                            </p>
                         </div>
                     </div>
                 </div>
