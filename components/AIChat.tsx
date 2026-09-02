@@ -10,12 +10,12 @@ interface AIChatProps {
 const API_KEYS = import.meta.env.VITE_OPENROUTER_API_KEYS?.split(',') || [];
 
 const MODELS = [
-  'google/gemma-4-31b-it:free',
-  'google/gemma-4-26b-a4b-it:free',
   'minimax/minimax-m3:free',
   'nvidia/nemotron-3-ultra-550b-a55b:free',
   'minimax/minimax-m2.7:free',
   'liquid/lfm-2.5-2.6b:free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
 ];
 
 const SYSTEM_PROMPT = `أنت الذكاء الاصطناعي والمساعد الذكي الخاص بالستريمر iABS (أبو سعد). أنت لست أبو سعد شخصياً، بل أنت "موظف" و "عامل" عنده في القناة. مهمتك هي مساعدة المتابعين والطقطقة عليهم والرد بأسلوب يشبه أسلوب أبو سعد، ولكن مع التوضيح دايماً إنك مجرد ذكاء اصطناعي وعامل عند أبو سعد.
@@ -357,30 +357,52 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
     sendMessageDirect(newMessages, query);
   };
 
-  const tryRequest = async (body: object, keyIdx: number): Promise<Response> => {
-    if (keyIdx >= API_KEYS.length) throw new Error('All API keys failed');
-    console.warn(`[AIChat] Trying OpenRouter API key ${keyIdx + 1}/${API_KEYS.length}...`);
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEYS[keyIdx]}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'iABS Stream Hub',
-      },
-      body: JSON.stringify(body),
-    });
+  const tryRequest = async (body: object): Promise<Response> => {
+    // Fire ALL requests to every API key in parallel — the first one that
+    // succeeds wins. This makes the response dramatically faster than
+    // trying keys one-by-one sequentially (no waiting on rate limits).
+    const attempts = API_KEYS.map((key, idx) =>
+      fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'iABS Stream Hub',
+        },
+        body: JSON.stringify(body),
+      }).then(async (res) => {
+        if (res.ok) return res;
+        // Collect failure info but keep trying others
+        console.warn(`[AIChat] Key ${idx + 1} returned ${res.status}`);
+        const err = new Error(`HTTP ${res.status}`) as Error & { status: number; key: number };
+        err.status = res.status;
+        err.key = idx;
+        throw err;
+      })
+    );
 
-    if (res.status === 429 || res.status === 401 || res.status === 402 || res.status === 403 || res.status === 500 || res.status === 503) {
-      console.warn(`[AIChat] API key ${keyIdx + 1} returned ${res.status}, trying next key...`);
-      if (res.status === 429) await new Promise(r => setTimeout(r, 1500));
-      return tryRequest(body, keyIdx + 1);
-    }
-    if (!res.ok) {
-      console.error(`[AIChat] Request failed with status ${res.status}`);
-      throw new Error(`HTTP ${res.status}`);
-    }
-    return res;
+    // Resolve as soon as the FIRST successful (non-throwing) promise settles.
+    // If a request 429s instantly, we don't wait on it — the ok ones win.
+    const succeed = (p: Promise<Response>): Promise<{ ok: true; res: Response } | { ok: false; res: null }> =>
+      p.then(
+        (res) => ({ ok: true as const, res }),
+        () => ({ ok: false as const, res: null })
+      );
+
+    const races = attempts.map(succeed);
+    // Fast winner: pick whichever successful one resolves first
+    const winner = await new Promise<{ ok: true; res: Response }>(async (resolve, reject) => {
+      let settled = 0;
+      for (const r of races) {
+        r.then((result) => {
+          settled++;
+          if (result.ok) resolve(result);
+          else if (settled >= races.length) reject(new Error('All API keys failed'));
+        });
+      }
+    });
+    return winner.res;
   };
 
   const sendMessageDirect = async (newMessages: Message[], text: string) => {
@@ -412,7 +434,7 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         };
         console.warn(`[AIChat] Trying model: ${model}`);
         try {
-          response = await tryRequest(body, keyIndex);
+          response = await tryRequest(body);
           break;
         } catch (e) {
           console.warn(`[AIChat] Model ${model} failed on all keys, trying next model...`);
