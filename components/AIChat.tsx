@@ -7,7 +7,16 @@ interface AIChatProps {
   streamerInfo?: string;
 }
 
-const API_KEYS = import.meta.env.VITE_GROQ_API_KEYS?.split(',') || [];
+const API_KEYS = import.meta.env.VITE_OPENROUTER_API_KEYS?.split(',') || [];
+
+const MODELS = [
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'minimax/minimax-m3:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'minimax/minimax-m2.7:free',
+  'liquid/lfm-2.5-2.6b:free',
+];
 
 const SYSTEM_PROMPT = `أنت الذكاء الاصطناعي والمساعد الذكي الخاص بالستريمر iABS (أبو سعد). أنت لست أبو سعد شخصياً، بل أنت "موظف" و "عامل" عنده في القناة. مهمتك هي مساعدة المتابعين والطقطقة عليهم والرد بأسلوب يشبه أسلوب أبو سعد، ولكن مع التوضيح دايماً إنك مجرد ذكاء اصطناعي وعامل عند أبو سعد.
 
@@ -350,19 +359,21 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
 
   const tryRequest = async (body: object, keyIdx: number): Promise<Response> => {
     if (keyIdx >= API_KEYS.length) throw new Error('All API keys failed');
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    console.warn(`[AIChat] Trying OpenRouter API key ${keyIdx + 1}/${API_KEYS.length}...`);
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${API_KEYS[keyIdx]}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'iABS Stream Hub',
       },
       body: JSON.stringify(body),
     });
-    
-    if (res.status === 429 || res.status === 401 || res.status === 500 || res.status === 400) {
-      console.warn(`[AIChat] API key ${keyIdx} returned ${res.status}, trying next key...`);
-      // For Groq 429 rate limit, wait slightly before retry
-      if (res.status === 429) await new Promise(r => setTimeout(r, 1000));
+
+    if (res.status === 429 || res.status === 401 || res.status === 402 || res.status === 403 || res.status === 500 || res.status === 503) {
+      console.warn(`[AIChat] API key ${keyIdx + 1} returned ${res.status}, trying next key...`);
+      if (res.status === 429) await new Promise(r => setTimeout(r, 1500));
       return tryRequest(body, keyIdx + 1);
     }
     if (!res.ok) {
@@ -386,25 +397,30 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         ? SYSTEM_PROMPT + `\n\nهذي بيانات المتصدرين من بوتريكس حالياً:\n${JSON.stringify(botrixData.slice(0, 20))}\n\nجاوب على أسئلة المستخدم عن حسابه أو نقاطه بمعلوماتهم (المستوى، وقت المشاهدة، XP، النقاط).\n🔥 قاعدة مهمة جداً للطقطقة: إذا سألك أي شخص عن "ساعاته" أو "نقاطه" وهو لسا ما علمك وش اسمه، أول شيء قله "وش اسمك في الكيك يا ورع عشان أشوف؟" (لا تطقطق عليه هنا). أما إذا علمك اسمه وبحثت عنه في البيانات ولقيته وعطيته أرقامه وساعاته العالية، **هنا فقط لازم تطقطق عليه وتهزئه** وتقوله: "انت ما عندك حياة ولا وش؟" أو "روح شوف لك حياة يا ورع 24 ساعة بالبث!".`
         : SYSTEM_PROMPT;
 
-      const body = {
-        model: 'qwen/qwen3-32b',
-        messages: [
-          { role: 'system', content: systemContent },
-          ...newMessages.map(m => ({ role: m.role, content: m.content })),
-        ],
-        stream: true,
-        max_tokens: 1024,
-        temperature: 0.7,
-      };
+      let response: Response | null = null;
 
-      let response: Response;
-      try {
-        response = await tryRequest(body, keyIndex);
-      } catch {
-        // Fallback: if Qwen3 fails on all keys, try Llama as backup
-        console.warn('[AIChat] Qwen3 failed, falling back to Llama 3.3...');
-        body.model = 'llama-3.3-70b-versatile';
-        response = await tryRequest(body, 0);
+      for (const model of MODELS) {
+        const body = {
+          model,
+          messages: [
+            { role: 'system', content: systemContent },
+            ...newMessages.map(m => ({ role: m.role, content: m.content })),
+          ],
+          stream: true,
+          max_tokens: 1024,
+          temperature: 0.7,
+        };
+        console.warn(`[AIChat] Trying model: ${model}`);
+        try {
+          response = await tryRequest(body, keyIndex);
+          break;
+        } catch (e) {
+          console.warn(`[AIChat] Model ${model} failed on all keys, trying next model...`);
+        }
+      }
+
+      if (!response) {
+        throw new Error('All models failed');
       }
       setKeyIndex(0);
 
