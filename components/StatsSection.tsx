@@ -20,6 +20,24 @@ const Skeleton: React.FC<{ className: string }> = ({ className }) => (
   <div className={`bg-white/5 animate-pulse rounded-xl ${className}`}></div>
 );
 
+// Animated followers counter (rAF, reduced-motion safe)
+const KickCount: React.FC<{ value: number }> = ({ value }) => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(value); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / 1400);
+      setN(Math.round(value * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <span dir="ltr">{n.toLocaleString('en-US')}</span>;
+};
+
 // --- NEW GRADIENT ICONS ---
 
 const DiamondIcon = ({ className }: { className?: string }) => (
@@ -338,50 +356,72 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     <>
       <div className="w-full space-y-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
 
-        {/* --- CHANNEL STATS BAR --- */}
+        {/* --- KICK FORTRESS: followers + sub badges in 3D --- */}
         {channelInfo ? (
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-kick/0 via-kick/5 to-kick/0 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-            <div className="relative flex flex-col md:flex-row items-center justify-between bg-[#080808]/60 backdrop-blur-md border border-white/5 p-6 md:p-8 rounded-[30px] shadow-2xl overflow-hidden hover:border-white/10 transition-all gap-6 md:gap-0">
+          <div className="relative [perspective:1200px]">
+            <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-b from-[#53FC18]/15 via-transparent to-transparent blur-2xl pointer-events-none" aria-hidden="true" />
+            <div className="group card-sheen relative overflow-hidden rounded-[30px] border border-[#53FC18]/20 bg-[#070a06]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(83,252,24,0.25)] [transform-style:preserve-3d]">
+              <div aria-hidden="true" className="absolute -end-8 -bottom-12 opacity-[0.07] scale-[3.2] origin-bottom-right pointer-events-none text-[#53FC18]">
+                <KickIcon className="w-24 h-24" />
+              </div>
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-l from-transparent via-[#53FC18]/70 to-transparent" />
+              <div className="relative p-5 sm:p-8 flex flex-col lg:flex-row items-center gap-6 lg:gap-10 [transform-style:preserve-3d]">
 
-              {/* Background Noise */}
-
-
-              <div className="flex items-center gap-6 relative z-10">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-[#FF2D2D] blur-xl opacity-20 animate-pulse"></div>
-                  <div className="p-4 bg-[#111] text-white rounded-2xl border border-white/10 shadow-lg relative">
-                    <KickIcon className="w-10 h-10 text-[#53FC18]" />
+                {/* 3D K emblem + live followers */}
+                <div className="flex items-center gap-5 shrink-0">
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 [transform:translateZ(36px)]">
+                    <KickIcon className="absolute inset-0 m-auto w-10 h-10 sm:w-12 sm:h-12 translate-x-[6px] translate-y-[7px] text-[#123f0c]" aria-hidden="true" />
+                    <KickIcon className="absolute inset-0 m-auto w-10 h-10 sm:w-12 sm:h-12 translate-x-[3px] translate-y-[3px] text-[#1e6b12]" aria-hidden="true" />
+                    <div className="absolute inset-0 rounded-[24px] bg-gradient-to-b from-[#8dff6a] via-[#53FC18] to-[#2b9e1c] border border-[#c6ffab]/60 shadow-[0_0_44px_rgba(83,252,24,0.5),inset_0_2px_0_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
+                      <KickIcon className="w-10 h-10 sm:w-12 sm:h-12 text-black" />
+                    </div>
+                  </div>
+                  <div className="min-w-0 [transform:translateZ(18px)]">
+                    <p className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.25em] text-[#53FC18] uppercase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#53FC18] animate-pulse shadow-[0_0_8px_#53FC18]" />
+                      {t.followers} • KICK
+                    </p>
+                    <p className="text-4xl sm:text-5xl font-black text-white tracking-tighter leading-none mt-1 drop-shadow-lg">
+                      <KickCount value={channelInfo.followers_count} />
+                    </p>
+                    <a href="https://kick.com/iabs" target="_blank" rel="noopener noreferrer"
+                      className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-black px-4 py-2 rounded-full border border-[#53FC18]/50 text-[#53FC18] hover:bg-[#53FC18] hover:text-black active:scale-95 transition-all duration-300">
+                      {lang === 'en' ? 'FOLLOW' : 'تابع الآن'}
+                      <svg className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </a>
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter drop-shadow-lg">{formatNumber(channelInfo.followers_count)}</h3>
-                  <p className="text-xs text-white/40 uppercase tracking-[0.2em] font-bold mt-1 pl-1">{t.followers}</p>
-                </div>
-              </div>
 
-              <div className="flex flex-col md:flex-row items-center gap-3 relative z-10">
-                {channelInfo.subscriber_badges && channelInfo.subscriber_badges.length > 0 && (
-                  <>
-                    <div className="flex flex-col items-center md:items-end">
-                      <span className="text-[10px] text-white/30 font-bold uppercase tracking-[0.25em]">{t.subBadges}</span>
-                      <div className="h-0.5 w-8 bg-[#FF2D2D]/50 rounded-full mt-1 hidden md:block"></div>
-                    </div>
-                    <div className="flex flex-wrap justify-center md:justify-end gap-2">
-                      {channelInfo.subscriber_badges.sort((a, b) => a.months - b.months).map((badge) => (
-                        <div key={badge.id} className="relative group/badge transition-transform duration-300 hover:-translate-y-2">
-                          <div className="absolute -inset-2 bg-white/20 blur-md rounded-full opacity-0 group-hover/badge:opacity-100 transition-opacity"></div>
-                          <img
-                            src={badge.badge_image.src}
-                            alt={`${badge.months} months`}
-                            className="w-12 h-12 object-contain drop-shadow-xl relative z-10"
-                            title={`${badge.months} Months`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+                {/* sub badges podium */}
+                <div className="flex-1 w-full min-w-0">
+                  {channelInfo.subscriber_badges && channelInfo.subscriber_badges.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-center lg:justify-end gap-2.5 mb-4">
+                        <span className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{t.subBadges}</span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#53FC18]/15 border border-[#53FC18]/40 text-[#53FC18]" dir="ltr">{channelInfo.subscriber_badges.length}</span>
+                      </div>
+                      <div className="flex flex-wrap justify-center lg:justify-end gap-2.5 sm:gap-3.5">
+                        {[...channelInfo.subscriber_badges].sort((a, b) => a.months - b.months).map((badge, i) => (
+                          <div key={badge.id} className="flex flex-col items-center opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
+                            <div className="group/badge relative w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 p-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#53FC18]/60 hover:shadow-[0_14px_30px_-8px_rgba(83,252,24,0.5)]">
+                              <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-white/40 to-transparent" />
+                              <img
+                                src={badge.badge_image.src}
+                                alt={`${badge.months} months subscriber badge`}
+                                loading="lazy"
+                                className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)] transition-transform duration-300 group-hover/badge:scale-110"
+                                title={`${badge.months} Months`}
+                              />
+                            </div>
+                            <span className="mt-1.5 text-[9px] sm:text-[10px] font-black text-white/50 tracking-wider" dir="ltr">{badge.months}M</span>
+                            <span className="w-8 h-[3px] rounded-full bg-black/60 border-b border-white/10 mt-1" aria-hidden="true" />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
               </div>
             </div>
           </div>
