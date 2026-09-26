@@ -207,6 +207,9 @@
     /* ===== Alert tiers: 3D metal bars grow ===== */
     .tier-bar { transform-origin: bottom; transform: scaleY(0); animation: tier-grow 0.9s cubic-bezier(0.16,1,0.3,1) forwards; will-change: transform; }
     @keyframes tier-grow { 0% { transform: scaleY(0); } 60% { transform: scaleY(1.04); } 100% { transform: scaleY(1); } }
+    /* ===== Leaderboard progress bars grow ===== */
+    .bar-grow { transform: scaleX(0); animation: bar-grow 1s cubic-bezier(0.16,1,0.3,1) forwards; will-change: transform; }
+    @keyframes bar-grow { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
 
     /* ===== Watermark hero mark: red fire + living motion + light static 3D ===== */
     .wm-mark::before { content: ""; position: absolute; inset: -12% -6%; background: radial-gradient(ellipse 55% 45% at 50% 55%, rgba(255,45,45,0.28), transparent 70%); filter: blur(30px); animation: wm-aura 4.5s ease-in-out infinite; pointer-events: none; }

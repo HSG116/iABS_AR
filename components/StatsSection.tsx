@@ -38,45 +38,48 @@ const KickCount: React.FC<{ value: number }> = ({ value }) => {
   return <span dir="ltr">{n.toLocaleString('en-US')}</span>;
 };
 
-// --- NEW GRADIENT ICONS ---
+// --- CHAMPION ICONS ---
 
-const DiamondIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} strokeWidth="0">
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
     <defs>
-      <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="crownGold" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#FDE68A" />
-        <stop offset="100%" stopColor="#D97706" />
+        <stop offset="55%" stopColor="#F59E0B" />
+        <stop offset="100%" stopColor="#B45309" />
       </linearGradient>
     </defs>
-    <path stroke="url(#goldGradient)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    <path fill="url(#goldGradient)" fillOpacity="0.1" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    <path fill="url(#crownGold)" d="M2.5 8.5 6.5 12l5.5-7 5.5 7 4-3.5L20 18H4L2.5 8.5z" />
+    <rect x="4" y="18.6" width="16" height="2.2" rx="1.1" fill="url(#crownGold)" />
+    <circle cx="12" cy="12.6" r="1.4" fill="#FFF7D6" />
   </svg>
 );
 
-const FlameIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} strokeWidth="0">
+const BoltIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
     <defs>
-      <linearGradient id="roseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="boltRose" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#FDA4AF" />
-        <stop offset="100%" stopColor="#E11D48" />
+        <stop offset="55%" stopColor="#F43F5E" />
+        <stop offset="100%" stopColor="#9F1239" />
       </linearGradient>
     </defs>
-    <path stroke="url(#roseGradient)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
-    <path stroke="url(#roseGradient)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
-    <path fill="url(#roseGradient)" fillOpacity="0.1" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+    <path fill="url(#boltRose)" d="M13 2 4.5 13.5H10L9 22l8.5-11.5H12L13 2z" />
   </svg>
 );
 
-const StarIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} strokeWidth="0">
+const MedalIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
     <defs>
-      <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="medalCyan" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#67E8F9" />
-        <stop offset="100%" stopColor="#06B6D4" />
+        <stop offset="55%" stopColor="#0891B2" />
+        <stop offset="100%" stopColor="#155E75" />
       </linearGradient>
     </defs>
-    <path stroke="url(#cyanGradient)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-    <path fill="url(#cyanGradient)" fillOpacity="0.1" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    <path stroke="url(#medalCyan)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M8.5 9.5 6 2h4.5L12 6.8 13.5 2H18l-2.5 7.5" />
+    <circle cx="12" cy="15" r="5.2" stroke="url(#medalCyan)" strokeWidth="2.2" />
+    <circle cx="12" cy="15" r="1.6" fill="url(#medalCyan)" />
   </svg>
 );
 
@@ -104,7 +107,12 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       text: 'text-yellow-400',
       bgIcon: 'bg-yellow-500/10',
       gradient: 'from-yellow-400 to-amber-600',
-      subText: 'text-yellow-200/50'
+      subText: 'text-yellow-200/50',
+      frame: 'from-yellow-400/70 via-yellow-400/10 to-transparent',
+      glowColor: '234,179,8',
+      barBright: '#FDE68A',
+      barDeep: '#B45309',
+      medalBg: 'linear-gradient(160deg,#FDE68A,#B45309)'
     },
     rose: {
       border: 'border-[#FF2D2D]/20',
@@ -112,7 +120,12 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       text: 'text-[#FF2D2D]',
       bgIcon: 'bg-[#FF2D2D]/10',
       gradient: 'from-[#FF2D2D] to-red-800',
-      subText: 'text-red-200/50'
+      subText: 'text-red-200/50',
+      frame: 'from-[#FF2D2D]/70 via-[#FF2D2D]/10 to-transparent',
+      glowColor: '255,45,45',
+      barBright: '#FDA4AF',
+      barDeep: '#9F1239',
+      medalBg: 'linear-gradient(160deg,#FB7185,#9F1239)'
     },
     cyan: {
       border: 'border-cyan-500/20',
@@ -120,7 +133,12 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       text: 'text-cyan-400',
       bgIcon: 'bg-cyan-500/10',
       gradient: 'from-cyan-400 to-blue-600',
-      subText: 'text-cyan-200/50'
+      subText: 'text-cyan-200/50',
+      frame: 'from-cyan-400/70 via-cyan-400/10 to-transparent',
+      glowColor: '6,182,212',
+      barBright: '#67E8F9',
+      barDeep: '#0E7490',
+      medalBg: 'linear-gradient(160deg,#67E8F9,#0E7490)'
     }
   }[accentColor];
 
@@ -152,17 +170,15 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
   if (!data || data.length === 0) {
     return (
       <div className={`
-                 relative flex flex-col items-center justify-center p-6 text-center rounded-[32px] overflow-hidden
-                 bg-black/60 backdrop-blur-lg border border-white/5
-                 transition-all duration-700 hover:border-white/10 group
+                 relative flex flex-col items-center justify-center p-6 text-center rounded-[26px] overflow-hidden
+                 bg-[#080808]/80 backdrop-blur-xl border border-dashed border-white/10
+                 transition-all duration-500 hover:border-white/20 group
                  ${isMain ? 'lg:-mt-4 z-10 min-h-[300px] md:min-h-[440px]' : 'min-h-[250px] md:min-h-[380px]'}
                  ${className}
              `}
         style={{ animationDelay: `${delay}ms` }}>
-        {/* Background Noise & Sheen */}
-
-
-        <div className={`p-4 md:p-5 rounded-full ${config.bgIcon} mb-4 md:mb-5 opacity-50 group-hover:opacity-100 transition-opacity duration-500 ring-1 ring-white/5`}>
+        <div className={`absolute top-0 inset-x-0 h-[2px] bg-gradient-to-l from-transparent via-white/20 to-transparent opacity-60`} />
+        <div className={`p-4 md:p-5 rounded-2xl ${config.bgIcon} mb-4 md:mb-5 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 border border-white/10`}>
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `w-6 h-6 md:w-8 md:h-8 ${config.text} drop-shadow-lg` })}
         </div>
         <h3 className={`text-sm md:text-base font-bold text-white/60 mb-1 uppercase tracking-[0.2em]`}>{title}</h3>
@@ -172,97 +188,76 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
   }
 
   const sorted = [...data].sort((a, b) => b.quantity - a.quantity).slice(0, 10);
+  const maxQ = Math.max(1, ...sorted.map(e => e.quantity || 0));
+  const totalQ = sorted.reduce((s, e) => s + (e.quantity || 0), 0);
+  const champ = sorted[0];
 
   return (
     <div
-      className={`
-                group relative flex flex-col rounded-[24px] md:rounded-[32px] overflow-hidden transition-all duration-700
-                bg-[#050505]/80 backdrop-blur-lg border border-white/5
-                ${config.glow} hover:border-white/20
-                ${isMain ? 'md:-mt-8 z-20 md:scale-105 shadow-2xl ring-1 ring-white/10' : 'shadow-xl'}
-                ${className}
-            `}
+      className={`group relative rounded-[26px] p-[1.5px] bg-gradient-to-b ${config.frame} ${isMain ? 'md:-mt-8 z-20 md:scale-[1.03]' : ''} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Deep Gradient Background Effect */}
-      <div className={`absolute top-0 left-0 right-0 h-24 md:h-32 bg-gradient-to-b ${config.bgIcon.replace('bg-', 'from-').replace('/10', '/20')} to-transparent pointer-events-none opacity-40 blur-2xl`}></div>
+      <div className="absolute -inset-1.5 rounded-[28px] blur-2xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none" style={{ background: `linear-gradient(180deg, rgba(${config.glowColor},0.35), transparent 60%)` }} />
+      <div className="card-sheen relative rounded-[24.5px] bg-[#080808]/95 backdrop-blur-xl overflow-hidden perspective-1000 [transform-style:preserve-3d]">
+        <div className="absolute top-0 inset-x-8 h-[2px] rounded-full opacity-80" style={{ background: `linear-gradient(90deg, transparent, rgba(${config.glowColor},0.9), transparent)` }} />
 
-      {/* Noise Texture */}
-
-
-      {/* Header */}
-      <div className="relative p-4 md:p-6 flex flex-col items-center justify-center text-center border-b border-white/5 z-10">
-        <div className={`
-                    w-10 h-10 md:w-14 md:h-14 mb-2 md:mb-3 rounded-2xl flex items-center justify-center 
-                    bg-gradient-to-br from-white/10 to-transparent border border-white/10 
-                    shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-500
-                 `}>
-          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-5 h-5 md:w-7 md:h-7 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" }) : icon}
+        {/* Header with 3D medallion */}
+        <div className="relative p-4 md:p-6 pb-3 md:pb-4 flex items-center gap-3.5 md:gap-4 border-b border-white/5 z-10">
+          <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/15 shrink-0 [transform:translateZ(28px)] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+            style={{ background: config.medalBg, boxShadow: `0 12px 30px -8px rgba(${config.glowColor},0.55), inset 0 1px 0 rgba(255,255,255,0.45)` }}>
+            {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6 md:w-8 md:h-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" }) : icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className={`text-lg md:text-2xl font-black text-white tracking-tight leading-none mb-1 ${lang === 'ar' ? 'font-arabic' : ''}`}>{title}</h3>
+            <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.25em] md:tracking-[0.3em] bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>{subtitle}</span>
+          </div>
+          <div className="text-end shrink-0">
+            <p className="text-base md:text-xl font-black text-white leading-none" dir="ltr">{formatNumber(totalQ)}</p>
+            <p className={`text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] mt-1 ${config.subText}`}>{t.gift} • {sorted.length}</p>
+          </div>
         </div>
-        <div>
-          <h3 className={`text-base md:text-2xl font-black text-white tracking-tight leading-none mb-0.5 md:mb-1 ${lang === 'ar' ? 'font-arabic' : ''}`}>{title}</h3>
-          <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent opacity-80`}>{subtitle}</span>
-        </div>
-      </div>
 
-      {/* List */}
-      <div className="flex-1 p-2 md:p-3 space-y-1.5 md:space-y-2 relative overflow-y-auto max-h-[300px] md:max-h-[400px] scrollbar-hide">
-        {sorted.map((entry, idx) => {
-          const isTop3 = idx < 3;
-          return (
-            <div
-              key={idx}
-              className={`
-                                relative flex items-center justify-between p-2 md:p-3.5 rounded-xl md:rounded-2xl transition-all duration-300 group/row
-                                ${isTop3 ? 'bg-gradient-to-r from-white/[0.03] to-transparent border border-white/5' : 'hover:bg-white/[0.02]'}
-                            `}
-            >
-              <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                {/* Rank Badge */}
-                <div className="shrink-0 flex justify-center w-6 md:w-8">
-                  {renderRankBadge(idx + 1)}
-                </div>
+        {/* Champion banner */}
+        {champ && (
+          <div className="mx-3 md:mx-4 mt-3 rounded-2xl p-[1px]" style={{ background: 'linear-gradient(120deg,#FDE68A,#B45309,#FDE68A)' }}>
+            <div className="rounded-[15px] bg-black/85 px-3 py-2.5 flex items-center gap-2.5 overflow-hidden">
+              <CrownIcon className="w-6 h-6 md:w-7 md:h-7 shrink-0 drop-shadow-[0_0_10px_rgba(255,215,0,0.6)]" />
+              <p className="flex-1 min-w-0 text-sm md:text-base font-black text-white truncate" dir="auto">{champ.username}</p>
+              <p className="text-sm md:text-base font-black text-[#FFD700] shrink-0" dir="ltr">{formatNumber(champ.quantity)}</p>
+            </div>
+          </div>
+        )}
 
-                {/* User Info */}
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className={`
-                                         text-sm md:text-base font-bold truncate transition-colors pr-2
-                                         ${idx === 0 ? 'text-white drop-shadow-lg' : 'text-white/95 drop-shadow-md'}
-                                         group-hover/row:text-white
-                                         leading-tight
-                                     `}>
+        {/* List with progress bars */}
+        <div className="flex-1 p-2.5 md:p-4 space-y-1.5 md:space-y-2.5 relative overflow-y-auto max-h-[300px] md:max-h-[400px] scrollbar-hide">
+          {sorted.slice(1).map((entry, idx) => {
+            const rank = idx + 2;
+            const pct = Math.max(4, Math.round(((entry.quantity || 0) / maxQ) * 100));
+            return (
+              <div key={idx} className="relative rounded-xl md:rounded-2xl p-2 md:p-3 transition-all duration-300 group/row hover:bg-white/[0.04] hover:-translate-y-0.5 border border-transparent hover:border-white/10">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                  <div className="shrink-0 flex justify-center w-6 md:w-8">
+                    {renderRankBadge(rank)}
+                  </div>
+                  <span className="flex-1 min-w-0 text-[13px] md:text-[15px] font-bold text-white/90 truncate group-hover/row:text-white transition-colors" dir="auto">
                     {entry.username}
                   </span>
-                  {isTop3 && (
-                    <div className="hidden md:block h-0.5 w-12 rounded-full bg-gradient-to-r from-white/30 to-transparent mt-1"></div>
-                  )}
+                  <span className={`text-[13px] md:text-[15px] font-black tracking-wide ${config.text} shrink-0`} dir="ltr">
+                    {formatNumber(entry.quantity)}
+                  </span>
+                </div>
+                <div className="mt-1.5 md:mt-2 ms-8 md:ms-11 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="bar-grow h-full rounded-full" style={{ width: `${pct}%`, background: `linear-gradient(to left, ${config.barBright}, ${config.barDeep})`, boxShadow: `0 0 8px rgba(${config.glowColor},0.5)`, animationDelay: `${idx * 80}ms`, transformOrigin: lang === 'ar' ? 'right' : 'left' }} />
                 </div>
               </div>
+            );
+          })}
+          <div className="h-3"></div>
+        </div>
 
-              {/* Amount */}
-              <div className="flex items-center gap-2 pl-3 bg-black/30 rounded-lg px-3 py-1.5 border border-white/10">
-                <span className={`
-                                         text-sm md:text-base font-black tracking-wide 
-                                         ${idx === 0 ? 'text-white drop-shadow-lg' : config.text}
-                                         group-hover/row:scale-105 transition-all
-                                         leading-none
-                                     `}>
-                  {formatNumber(entry.quantity)}
-                </span>
-                {idx === 0 && (
-                  <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-white animate-pulse shadow-[0_0_10px_white]"></div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Decorative spacer at bottom */}
-        <div className="h-4"></div>
+        {/* Bottom Fade Mask */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 md:h-16 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-20"></div>
       </div>
-
-      {/* Bottom Fade Mask */}
-      <div className="absolute bottom-0 left-0 right-0 h-12 md:h-16 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-20"></div>
     </div>
   );
 };
@@ -403,7 +398,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                       </div>
                       <div className="flex flex-wrap justify-center lg:justify-end gap-2.5 sm:gap-3.5">
                         {[...channelInfo.subscriber_badges].sort((a, b) => a.months - b.months).map((badge, i) => (
-                          <div key={badge.id} className="flex flex-col items-center opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
+                          <div key={badge.id} className="flex flex-col items-center basis-[23%] sm:basis-auto opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
                             <div className="group/badge relative w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 p-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF2D2D]/60 hover:shadow-[0_14px_30px_-8px_rgba(255,45,45,0.55)]">
                               <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-white/40 to-transparent" />
                               <img
@@ -449,7 +444,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 title={t.allTime}
                 subtitle="Legends"
                 data={leaderboards.gifts}
-                icon={<DiamondIcon />}
+                icon={<CrownIcon />}
                 accentColor="yellow"
                 isMain={true}
                 lang={lang}
@@ -464,7 +459,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 title={t.weekly}
                 subtitle="Active"
                 data={leaderboards.gifts_week}
-                icon={<FlameIcon />}
+                icon={<BoltIcon />}
                 accentColor="rose"
                 lang={lang}
                 t={t}
@@ -478,7 +473,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 title={t.monthly}
                 subtitle="Stars"
                 data={leaderboards.gifts_month}
-                icon={<StarIcon />}
+                icon={<MedalIcon />}
                 accentColor="cyan"
                 lang={lang}
                 t={t}
