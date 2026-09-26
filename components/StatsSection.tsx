@@ -370,11 +370,12 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                 {/* 3D K emblem + live followers */}
                 <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 shrink-0 w-full sm:w-auto">
                   <div className="relative w-[72px] h-[72px] sm:w-24 sm:h-24 shrink-0 [transform:translateZ(36px)]">
-                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[6px] translate-y-[7px] text-[#3d0a0a]" aria-hidden="true" />
-                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[3px] translate-y-[3px] text-[#7a1010]" aria-hidden="true" />
-                    <div className="absolute inset-0 rounded-[22px] sm:rounded-[24px] bg-gradient-to-b from-[#ff9a9a] via-[#FF2D2D] to-[#a31212] border border-[#ffb3b3]/60 shadow-[0_0_44px_rgba(255,45,45,0.55),inset_0_2px_0_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
+                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[6px] translate-y-[7px] text-[#123f0c]" aria-hidden="true" />
+                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[3px] translate-y-[3px] text-[#1e6b12]" aria-hidden="true" />
+                    <div className="absolute inset-0 rounded-[22px] sm:rounded-[24px] bg-gradient-to-b from-[#8dff6a] via-[#53FC18] to-[#2b9e1c] border border-[#c6ffab]/60 shadow-[0_0_44px_rgba(83,252,24,0.55),inset_0_2px_0_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
                       <KickIcon className="w-9 h-9 sm:w-12 sm:h-12 text-black" />
                     </div>
+                    <span className="absolute -bottom-2 inset-x-6 h-3 rounded-full bg-[#53FC18]/50 blur-md" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 text-center sm:text-start [transform:translateZ(18px)]">
                     <p className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.25em] text-[#ff6b6b] uppercase">
