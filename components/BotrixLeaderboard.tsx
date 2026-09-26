@@ -113,13 +113,14 @@ const BotrixLeaderboard: React.FC<BotrixLeaderboardProps> = ({ lang }) => {
 
   const sorted = useMemo(() => {
     if (!data) return [];
-    return [...data].sort((a, b) => (b.watchtime || 0) - (a.watchtime || 0)).slice(0, 12);
+    return [...data].sort((a, b) => (b.watchtime || 0) - (a.watchtime || 0)).slice(0, 50);
   }, [data]);
 
   // Enrich top chatters with live Kick data (followers, bio, verified, avatar)
+  // Top 15 get full enrichment; the rest render instantly with Botrix data.
   useEffect(() => {
     if (!sorted.length) return;
-    const toFetch = sorted.map(e => e.name).filter(n => !fetchedRef.current.has(n.toLowerCase()));
+    const toFetch = sorted.slice(0, 15).map(e => e.name).filter(n => !fetchedRef.current.has(n.toLowerCase()));
     if (!toFetch.length) return;
     toFetch.forEach(n => fetchedRef.current.add(n.toLowerCase()));
     let cancelled = false;
