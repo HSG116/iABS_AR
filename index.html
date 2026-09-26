@@ -104,13 +104,8 @@
     #boot .d2 { transform: translate(14px, 18px); opacity: 0.45; }
     #boot .b-logo { position: relative; width: 88px; height: 88px; border-radius: 26px; overflow: hidden; box-shadow: 0 20px 55px -8px rgba(255,45,45,0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
     #boot .b-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    #boot .b-name { color: #fff; font-weight: 900; font-size: 30px; letter-spacing: 0.4em; text-indent: 0.4em; text-shadow: 0 0 26px rgba(255,45,45,0.4); }
-    #boot .b-name b { display: inline-block; font-weight: 900; opacity: 0; animation: bletters 0.55s cubic-bezier(0.16,1,0.3,1) forwards; }
-    #boot .b-name b:nth-child(1) { color: #FF2D2D; animation-delay: 0.05s; }
-    #boot .b-name b:nth-child(2) { animation-delay: 0.15s; }
-    #boot .b-name b:nth-child(3) { animation-delay: 0.25s; }
-    #boot .b-name b:nth-child(4) { animation-delay: 0.35s; }
-    @keyframes bletters { 0% { opacity: 0; transform: translateY(20px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    #boot .b-name { color: #fff; font-weight: 900; font-size: 26px; letter-spacing: 0.35em; text-indent: 0.35em; }
+    #boot .b-name span { color: #FF2D2D; }
     #boot .b-sub { color: rgba(255,255,255,0.42); font-size: 10px; font-weight: 700; letter-spacing: 0.5em; text-indent: 0.5em; opacity: 0; animation: bfade 0.8s ease 0.55s forwards; }
     @keyframes bfade { to { opacity: 1; } }
     #boot .b-bar { width: 172px; height: 3px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 0 18px rgba(255,45,45,0.25); }
@@ -287,7 +282,7 @@
 </head>
 
 <body class="bg-black text-white overflow-x-hidden antialiased">
-  <div id="root"><div id="boot" aria-hidden="true"><div class="b-aura"></div><div class="b-stars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="b-wrap"><div class="b-ring r1"></div><div class="b-ring r2"></div><div class="b-ring r3"></div><div class="b-depth d1"></div><div class="b-depth d2"></div><div class="b-logo"><img src="/favicon.png" alt="" fetchpriority="high"></div></div><div class="b-name"><b>i</b><b>A</b><b>B</b><b>S</b></div><div class="b-sub">STREAM HUB</div><div class="b-bar"><i></i></div></div></div>
+  <div id="root"><div id="boot" aria-hidden="true"><div class="b-aura"></div><div class="b-stars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="b-wrap"><div class="b-ring r1"></div><div class="b-ring r2"></div><div class="b-ring r3"></div><div class="b-depth d1"></div><div class="b-depth d2"></div><div class="b-logo"><img src="/favicon.png" alt="" fetchpriority="high"></div></div><div class="b-name"><span>i</span>ABS</div><div class="b-sub">STREAM HUB</div><div class="b-bar"><i></i></div></div></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 
