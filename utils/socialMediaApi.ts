@@ -1,4 +1,13 @@
-interface SocialMediaStats {
+// Live social counters — 3-layer architecture per platform:
+//   1) /api/social (server-side: Vercel Edge in prod, vite middleware in dev)
+//   2) Direct client fetch (CORS-open sources only)
+//   3) Verified static fallback (last confirmed live numbers, 2026-09-26)
+//
+// Verified live on 2026-09-26:
+//   TikTok @iabsq .... 68,337 (TikMatrix) | YouTube UC... 110,106 (Mixerno)
+//   X @iABSq ......... 68,568 (FixTweet, verified account)
+
+export interface SocialMediaStats {
   instagram?: number;
   tiktok?: number;
   twitter?: number;
@@ -6,17 +15,20 @@ interface SocialMediaStats {
   whatsapp?: number;
 }
 
-const FALLBACK = {
-  instagram: 21300,
-  tiktok: 42300,
-  twitter: 57200,
-  youtube: 74800,
-  whatsapp: 9100,
+export const FALLBACK = {
+  instagram: 21300, // curated — Instagram walls all free readers for this account
+  tiktok: 68337,
+  twitter: 68568,
+  youtube: 110106,
+  whatsapp: 9100, // no public API — curated
 };
 
-async function fetchJson(url: string): Promise<any> {
+const CACHE_KEY = 'iabs_social_cache_v1';
+export const SOCIAL_TTL_MS = 5 * 60 * 1000;
+
+async function fetchJson(url: string, timeoutMs = 9000): Promise<any> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -26,43 +38,63 @@ async function fetchJson(url: string): Promise<any> {
   }
 }
 
-export async function getInstagramFollowers(username: string): Promise<number> {
+/** Layer 1 — our server API (works in dev + prod, no CORS issues). */
+async function viaServerApi(platform: 'tiktok' | 'instagram' | 'twitter' | 'youtube'): Promise<number | null> {
   try {
-    const data = await fetchJson(`https://api.socialcounts.io/instagram/user/${username}`);
-    const count = data?.followers || data?.follower_count || data?.count;
-    if (count) return parseInt(String(count).replace(/,/g, '')) || FALLBACK.instagram;
-  } catch {}
-  return FALLBACK.instagram;
+    const j = await fetchJson(`/api/social?platform=${platform}`);
+    return typeof j?.count === 'number' && j.count > 0 ? j.count : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function getTikTokFollowers(username: string): Promise<number> {
+function num(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v) && v > 0) return Math.round(v);
+  if (typeof v === 'string') {
+    const n = parseInt(v.replace(/[^\d]/g, ''), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
+
+export async function getInstagramFollowers(username = 'absq'): Promise<number> {
+  void username;
+  return (await viaServerApi('instagram')) ?? FALLBACK.instagram;
+}
+
+export async function getTikTokFollowers(username = 'iabsq'): Promise<number> {
+  const via = await viaServerApi('tiktok');
+  if (via) return via;
+  // Layer 2 — TikMatrix allows CORS + needs no key
   try {
-    const data = await fetchJson(`https://countik.com/api/tiktok/@${username}`);
-    const count = data?.followerCount || data?.followers || data?.follower_count;
-    if (count) return parseInt(String(count)) || FALLBACK.tiktok;
-  } catch {}
-  try {
-    const data = await fetchJson(`https://api.socialcounts.io/tiktok/user/${username}`);
-    const count = data?.followers || data?.follower_count || data?.count;
-    if (count) return parseInt(String(count).replace(/,/g, '')) || FALLBACK.tiktok;
+    const d = await fetchJson(`https://user.tikmatrix.com/api/user?username=${username}`);
+    const n = num(String(d?.stats?.Followers ?? '').replace(/,/g, ''));
+    if (n) return n;
   } catch {}
   return FALLBACK.tiktok;
 }
 
-export async function getTwitterFollowers(username: string): Promise<number> {
+export async function getTwitterFollowers(username = 'iABSq'): Promise<number> {
+  const via = await viaServerApi('twitter');
+  if (via) return via;
+  // Layer 2 — FixTweet API (usually CORS-open)
   try {
-    const data = await fetchJson(`https://api.socialcounts.io/twitter/user/${username}`);
-    const count = data?.followers || data?.follower_count || data?.count;
-    if (count) return parseInt(String(count).replace(/,/g, '')) || FALLBACK.twitter;
+    const d = await fetchJson(`https://api.fxtwitter.com/${username}`);
+    const n = num(d?.user?.followers);
+    if (n) return n;
   } catch {}
   return FALLBACK.twitter;
 }
 
-export async function getYouTubeSubscribers(channelId: string): Promise<number> {
+export async function getYouTubeSubscribers(channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w'): Promise<number> {
+  const via = await viaServerApi('youtube');
+  if (via) return via;
+  // Layer 2 — Mixerno (usually CORS-open)
   try {
-    const data = await fetchJson(`https://pipedapi.kavin.rocks/channel/${channelId}`);
-    const count = data?.subscriberCount;
-    if (count) return parseInt(String(count)) || FALLBACK.youtube;
+    const d = await fetchJson(`https://mixerno.space/api/youtube-channel-counter/user/${channelId}`);
+    const entry = Array.isArray(d?.counts) ? d.counts.find((c: any) => c?.value === 'subscribers') : null;
+    const n = num(entry?.count);
+    if (n) return n;
   } catch {}
   return FALLBACK.youtube;
 }
@@ -78,13 +110,24 @@ export async function getAllSocialMediaStats(): Promise<SocialMediaStats> {
     getTwitterFollowers('iABSq'),
     getYouTubeSubscribers('UCdIM7MB-8G-FgE7ld3XAQ8w'),
   ]);
-  return {
-    instagram,
-    tiktok,
-    twitter,
-    youtube,
-    whatsapp: FALLBACK.whatsapp,
-  };
+  const stats = { instagram, tiktok, twitter, youtube, whatsapp: FALLBACK.whatsapp };
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), stats }));
+  } catch {}
+  return stats;
+}
+
+/** Instant paint from cache (if fresh), so numbers show before the live fetch lands. */
+export function readSocialCache(): (SocialMediaStats & { _fresh: boolean }) | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { at, stats } = JSON.parse(raw);
+    if (!stats) return null;
+    return { ...stats, _fresh: Date.now() - at < SOCIAL_TTL_MS };
+  } catch {
+    return null;
+  }
 }
 
 export function formatFollowerCount(count: number): string {

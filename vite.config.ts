@@ -104,6 +104,122 @@ export default defineConfig(({ mode }) => {
               }
               return;
             }
+            if (req.url && req.url.startsWith('/api/social')) {
+              // ---- /api/social : عدّادات التواصل الحية محلياً (مرآة api/social.ts) ----
+              const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+              const platform = (url.searchParams.get('platform') || '').toLowerCase();
+              const HANDLES: Record<string, string> = { tiktok: 'iabsq', instagram: 'absq', twitter: 'iABSq', youtube: 'UCdIM7MB-8G-FgE7ld3XAQ8w' };
+              const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+              const parseCompact = (input: any): number | null => {
+                if (typeof input === 'number' && Number.isFinite(input)) return Math.round(input);
+                const s = String(input ?? '').replace(/,/g, '').trim();
+                const m = s.match(/([\d.]+)\s*([KMB])?/i);
+                if (!m) return null;
+                let n = parseFloat(m[1]);
+                if (!Number.isFinite(n)) return null;
+                const u = (m[2] || '').toUpperCase();
+                if (u === 'K') n *= 1e3; else if (u === 'M') n *= 1e6; else if (u === 'B') n *= 1e9;
+                const out = Math.round(n);
+                return out > 0 ? out : null;
+              };
+              const jget = async (u: string) => {
+                const r = await fetch(u, { headers: { Accept: 'application/json', 'User-Agent': UA } });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return await r.json();
+              };
+              const tget = async (u: string) => {
+                const r = await fetch(u, { headers: { Accept: 'text/html', 'User-Agent': UA } });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return await r.text();
+              };
+              const tryFirst = async (fns: Array<() => Promise<{ count: number; source: string }>>) => {
+                let last = 'failed';
+                for (const fn of fns) {
+                  try { return await fn(); } catch (e: any) { last = e?.message || 'failed'; }
+                }
+                throw new Error(last);
+              };
+              try {
+                if (!HANDLES[platform]) {
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({ error: 'Use ?platform=tiktok|instagram|youtube|twitter' }));
+                  return;
+                }
+                let result: { count: number; source: string };
+                if (platform === 'tiktok') {
+                  result = await tryFirst([
+                    async () => {
+                      const d: any = await jget(`https://user.tikmatrix.com/api/user?username=${HANDLES.tiktok}`);
+                      const n = parseCompact(d?.stats?.Followers);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'tikmatrix' };
+                    },
+                    async () => {
+                      const d: any = await jget(`https://countik.com/api/tiktok/@${HANDLES.tiktok}`);
+                      const n = parseCompact(d?.followerCount ?? d?.followers ?? d?.follower_count);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'countik' };
+                    },
+                  ]);
+                } else if (platform === 'youtube') {
+                  result = await tryFirst([
+                    async () => {
+                      const d: any = await jget(`https://mixerno.space/api/youtube-channel-counter/user/${HANDLES.youtube}`);
+                      const entry = Array.isArray(d?.counts) ? d.counts.find((c: any) => c?.value === 'subscribers') : null;
+                      const n = parseCompact(entry?.count);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'mixerno' };
+                    },
+                    async () => {
+                      const d: any = await jget(`https://pipedapi.kavin.rocks/channel/${HANDLES.youtube}`);
+                      const n = parseCompact(d?.subscriberCount);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'piped' };
+                    },
+                  ]);
+                } else if (platform === 'twitter') {
+                  result = await tryFirst([
+                    async () => {
+                      const d: any = await jget(`https://api.fxtwitter.com/${HANDLES.twitter}`);
+                      const n = parseCompact(d?.user?.followers);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'fxtwitter' };
+                    },
+                    async () => {
+                      const d: any = await jget(`https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=${HANDLES.twitter}`);
+                      const n = parseCompact(Array.isArray(d) ? d[0]?.followers_count : d?.followers_count);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'syndication' };
+                    },
+                  ]);
+                } else {
+                  result = await tryFirst([
+                    async () => {
+                      const d: any = await jget(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${HANDLES.instagram}`);
+                      const n = parseCompact(d?.data?.user?.edge_followed_by?.count);
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'web_profile_info' };
+                    },
+                    async () => {
+                      const html = await tget(`https://www.instagram.com/${HANDLES.instagram}/`);
+                      const og = html.match(/property="og:description"\s+content="([^"]+)"/)?.[1] || '';
+                      const m = og.match(/([\d.,]+[KMB]?)\s+Followers/i);
+                      const n = m ? parseCompact(m[1]) : null;
+                      if (!n) throw new Error('empty');
+                      return { count: n, source: 'og_description' };
+                    },
+                  ]);
+                }
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ platform, ...result, updatedAt: new Date().toISOString() }));
+              } catch (err: any) {
+                res.statusCode = 502;
+                res.end(JSON.stringify({ platform, count: null, error: err.message || 'failed' }));
+              }
+              return;
+            }
             if (req.url && req.url.startsWith('/api/kick')) {
               // Parse the URL
               const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);

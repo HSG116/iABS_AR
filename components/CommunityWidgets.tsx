@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DiscordIcon, YoutubeIcon } from './Icons';
 import { Language } from '../types';
 
@@ -31,9 +31,54 @@ interface CommunityWidgetsProps {
    lang: Language;
 }
 
+/* ============ 3D tilt engine (pointer-fine only, GPU transforms) ============ */
+function useTilt(max = 9) {
+   const ref = useRef<HTMLDivElement>(null);
+   const fine = useRef(false);
+   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 20, on: false });
+   useEffect(() => {
+      fine.current =
+         window.matchMedia('(pointer: fine)').matches &&
+         !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   }, []);
+   const move = (e: React.PointerEvent) => {
+      if (!fine.current || !ref.current) return;
+      const r = ref.current.getBoundingClientRect();
+      const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      setTilt({ ry: (px - 0.5) * max * 2, rx: (0.5 - py) * max * 2, gx: px * 100, gy: py * 100, on: true });
+   };
+   const leave = () => setTilt((s) => ({ ...s, rx: 0, ry: 0, on: false }));
+   return { ref, tilt, move, leave };
+}
+
+const tiltStyle = (tilt: { rx: number; ry: number; on: boolean }): React.CSSProperties => ({
+   transform: `perspective(1100px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(${tilt.on ? 1.015 : 1})`,
+   transition: tilt.on ? 'transform 0.12s ease-out' : 'transform 0.6s cubic-bezier(0.16,1,0.3,1)',
+   transformStyle: 'preserve-3d',
+   willChange: 'transform',
+});
+
+const CardSkeleton: React.FC<{ glow: string }> = ({ glow }) => (
+   <div className="w-full rounded-[26px] border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-xl p-5 animate-pulse" aria-hidden="true">
+      <div className="h-20 rounded-2xl bg-white/[0.06]" />
+      <div className="flex items-center gap-3 mt-4">
+         <div className="w-14 h-14 rounded-2xl" style={{ background: glow }} />
+         <div className="flex-1">
+            <div className="h-4 rounded-lg bg-white/10 w-2/3" />
+            <div className="h-3 rounded-lg bg-white/[0.07] w-1/3 mt-2" />
+         </div>
+      </div>
+      <div className="h-12 rounded-2xl bg-white/[0.06] mt-4" />
+   </div>
+);
+
+/* ============================ DISCORD ============================ */
 export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const [data, setData] = useState<DiscordData | null>(null);
    const [loading, setLoading] = useState(true);
+   const { ref, tilt, move, leave } = useTilt(9);
+   const isRTL = lang === 'ar';
 
    useEffect(() => {
       const fetchDiscord = async () => {
@@ -52,131 +97,144 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
       return () => clearInterval(interval);
    }, []);
 
-   if (loading || !data) {
-      return (
-         <div className="aspect-square w-full bg-[#0a0b14] rounded-[48px] animate-pulse border-8 border-white/5" />
-      );
-   }
+   if (loading || !data) return <CardSkeleton glow="rgba(88,101,242,0.25)" />;
 
-   const isRTL = lang === 'ar';
    const activeMembers = (data as any).members.filter((m: any) => m.game);
-   const squadAvatars = data.members.slice(0, 12);
+   const squad = data.members.slice(0, 6);
+   const extra = Math.max(0, data.presence_count - squad.length);
 
    return (
-    <div className="group relative flex flex-col h-auto min-h-[350px] sm:min-h-[380px] md:min-h-[500px] w-full bg-[#0a0b14] border-[4px] sm:border-[6px] md:border-[10px] border-[#5865F2]/20 rounded-[24px] sm:rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#5865F2]/40 hover:shadow-[0_0_100px_rgba(88,101,242,0.15)] hover:-translate-y-2 pb-3 sm:pb-4 md:pb-10">
-         {/* BACKGROUND LINK */}
-         <a
-            href={data.instant_invite}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 z-40"
-            aria-label="Join Discord"
-         />
-
-         {/* Background Ambience */}
-         <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#5865F2] to-transparent animate-plasma-flow z-20"></div>
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(88,101,242,0.1),transparent_50%)]"></div>
-         <div className="absolute inset-0 opacity-5 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:30px_30px]"></div>
-
-         {/* 0. TOP BANNER - RECLAIMED SPACE FOR MOBILE ACTION */}
-         <div className="relative h-16 md:h-[25%] w-full overflow-hidden shrink-0 z-0">
-            <img src="/12ab6917-943c-4013-a96f-18156e8ed881.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
-            <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#5865F2] to-transparent animate-plasma-flow z-20 top-0"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0b14] to-95%"></div>
-         </div>
-
-         {/* 2. LAYERED PROFILE LOGO - OPTIMIZED ANCHOR */}
-         <div className="absolute top-[35px] md:top-[25%] left-1/2 -translate-x-1/2 md:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
-            <div className="relative">
-               <div className="absolute -inset-10 bg-[#5865F2] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-               <div className="relative w-16 h-16 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-0.5 md:p-1.5 bg-[#0a0b14] border-[2px] md:border-[3px] border-white/10 shadow-2xl overflow-hidden transform group-hover:rotate-[6deg] transition-all duration-700">
-                  <img src="/favicon.png" className="w-full h-full object-cover rounded-[10px] md:rounded-[34px]" />
+      <div className="perspective-1000 h-full">
+         <div
+            ref={ref}
+            onPointerMove={move}
+            onPointerLeave={leave}
+            style={tiltStyle(tilt)}
+            className="group relative h-full rounded-[26px] p-[1.5px] bg-gradient-to-b from-[#5865F2]/70 via-[#5865F2]/15 to-white/[0.06] shadow-[0_24px_70px_-20px_rgba(88,101,242,0.45)]"
+         >
+            <div className="relative h-full rounded-[24.5px] bg-[#0a0b16]/95 backdrop-blur-xl overflow-hidden flex flex-col">
+               {/* pointer glare */}
+               <div
+                  className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-10"
+                  style={{
+                     opacity: tilt.on ? 1 : 0,
+                     background: `radial-gradient(420px circle at ${tilt.gx}% ${tilt.gy}%, rgba(88,101,242,0.22), transparent 65%)`,
+                  }}
+               />
+               {/* color bleed — banner tones wash down the whole card, no boundary */}
+               <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+                  <img
+                     src="/12ab6917-943c-4013-a96f-18156e8ed881.png"
+                     alt=""
+                     className="absolute top-0 inset-x-0 h-[48%] w-full object-cover blur-3xl opacity-30"
+                     style={{ maskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)' }}
+                  />
                </div>
-            </div>
-         </div>
-
-         <div className="relative z-10 p-4 md:p-5 flex-1 flex flex-col items-center">
-
-            {/* HEADER: PUSHED DOWN FOR LOGO */}
-            <div className="text-center mt-8 md:mt-14 mb-2 md:mb-2 w-full">
-               <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
-                  ABS COMMUNITY
-               </h2>
-               <div className="flex items-center justify-center gap-1 md:gap-2">
-                  <div className="px-2 py-0.5 md:px-3 md:py-1 bg-[#5865F2]/20 border border-[#5865F2]/30 rounded-md text-[8px] md:text-[10px] font-black text-white/70 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
-                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                     ELITE
+               {/* orbiting halo */}
+               <div className="absolute -top-24 start-1/4 w-72 h-72 rounded-full bg-[#5865F2]/25 blur-[90px] animate-aurora pointer-events-none" />
+                {/* banner — melts into body, no hard edge */}
+                <div className="relative h-24 sm:h-28 overflow-hidden shrink-0">
+                   <img
+                      src="/12ab6917-943c-4013-a96f-18156e8ed881.png"
+                      alt=""
+                      className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-[2.5s] ease-out"
+                   />
+                   <div className="absolute inset-0 bg-gradient-to-b from-[#0a0b16]/45 via-transparent to-transparent" />
+                   {/* black melt — hides the image edge completely */}
+                   <div className="absolute inset-x-0 bottom-0 h-[85%] bg-gradient-to-t from-[#0a0b16] via-[#0a0b16]/70 to-transparent" />
+                   <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a0b16] to-transparent" />
+                  <span className="absolute top-3 start-3 inline-flex items-center gap-1.5 text-[9px] font-black tracking-[0.2em] px-2.5 py-1 rounded-full bg-black/55 backdrop-blur border border-white/15 text-white/80">
+                     <DiscordIcon className="w-3.5 h-3.5 text-[#5865F2]" /> DISCORD
+                  </span>
+                  <span className="absolute top-3 end-3 inline-flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-full bg-[#5865F2]/20 backdrop-blur border border-[#5865F2]/50 text-white">
+                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> ELITE
+                  </span>
+               </div>
+                {/* crest + title — straddles the melt */}
+                <div className="relative px-5 -mt-10 flex items-end gap-3.5">
+                   <div aria-hidden="true" className="absolute -top-8 inset-x-8 h-14 bg-[#5865F2]/15 blur-2xl pointer-events-none" />
+                   <div className="relative shrink-0" style={{ transform: 'translateZ(45px)' }}>
+                      <div className="absolute -inset-3 bg-[#5865F2]/50 blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-500 rounded-full" />
+                      <div className="relative w-[72px] h-[72px] rounded-[22px] overflow-hidden border-2 border-[#5865F2]/60 ring-4 ring-[#0a0b16]/90 bg-[#0a0b16] shadow-[0_16px_36px_rgba(0,0,0,0.65)] transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105">
+                        <img src="/favicon.png" alt="iABS Discord server" className="w-full h-full object-cover" />
+                     </div>
+                     <span className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-green-400 border-4 border-[#0a0b16] animate-pulse" />
                   </div>
+                  <div className="min-w-0 pb-1">
+                     <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-none" dir="ltr">ABS COMMUNITY</h3>
+                     <p className="text-[11px] text-white/45 font-bold mt-1">{lang === 'en' ? 'Legends hangout' : 'أكبر تجمع للأساطير'}</p>
+                  </div>
+                  <p className="ms-auto text-end shrink-0 pb-1">
+                     <span className="block text-xl sm:text-2xl font-black text-white leading-none" dir="ltr">{data.presence_count}</span>
+                     <span className="block text-[9px] font-black tracking-[0.2em] text-[#8b96ff] uppercase mt-0.5">{lang === 'en' ? 'online' : 'متصل'}</span>
+                  </p>
                </div>
-            </div>
-
-            {/* CONTENT CENTER: SQUAD PREVIEW & LIVE ACTIVITY */}
-            <div className="flex flex-col items-center justify-center pointer-events-none p-2 md:p-4 w-full flex-1">
-               <div className="flex flex-col items-center gap-3 md:gap-6">
-                  {/* Squad Avatars */}
-                  <div className="flex -space-x-2 md:-space-x-3">
-                     {squadAvatars.slice(0, 4).map((m: any, i: number) => (
-                        <img key={i} src={m.avatar_url} className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-[#0a0b14] bg-white/5 shadow-xl" />
-                     ))}
-                     <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-[#0a0b14] bg-[#5865F2] flex items-center justify-center text-[7px] md:text-[10px] font-black text-white shadow-xl">
-                        +{data.presence_count - 4}
+                {/* squad — fused into the flow */}
+                <div className="px-5 mt-3 relative">
+                   <div aria-hidden="true" className="mx-auto mb-3 h-px w-1/2 bg-gradient-to-l from-transparent via-[#5865F2]/50 to-transparent" />
+                   <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] p-3.5 flex items-center gap-3">
+                     <div className="flex -space-x-2.5 rtl:space-x-reverse shrink-0">
+                        {squad.map((m: any, i: number) => (
+                           <img
+                              key={i}
+                              src={m.avatar_url}
+                              alt={m.username}
+                              loading="lazy"
+                              className="w-9 h-9 rounded-full border-2 border-[#0a0b16] bg-white/10 object-cover transition-transform duration-300 hover:scale-125 hover:-translate-y-1 hover:z-10 relative"
+                              style={{ zIndex: squad.length - i }}
+                           />
+                        ))}
+                        {extra > 0 && (
+                           <span className="w-9 h-9 rounded-full border-2 border-[#0a0b16] bg-[#5865F2] flex items-center justify-center text-[10px] font-black text-white" dir="ltr">+{extra}</span>
+                        )}
+                     </div>
+                     <div className="min-w-0 flex-1">
+                        {activeMembers.length > 0 ? (
+                           <>
+                              <p className="text-[9px] font-black tracking-[0.25em] text-green-400 uppercase flex items-center gap-1.5">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                                 {lang === 'en' ? 'now playing' : 'يلعب الآن'}
+                              </p>
+                              <p className="text-[13px] font-black text-white truncate mt-0.5">
+                                 {activeMembers[0].username} <span className="text-white/35 font-bold">• {activeMembers[0].game.name}</span>
+                              </p>
+                           </>
+                        ) : (
+                           <>
+                              <p className="text-[9px] font-black tracking-[0.25em] text-white/35 uppercase">{lang === 'en' ? 'squad standby' : 'الفرقة في الانتظار'}</p>
+                              <p className="text-[13px] font-bold text-white/60 truncate mt-0.5">{lang === 'en' ? 'Be the first to deploy' : 'كن أول المنضمين'}</p>
+                           </>
+                        )}
                      </div>
                   </div>
-
-                  {/* LIVE ACTIVITY - FILLS THE SPACE PROFESSIONALLY */}
-                  <div className="md:flex hidden flex-col items-center text-center">
-                     <div className="w-8 h-px bg-white/10 mb-2 opacity-30"></div>
-                     <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] mb-2">SQUAD ACTIVE</p>
-                     {activeMembers.length > 0 ? (
-                        <div className="flex flex-col gap-1 items-center bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2 backdrop-blur-sm">
-                           <span className="text-xs md:text-sm font-black text-white/90 tracking-wide line-clamp-1">
-                              {activeMembers[0].username}
-                           </span>
-                           <span className="text-[10px] md:text-xs font-bold text-[#5865F2] italic opacity-80 uppercase tracking-widest line-clamp-1">
-                              {activeMembers[0].game.name}
-                           </span>
-                        </div>
-                     ) : (
-                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">SQUAD STANDBY</p>
-                     )}
-                  </div>
-
-                  <div className="md:hidden flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">SQUAD ACTIVE</span>
-                  </div>
+               </div>
+               {/* CTA */}
+               <div className="px-5 pb-5 mt-4 flex-1 flex items-end">
+                  <a
+                     href={data.instant_invite}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     aria-label={lang === 'en' ? 'Join Discord server' : 'انضم لسيرفر الديسكورد'}
+                     className="btn-arena card-sheen relative w-full min-h-[52px] inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-[#7b86ff] to-[#5865F2] text-white font-black text-sm shadow-[0_14px_36px_-10px_rgba(88,101,242,0.7)] overflow-hidden"
+                  >
+                     <DiscordIcon className="w-5 h-5 shrink-0" />
+                     {lang === 'en' ? 'JOIN THE SQUAD' : 'انضم للفرقة الآن'}
+                     <svg className={`w-4 h-4 shrink-0 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                  </a>
                </div>
             </div>
-
-        {/* FOOTER AREA: ACTION & STATS - ANCHORED TO BOTTOM */}
-        <div className="mt-auto w-full flex flex-col items-center gap-0.5 md:gap-1.5 pt-1 border-t border-white/[0.03]">
-               <div className="flex items-center gap-2 md:gap-4 mb-0.5 md:mb-0">
-                  <span className="text-[8px] md:text-lg font-black text-white italic leading-none">{data.presence_count} LIVE</span>
-                  <div className="w-px h-2 md:h-4 bg-white/10"></div>
-                  <span className="text-[5px] md:text-[9px] font-black text-[#5865F2] tracking-widest uppercase">8.6K TOTAL</span>
-               </div>
-
-               {/* ACTION BUTTON: LARGE CENTERED - NOW VISIBLE */}
-               <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50 mb-0.5 md:mb-0">
-                  <div className="relative w-full px-4 py-1 md:px-12 md:py-3.5 bg-[#5865F2] rounded-[10px] md:rounded-[24px] shadow-[0_10px_30px_rgba(88,101,242,0.3)] hover:scale-[1.03] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-2 md:gap-3">
-                     <div className="absolute inset-x-0 -bottom-10 h-20 bg-white blur-[80px] opacity-0 group-hover/btn:opacity-10 transition-opacity"></div>
-                     <span className="text-[6px] md:text-xs font-black text-white uppercase tracking-[0.05em] md:tracking-[0.1em] leading-none">
-                        {lang === 'en' ? 'DEPLOY NOW' : 'انـضـم الآن'}
-                     </span>
-                     <svg className={`w-3 h-3 md:w-5 md:h-5 ${isRTL ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                  </div>
-               </div>
-            </div>
-
          </div>
       </div>
    );
 };
 
+/* ============================ YOUTUBE ============================ */
 export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const [video, setVideo] = useState<YoutubeData | null>(null);
    const [subs, setSubs] = useState<string>('100K');
    const [loading, setLoading] = useState(true);
+   const { ref, tilt, move, leave } = useTilt(9);
+   const isRTL = lang === 'ar';
    const channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w';
    const channelUrl = 'https://www.youtube.com/@ABS11';
 
@@ -200,17 +258,12 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                throw new Error('No items');
             }
 
-            // --- FETCH REAL SUBSCRIBER COUNT ---
             try {
                const statsRes = await fetch(`https://pipedapi.kavin.rocks/channel/${channelId}`);
                const statsData = await statsRes.json();
                if (statsData.subscriberCount) {
                   const count = statsData.subscriberCount;
-                  if (count >= 1000) {
-                     setSubs(`${(count / 1000).toFixed(1)}K+`);
-                  } else {
-                     setSubs(`${count}`);
-                  }
+                  setSubs(count >= 1000 ? `${(count / 1000).toFixed(1)}K+` : `${count}`);
                }
             } catch (err) {
                console.warn("Subscriber fetch failed, using fallback:", err);
@@ -228,124 +281,124 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
          }
       };
       fetchVideo();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [lang]);
 
-   if (loading && !video) {
-      return (
-         <div className="aspect-square w-full bg-[#050000] rounded-[48px] animate-pulse border-8 border-white/5" />
-      );
-   }
-
-   const isRTL = lang === 'ar';
+   if (loading && !video) return <CardSkeleton glow="rgba(255,0,0,0.25)" />;
 
    return (
-    <div className="group relative flex flex-col h-auto min-h-[350px] sm:min-h-[380px] md:min-h-[500px] w-full bg-[#050000] border-[4px] sm:border-[6px] md:border-[10px] border-[#FF0000]/20 rounded-[24px] sm:rounded-[32px] md:rounded-[56px] overflow-hidden transition-all duration-700 hover:border-[#FF0000]/40 hover:shadow-[0_0_100px_rgba(255,0,0,0.15)] hover:-translate-y-2 pb-3 sm:pb-4 md:pb-10">
-         {/* BACKGROUND LINK */}
-         <a
-            href={channelUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 z-10"
-            aria-label="Visit Channel"
-         />
-
-         {/* 1. TOP BANNER - RECLAIMED SPACE FOR MOBILE ACTION */}
-         <div className="relative h-16 md:h-[25%] w-full overflow-hidden shrink-0 z-0">
-            <img src="/channels4_banner.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5000ms]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#050000]"></div>
-            <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF0000] to-transparent animate-plasma-flow z-20 top-0"></div>
-         </div>
-
-         {/* 2. LAYERED PROFILE LOGO - OPTIMIZED ANCHOR */}
-         <div className="absolute top-[35px] md:top-[25%] left-1/2 -translate-x-1/2 md:-translate-y-1/2 z-30 flex flex-col items-center pointer-events-none">
-            <div className="relative">
-               <div className="absolute -inset-10 bg-[#FF0000] blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"></div>
-               <div className="relative w-16 h-16 md:w-28 md:h-28 rounded-[12px] md:rounded-[42px] p-0.5 md:p-1.5 bg-[#050000] border-[2px] md:border-[3px] border-white/10 shadow-2xl overflow-hidden transform group-hover:rotate-[-6deg] transition-all duration-700">
-                  <img src="/favicon.png" className="w-full h-full object-cover rounded-[10px] md:rounded-[34px]" />
-               </div>
-            </div>
-         </div>
-
-         <div className="relative z-10 p-4 lg:p-6 flex-1 flex flex-col items-center">
-
-            {/* 3. CHANNEL INFO & SPACER - RESTORED GAP */}
-            <div className="text-center mt-8 md:mt-14 mb-2 lg:mb-2 w-full">
-               <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-widest leading-none mb-1 md:mb-2 uppercase drop-shadow-md">
-                  {lang === 'en' ? 'ABS' : 'قـناة iABS'}
-               </h2>
-               <div className="flex items-center justify-center gap-1 md:gap-2">
-                  <div className="px-2 py-0.5 md:px-3 md:py-1 bg-white/[0.03] border border-white/5 rounded-md text-[8px] md:text-[10px] font-black text-white/40 uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center gap-1 md:gap-2 backdrop-blur-xl">
-                     <span className="w-1.5 h-1.5 rounded-full bg-[#FF0000] animate-pulse"></span>
-                     ELITE
-                  </div>
-               </div>
-            </div>
-
-            {/* 4. CONTENT CENTER: DYNAMIC THUMBNAIL */}
-            <div className="w-full flex flex-col items-center justify-center gap-2 md:gap-3 pointer-events-none px-4 mb-2 md:mb-4">
-
-               {/* Professional Video Preview Frame */}
-               <div className="relative w-full max-w-[150px] md:max-w-[180px] aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/10 shadow-2xl group/thumb">
+      <div className="perspective-1000 h-full">
+         <div
+            ref={ref}
+            onPointerMove={move}
+            onPointerLeave={leave}
+            style={tiltStyle(tilt)}
+            className="group relative h-full rounded-[26px] p-[1.5px] bg-gradient-to-b from-[#FF2D2D]/70 via-[#FF2D2D]/15 to-white/[0.06] shadow-[0_24px_70px_-20px_rgba(255,45,45,0.45)]"
+         >
+            <div className="relative h-full rounded-[24.5px] bg-[#0d0505]/95 backdrop-blur-xl overflow-hidden flex flex-col">
+               <div
+                  className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-10"
+                  style={{
+                     opacity: tilt.on ? 1 : 0,
+                     background: `radial-gradient(420px circle at ${tilt.gx}% ${tilt.gy}%, rgba(255,45,45,0.2), transparent 65%)`,
+                  }}
+               />
+               {/* color bleed — banner tones wash down the whole card, no boundary */}
+               <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
                   <img
-                     src={video?.thumbnail || "/channels4_banner.jpg"}
-                     className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-all duration-700"
-                     alt="Latest Video Preview"
-                     onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target.src.includes('maxresdefault')) {
-                           target.src = target.src.replace('maxresdefault', 'hqdefault');
-                        } else {
-                           target.src = "/channels4_banner.jpg";
-                        }
-                     }}
+                     src="/channels4_banner.jpg"
+                     alt=""
+                     className="absolute top-0 inset-x-0 h-[48%] w-full object-cover blur-3xl opacity-30"
+                     style={{ maskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)' }}
                   />
-
-                  {/* Play Button Icon Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                     <div className="w-10 h-10 rounded-full bg-[#FF0000]/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
-                        <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
-                           <path d="M8 5v14l11-7z" />
-                        </svg>
+               </div>
+               <div className="absolute -top-24 end-1/4 w-72 h-72 rounded-full bg-[#FF2D2D]/20 blur-[90px] animate-aurora pointer-events-none" />
+                {/* banner — melts into body, no hard edge */}
+                <div className="relative h-24 sm:h-28 overflow-hidden shrink-0">
+                   <img
+                      src="/channels4_banner.jpg"
+                      alt=""
+                      className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-[2.5s] ease-out"
+                   />
+                   <div className="absolute inset-0 bg-gradient-to-b from-[#0d0505]/45 via-transparent to-transparent" />
+                   {/* black melt — hides the image edge completely */}
+                   <div className="absolute inset-x-0 bottom-0 h-[85%] bg-gradient-to-t from-[#0d0505] via-[#0d0505]/70 to-transparent" />
+                   <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0505] to-transparent" />
+                  <span className="absolute top-3 start-3 inline-flex items-center gap-1.5 text-[9px] font-black tracking-[0.2em] px-2.5 py-1 rounded-full bg-black/55 backdrop-blur border border-white/15 text-white/80">
+                     <YoutubeIcon className="w-3.5 h-3.5 text-[#FF2D2D]" /> YOUTUBE
+                  </span>
+                  <span className="absolute top-3 end-3 inline-flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-full bg-[#FF2D2D]/20 backdrop-blur border border-[#FF2D2D]/50 text-white" dir="ltr">4K • HDR</span>
+               </div>
+                {/* crest + title — straddles the melt */}
+                <div className="relative px-5 -mt-10 flex items-end gap-3.5">
+                   <div aria-hidden="true" className="absolute -top-8 inset-x-8 h-14 bg-[#FF2D2D]/15 blur-2xl pointer-events-none" />
+                   <div className="relative shrink-0" style={{ transform: 'translateZ(45px)' }}>
+                      <div className="absolute -inset-3 bg-[#FF2D2D]/50 blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-500 rounded-full" />
+                      <div className="relative w-[72px] h-[72px] rounded-[22px] overflow-hidden border-2 border-[#FF2D2D]/60 ring-4 ring-[#0d0505]/90 bg-[#0d0505] shadow-[0_16px_36px_rgba(0,0,0,0.65)] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-105">
+                        <img src="/favicon.png" alt="iABS YouTube channel" className="w-full h-full object-cover" />
                      </div>
+                     <span className="absolute -bottom-1 -end-1 w-7 h-7 rounded-full bg-[#FF2D2D] border-4 border-[#0d0505] flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                     </span>
                   </div>
+                  <div className="min-w-0 pb-1">
+                     <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-none">{lang === 'en' ? 'iABS CHANNEL' : 'قناة iABS'}</h3>
+                     <p className="text-[11px] text-white/45 font-bold mt-1">{lang === 'en' ? 'VODs & best moments' : 'أرشيف البثوث وأجمل اللقطات'}</p>
+                  </div>
+                  <p className="ms-auto text-end shrink-0 pb-1">
+                     <span className="block text-xl sm:text-2xl font-black text-white leading-none" dir="ltr">{subs}</span>
+                     <span className="block text-[9px] font-black tracking-[0.2em] text-[#ff6b6b] uppercase mt-0.5">{lang === 'en' ? 'subs' : 'مشترك'}</span>
+                  </p>
                </div>
-
-               <h3 className="text-[11px] md:text-sm lg:text-base font-black text-white/95 leading-tight text-center line-clamp-2 drop-shadow-2xl">
-                  {video?.title}
-               </h3>
-            </div>
-
-        {/* 5. FOOTER AREA: ACTION & STATS - ANCHORED TO BOTTOM */}
-        <div className="mt-auto w-full flex flex-col items-center gap-0.5 md:gap-3 pt-1 border-t border-white/[0.03]">
-               <div className="flex items-center gap-3 md:gap-5 mb-0.5 md:mb-0">
-                  <span className="text-[9px] md:text-2xl font-black text-white italic leading-none drop-shadow-md">{subs}</span>
-                  <div className="w-px h-2 md:h-5 bg-white/10"></div>
-                  <span className="text-[7px] md:text-[11px] font-black text-[#FF0000] tracking-widest uppercase">4K-HDR</span>
-               </div>
-
-               {/* ACTION BUTTON: SPECIFIC VIDEO LINK */}
-               <div className="group/btn relative w-full flex justify-center pointer-events-auto z-50 mb-0.5 md:mb-1">
+               {/* latest video — fused into the flow */}
+               <div className="px-5 mt-3 relative">
+                  <div aria-hidden="true" className="mx-auto mb-3 h-px w-1/2 bg-gradient-to-l from-transparent via-[#FF2D2D]/50 to-transparent" />
                   <a
                      href={video?.link || channelUrl}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="relative w-full px-4 py-1 md:px-14 md:py-3 bg-[#FF0000] rounded-[10px] md:rounded-[28px] shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-[1.05] active:scale-95 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center gap-2 md:gap-3"
+                     aria-label={video?.title || 'Latest video'}
+                     className="group/vid relative block rounded-2xl overflow-hidden border border-white/10 bg-black shadow-[0_18px_44px_-16px_rgba(255,45,45,0.35)]"
                   >
-                     <div className="absolute inset-x-0 -bottom-10 h-20 bg-white blur-[80px] opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
-                     <span className="text-[7px] md:text-sm font-black text-white uppercase tracking-[0.05em] md:tracking-[0.1em] leading-none">
-                        {lang === 'en' ? 'WATCH NOW' : 'شـاهـد الآن'}
-                     </span>
-                     <div className="w-4 h-4 md:w-8 md:h-8 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center shrink-0 border border-white/20">
-                        <svg className={`w-2.5 h-2.5 md:w-4.5 md:h-4.5 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                     <div className="relative aspect-video">
+                        <img
+                           src={video?.thumbnail || '/channels4_banner.jpg'}
+                           alt={video?.title || 'Latest video'}
+                           loading="lazy"
+                           className="w-full h-full object-cover opacity-85 group-hover/vid:opacity-100 group-hover/vid:scale-105 transition-all duration-700"
+                           onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (target.src.includes('maxresdefault')) target.src = target.src.replace('maxresdefault', 'hqdefault');
+                              else target.src = '/channels4_banner.jpg';
+                           }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                        <span className="absolute top-2.5 start-2.5 text-[8px] font-black tracking-[0.2em] px-2 py-1 rounded-lg bg-[#FF2D2D] text-white shadow-[0_0_16px_rgba(255,45,45,0.6)]">
+                           {lang === 'en' ? 'LATEST' : 'الأحدث'}
+                        </span>
+                        <span className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-black/45 backdrop-blur-md border border-white/40 flex items-center justify-center transition-transform duration-300 group-hover/vid:scale-125 shadow-[0_0_28px_rgba(255,45,45,0.5)]">
+                           <svg className="w-5 h-5 text-white fill-current translate-x-[1px] rtl:-translate-x-[1px] rtl:rotate-180" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        </span>
+                        <span className="absolute bottom-2.5 start-2.5 end-2.5 text-[11px] sm:text-xs font-black text-white leading-snug line-clamp-2 text-start">{video?.title}</span>
                      </div>
                   </a>
                </div>
+               {/* CTA */}
+               <div className="px-5 pb-5 mt-4 flex-1 flex items-end">
+                  <a
+                     href={channelUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     aria-label={lang === 'en' ? 'Visit YouTube channel' : 'زيارة قناة اليوتيوب'}
+                     className="btn-arena card-sheen relative w-full min-h-[52px] inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-[#ff4d4d] to-[#cc0000] text-white font-black text-sm shadow-[0_14px_36px_-10px_rgba(255,0,0,0.7)] overflow-hidden"
+                  >
+                     <YoutubeIcon className="w-5 h-5 shrink-0" />
+                     {lang === 'en' ? 'SUBSCRIBE NOW' : 'اشترك الآن'}
+                     <svg className={`w-4 h-4 shrink-0 ${isRTL ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                  </a>
+               </div>
             </div>
-
          </div>
       </div>
    );
 };
-
-
-
