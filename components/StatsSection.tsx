@@ -201,18 +201,18 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       <div className="card-sheen relative rounded-[24.5px] bg-[#080808]/95 backdrop-blur-xl overflow-hidden perspective-1000 [transform-style:preserve-3d]">
         <div className="absolute top-0 inset-x-8 h-[2px] rounded-full opacity-80" style={{ background: `linear-gradient(90deg, transparent, rgba(${config.glowColor},0.9), transparent)` }} />
 
-        {/* Header with 3D medallion */}
-        <div className="relative p-4 md:p-6 pb-3 md:pb-4 flex items-center gap-3.5 md:gap-4 border-b border-white/5 z-10">
-          <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/15 shrink-0 [transform:translateZ(28px)] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+        {/* Header with 3D medallion — stacks vertically in narrow half-cards */}
+        <div className={`relative p-3 sm:p-4 md:p-6 pb-3 md:pb-4 flex ${isMain ? 'flex-row' : 'flex-col'} sm:flex-row items-center gap-2.5 sm:gap-3.5 md:gap-4 border-b border-white/5 z-10`}>
+          <div className={`${isMain ? 'w-12 h-12 md:w-16 md:h-16' : 'w-10 h-10 md:w-16 md:h-16'} rounded-2xl flex items-center justify-center border border-white/15 shrink-0 [transform:translateZ(28px)] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6`}
             style={{ background: config.medalBg, boxShadow: `0 12px 30px -8px rgba(${config.glowColor},0.55), inset 0 1px 0 rgba(255,255,255,0.45)` }}>
-            {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6 md:w-8 md:h-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" }) : icon}
+            {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `${isMain ? 'w-6 h-6 md:w-8 md:h-8' : 'w-5 h-5 md:w-8 md:h-8'} drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]` }) : icon}
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={`text-lg md:text-2xl font-black text-white tracking-tight leading-none mb-1 ${lang === 'ar' ? 'font-arabic' : ''}`}>{title}</h3>
-            <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.25em] md:tracking-[0.3em] bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>{subtitle}</span>
+          <div className={`min-w-0 flex-1 ${isMain ? '' : 'text-center sm:text-start'}`}>
+            <h3 className={`text-base sm:text-lg md:text-2xl font-black text-white tracking-tight leading-none mb-1 ${lang === 'ar' ? 'font-arabic' : ''}`}>{title}</h3>
+            <span className={`text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase tracking-[0.22em] md:tracking-[0.3em] bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>{subtitle}</span>
           </div>
-          <div className="text-end shrink-0">
-            <p className="text-base md:text-xl font-black text-white leading-none" dir="ltr">{formatNumber(totalQ)}</p>
+          <div className={`${isMain ? 'text-end' : 'text-center sm:text-end'} shrink-0`}>
+            <p className="text-base sm:text-lg md:text-xl font-black text-white leading-none" dir="ltr">{formatNumber(totalQ)}</p>
             <p className={`text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] mt-1 ${config.subText}`}>{t.gift} • {sorted.length}</p>
           </div>
         </div>
@@ -220,10 +220,10 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
         {/* Champion banner */}
         {champ && (
           <div className="mx-3 md:mx-4 mt-3 rounded-2xl p-[1px]" style={{ background: 'linear-gradient(120deg,#FDE68A,#B45309,#FDE68A)' }}>
-            <div className="rounded-[15px] bg-black/85 px-3 py-2.5 flex items-center gap-2.5 overflow-hidden">
-              <CrownIcon className="w-6 h-6 md:w-7 md:h-7 shrink-0 drop-shadow-[0_0_10px_rgba(255,215,0,0.6)]" />
-              <p className="flex-1 min-w-0 text-sm md:text-base font-black text-white truncate" dir="auto">{champ.username}</p>
-              <p className="text-sm md:text-base font-black text-[#FFD700] shrink-0" dir="ltr">{formatNumber(champ.quantity)}</p>
+            <div className="rounded-[15px] bg-black/85 px-2.5 sm:px-3 py-2 sm:py-2.5 flex items-center gap-2 overflow-hidden">
+              <CrownIcon className="w-5 h-5 md:w-7 md:h-7 shrink-0 drop-shadow-[0_0_10px_rgba(255,215,0,0.6)]" />
+              <p className="flex-1 min-w-0 text-xs sm:text-sm md:text-base font-black text-white truncate" dir="auto">{champ.username}</p>
+              <p className="text-xs sm:text-sm md:text-base font-black text-[#FFD700] shrink-0" dir="ltr">{formatNumber(champ.quantity)}</p>
             </div>
           </div>
         )}
@@ -234,19 +234,19 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
             const rank = idx + 2;
             const pct = Math.max(4, Math.round(((entry.quantity || 0) / maxQ) * 100));
             return (
-              <div key={idx} className="relative rounded-xl md:rounded-2xl p-2 md:p-3 transition-all duration-300 group/row hover:bg-white/[0.04] hover:-translate-y-0.5 border border-transparent hover:border-white/10">
-                <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                  <div className="shrink-0 flex justify-center w-6 md:w-8">
+              <div key={idx} className="relative rounded-xl md:rounded-2xl p-1.5 sm:p-2 md:p-3 transition-all duration-300 group/row hover:bg-white/[0.04] hover:-translate-y-0.5 border border-transparent hover:border-white/10">
+                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0">
+                  <div className="shrink-0 flex justify-center w-8">
                     {renderRankBadge(rank)}
                   </div>
-                  <span className="flex-1 min-w-0 text-[13px] md:text-[15px] font-bold text-white/90 truncate group-hover/row:text-white transition-colors" dir="auto">
+                  <span className="flex-1 min-w-0 text-xs sm:text-[13px] md:text-[15px] font-bold text-white/90 truncate group-hover/row:text-white transition-colors" dir="auto">
                     {entry.username}
                   </span>
-                  <span className={`text-[13px] md:text-[15px] font-black tracking-wide ${config.text} shrink-0`} dir="ltr">
+                  <span className={`text-xs sm:text-[13px] md:text-[15px] font-black tracking-wide ${config.text} shrink-0`} dir="ltr">
                     {formatNumber(entry.quantity)}
                   </span>
                 </div>
-                <div className="mt-1.5 md:mt-2 ms-8 md:ms-11 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                <div className="mt-1.5 md:mt-2 ms-10 md:ms-11 h-1 rounded-full bg-white/[0.06] overflow-hidden">
                   <div className="bar-grow h-full rounded-full" style={{ width: `${pct}%`, background: `linear-gradient(to left, ${config.barBright}, ${config.barDeep})`, boxShadow: `0 0 8px rgba(${config.glowColor},0.5)`, animationDelay: `${idx * 80}ms`, transformOrigin: lang === 'ar' ? 'right' : 'left' }} />
                 </div>
               </div>
@@ -396,9 +396,9 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                         <span className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{t.subBadges}</span>
                         <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FF2D2D]/15 border border-[#FF2D2D]/40 text-[#ff6b6b]" dir="ltr">{channelInfo.subscriber_badges.length}</span>
                       </div>
-                      <div className="flex flex-wrap justify-center lg:justify-end gap-2.5 sm:gap-3.5">
+                      <div className="flex flex-wrap justify-center lg:justify-end gap-2 sm:gap-3.5">
                         {[...channelInfo.subscriber_badges].sort((a, b) => a.months - b.months).map((badge, i) => (
-                          <div key={badge.id} className="flex flex-col items-center basis-[23%] sm:basis-auto opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
+                          <div key={badge.id} className="flex flex-col items-center basis-[calc(25%-6px)] sm:basis-auto opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
                             <div className="group/badge relative w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 p-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF2D2D]/60 hover:shadow-[0_14px_30px_-8px_rgba(255,45,45,0.55)]">
                               <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-white/40 to-transparent" />
                               <img
