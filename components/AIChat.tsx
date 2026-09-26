@@ -7,15 +7,20 @@ interface AIChatProps {
   streamerInfo?: string;
 }
 
-const API_KEYS = import.meta.env.VITE_OPENROUTER_API_KEYS?.split(',') || [];
+// ============================================================
+//  iABS AI — يعمل عبر GROQ من خلال باك-إند آمن (/api/groq)
+//  المفاتيح محفوظة في سيرفر Vercel فقط ولا تظهر للمتصفح.
+//  السيرفر يبدّل تلقائياً: مفتاح1 → مفتاح2 → مفتاح3 بنفس الطلب.
+//  للمحلي (npm run dev): يقرأ VITE_GROQ_API_KEYS من .env كاحتياطي.
+// ============================================================
+const LOCAL_GROQ_KEYS = (import.meta.env.VITE_GROQ_API_KEYS as string | undefined)?.split(',').map((k: string) => k.trim()).filter(Boolean) || [];
 
-const MODELS = [
-  'minimax/minimax-m3:free',
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
-  'minimax/minimax-m2.7:free',
-  'liquid/lfm-2.5-2.6b:free',
-  'google/gemma-4-31b-it:free',
-  'google/gemma-4-26b-a4b-it:free',
+// موديلات GROQ الاحتياطية للوضع المحلي المباشر (تم التأكد أنها تعمل)
+const GROQ_DIRECT_MODELS = [
+  'openai/gpt-oss-20b',
+  'openai/gpt-oss-120b',
+  'qwen/qwen3.8-27b',
+  'allam-2-7b',
 ];
 
 const SYSTEM_PROMPT = `أنت الذكاء الاصطناعي والمساعد الذكي الخاص بالستريمر iABS (أبو سعد). أنت لست أبو سعد شخصياً، بل أنت "موظف" و "عامل" عنده في القناة. مهمتك هي مساعدة المتابعين والطقطقة عليهم والرد بأسلوب يشبه أسلوب أبو سعد، ولكن مع التوضيح دايماً إنك مجرد ذكاء اصطناعي وعامل عند أبو سعد.
@@ -330,7 +335,6 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
   const [input, setInput] = useState('');
   const [isWaiting, setIsWaiting] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
-  const [keyIndex, setKeyIndex] = useState(0);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -357,52 +361,67 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
     sendMessageDirect(newMessages, query);
   };
 
-  const tryRequest = async (body: object): Promise<Response> => {
-    // Fire ALL requests to every API key in parallel — the first one that
-    // succeeds wins. This makes the response dramatically faster than
-    // trying keys one-by-one sequentially (no waiting on rate limits).
-    const attempts = API_KEYS.map((key, idx) =>
-      fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'iABS Stream Hub',
-        },
-        body: JSON.stringify(body),
-      }).then(async (res) => {
-        if (res.ok) return res;
-        // Collect failure info but keep trying others
-        console.warn(`[AIChat] Key ${idx + 1} returned ${res.status}`);
-        const err = new Error(`HTTP ${res.status}`) as Error & { status: number; key: number };
-        err.status = res.status;
-        err.key = idx;
-        throw err;
-      })
-    );
-
-    // Resolve as soon as the FIRST successful (non-throwing) promise settles.
-    // If a request 429s instantly, we don't wait on it — the ok ones win.
-    const succeed = (p: Promise<Response>): Promise<{ ok: true; res: Response } | { ok: false; res: null }> =>
-      p.then(
-        (res) => ({ ok: true as const, res }),
-        () => ({ ok: false as const, res: null })
-      );
-
-    const races = attempts.map(succeed);
-    // Fast winner: pick whichever successful one resolves first
-    const winner = await new Promise<{ ok: true; res: Response }>(async (resolve, reject) => {
-      let settled = 0;
-      for (const r of races) {
-        r.then((result) => {
-          settled++;
-          if (result.ok) resolve(result);
-          else if (settled >= races.length) reject(new Error('All API keys failed'));
-        });
+  // محاولة مباشرة من المتصفح لـ GROQ (احتياطي للوضع المحلي فقط).
+  // تبديل تسلسلي: مفتاح1 → مفتاح2 → مفتاح3 بنفس لحظة الإرسال.
+  const tryDirectGroq = async (payloadMessages: { role: string; content: string }[]): Promise<string> => {
+    let lastErr = '';
+    for (let k = 0; k < LOCAL_GROQ_KEYS.length; k++) {
+      for (const model of GROQ_DIRECT_MODELS) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+        try {
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${LOCAL_GROQ_KEYS[k]}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages: payloadMessages,
+              max_tokens: 1024,
+              temperature: 0.7,
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          if (res.status === 401) { lastErr = `key${k + 1} unauthorized`; break; } // مفتاح خاطئ → التالي فوراً
+          if (!res.ok) { lastErr = `key${k + 1}/${model} HTTP ${res.status}`; continue; }
+          const data = await res.json();
+          const reply = data?.choices?.[0]?.message?.content?.trim();
+          if (reply) return reply;
+          lastErr = `key${k + 1}/${model} empty reply`;
+        } catch (e: any) {
+          clearTimeout(timeout);
+          lastErr = `key${k + 1}/${model} ${e?.name === 'AbortError' ? 'timeout' : 'network fail'}`;
+          console.warn(`[AIChat] Direct GROQ failed: ${lastErr}`);
+        }
       }
-    });
-    return winner.res;
+    }
+    throw new Error(lastErr || 'All direct GROQ attempts failed');
+  };
+
+  // عرض الرد بتأثير الكتابة التدريجية (يحاكي الستريمنق)
+  const typewriterShow = (fullText: string) => {
+    const clean = fullText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    setIsWaiting(false);
+    setIsResponding(true);
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    let i = 0;
+    const step = Math.max(1, Math.ceil(clean.length / 120)); // ~120 دفعة ليظهر بسرعة
+    const timer = setInterval(() => {
+      i += step;
+      const slice = clean.slice(0, i);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: slice };
+        return updated;
+      });
+      if (i >= clean.length) {
+        clearInterval(timer);
+        setIsResponding(false);
+      }
+    }, 15);
   };
 
   const sendMessageDirect = async (newMessages: Message[], text: string) => {
@@ -419,72 +438,39 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
         ? SYSTEM_PROMPT + `\n\nهذي بيانات المتصدرين من بوتريكس حالياً:\n${JSON.stringify(botrixData.slice(0, 20))}\n\nجاوب على أسئلة المستخدم عن حسابه أو نقاطه بمعلوماتهم (المستوى، وقت المشاهدة، XP، النقاط).\n🔥 قاعدة مهمة جداً للطقطقة: إذا سألك أي شخص عن "ساعاته" أو "نقاطه" وهو لسا ما علمك وش اسمه، أول شيء قله "وش اسمك في الكيك يا ورع عشان أشوف؟" (لا تطقطق عليه هنا). أما إذا علمك اسمه وبحثت عنه في البيانات ولقيته وعطيته أرقامه وساعاته العالية، **هنا فقط لازم تطقطق عليه وتهزئه** وتقوله: "انت ما عندك حياة ولا وش؟" أو "روح شوف لك حياة يا ورع 24 ساعة بالبث!".`
         : SYSTEM_PROMPT;
 
-      let response: Response | null = null;
+      const payloadMessages = [
+        { role: 'system', content: systemContent },
+        ...newMessages.map(m => ({ role: m.role, content: m.content })),
+      ];
 
-      for (const model of MODELS) {
-        const body = {
-          model,
-          messages: [
-            { role: 'system', content: systemContent },
-            ...newMessages.map(m => ({ role: m.role, content: m.content })),
-          ],
-          stream: true,
-          max_tokens: 1024,
-          temperature: 0.7,
-        };
-        console.warn(`[AIChat] Trying model: ${model}`);
-        try {
-          response = await tryRequest(body);
-          break;
-        } catch (e) {
-          console.warn(`[AIChat] Model ${model} failed on all keys, trying next model...`);
-        }
-      }
-
-      if (!response) {
-        throw new Error('All models failed');
-      }
-      setKeyIndex(0);
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader');
-
-      const decoder = new TextDecoder();
       let assistantContent = '';
-      let started = false;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-
-        for (const line of lines) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              if (!started) {
-                started = true;
-                setIsWaiting(false);
-                setIsResponding(true);
-                setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-              }
-              assistantContent += delta;
-              // Strip any <think>...</think> reasoning blocks from Qwen3
-              const cleanContent = assistantContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: cleanContent };
-                return updated;
-              });
-            }
-          } catch {}
+      // 1) الطريق الأساسي: باك-إند Vercel الآمن (/api/groq)
+      //    السيرفر يبدّل بين المفاتيح الثلاثة تلقائياً بنفس الطلب.
+      try {
+        const res = await fetch('/api/groq', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: payloadMessages }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.reply) {
+            console.log(`[AIChat] Backend OK (key${data.keyIndex ?? '?'} / ${data.model ?? ''})`);
+            assistantContent = data.reply;
+          } else {
+            throw new Error('Empty backend reply');
+          }
+        } else {
+          throw new Error(`Backend HTTP ${res.status}`);
         }
+      } catch (backendErr) {
+        // 2) الاحتياطي: اتصال مباشر من المتصفح (للتشغيل المحلي فقط)
+        console.warn('[AIChat] Backend unavailable, falling back to direct GROQ:', backendErr);
+        assistantContent = await tryDirectGroq(payloadMessages);
       }
+
+      typewriterShow(assistantContent);
 
       try {
         const { error: ie } = await supabase.from('ai_chat_logs').insert([{
