@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { supabase } from '../supabaseClient';
 
 interface BotrixEntry {
   level: number;
@@ -8,11 +9,20 @@ interface BotrixEntry {
   name: string;
 }
 
+interface RichEntry extends BotrixEntry {
+  avatar: string;
+  followers: number | null;
+  bio: string;
+  verified: boolean;
+  role: 'mod' | 'vip' | 'og' | null;
+}
+
 interface BotrixLeaderboardProps {
   lang: 'en' | 'ar';
 }
 
 const API_URL = '/api/kick?endpoint=' + encodeURIComponent('https://botrix.live/api/public/leaderboard?platform=kick&user=iabs');
+const KICK_CH = (name: string) => '/api/kick?endpoint=' + encodeURIComponent(`https://kick.com/api/v2/channels/${name}`);
 
 const formatDuration = (seconds: number) => {
   const days = Math.floor(seconds / 86400);
@@ -24,7 +34,7 @@ const formatDuration = (seconds: number) => {
 const formatNum = (n: number) => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
+  return (n || 0).toLocaleString();
 };
 
 const SkeletonRow: React.FC<{ delay: number }> = ({ delay }) => (
@@ -39,12 +49,40 @@ const SkeletonRow: React.FC<{ delay: number }> = ({ delay }) => (
   </div>
 );
 
-const AVATAR_CACHE = new Map<string, string>();
+const PROFILE_CACHE = new Map<string, { avatar: string; followers: number | null; bio: string; verified: boolean }>();
+
+const ROLE_STYLE: Record<string, { pill: string; dot: string; label: string; ring: string }> = {
+  mod: { pill: 'bg-emerald-400/15 border-emerald-400/50 text-emerald-300', dot: 'bg-emerald-400', label: 'MOD', ring: 'border-emerald-400/60' },
+  vip: { pill: 'bg-pink-400/15 border-pink-400/50 text-pink-300', dot: 'bg-pink-400', label: 'VIP', ring: 'border-pink-400/60' },
+  og: { pill: 'bg-amber-400/15 border-amber-400/50 text-amber-300', dot: 'bg-amber-400', label: 'OG', ring: 'border-amber-400/60' },
+};
+
+const RoleBadge: React.FC<{ role: 'mod' | 'vip' | 'og' }> = ({ role }) => {
+  const s = ROLE_STYLE[role];
+  return (
+    <span className={`inline-flex items-center gap-1 text-[8px] md:text-[9px] font-black tracking-[0.14em] px-1.5 sm:px-2 py-[3px] rounded-lg border ${s.pill}`}>
+      <span className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${s.dot} animate-pulse`} />
+      {s.label}
+    </span>
+  );
+};
+
+const ROLE_RING: Record<string, string> = {
+  mod: '#10b981',
+  vip: '#ec4899',
+  og: '#f59e0b',
+};
+
+const MiniIcon: React.FC<{ d: string; className?: string }> = ({ d, className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+  </svg>
+);
 
 const BotrixLeaderboard: React.FC<BotrixLeaderboardProps> = ({ lang }) => {
   const [data, setData] = useState<BotrixEntry[] | null>(null);
-  const [avatars, setAvatars] = useState<Record<string, string>>({});
-  const [loadingAvatars, setLoadingAvatars] = useState<Record<string, boolean>>({});
+  const [profiles, setProfiles] = useState<Record<string, { avatar: string; followers: number | null; bio: string; verified: boolean }>>({});
+  const [roles, setRoles] = useState<Record<string, 'mod' | 'vip' | 'og'>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -52,245 +90,230 @@ const BotrixLeaderboard: React.FC<BotrixLeaderboardProps> = ({ lang }) => {
     fetch(API_URL)
       .then(r => r.json())
       .then((json: BotrixEntry[]) => {
-        if (!cancelled) setData(json);
+        if (!cancelled && Array.isArray(json)) setData(json);
+        else if (!cancelled) setData([]);
       })
-      .catch((err) => {
-        console.error('[BotrixLeaderboard] Fetch error:', err);
-        if (!cancelled) setData([]);
-      });
+      .catch(() => { if (!cancelled) setData([]); });
+    // staff roles (admin-curated, graceful when table missing)
+    (async () => {
+      try {
+        const { data: rows } = await supabase.from('chat_roles').select('username,role');
+        if (!cancelled && rows) {
+          const map: Record<string, 'mod' | 'vip' | 'og'> = {};
+          rows.forEach((r: any) => {
+            const role = String(r.role || '').toLowerCase();
+            if (role === 'mod' || role === 'vip' || role === 'og') map[String(r.username || '').toLowerCase()] = role;
+          });
+          setRoles(map);
+        }
+      } catch { /* table may not exist yet */ }
+    })();
     return () => { cancelled = true; };
   }, []);
 
   const sorted = useMemo(() => {
     if (!data) return [];
-    return [...data].slice(0, 50);
+    return [...data].sort((a, b) => (b.watchtime || 0) - (a.watchtime || 0)).slice(0, 12);
   }, [data]);
 
-  const allNames = useMemo(() => {
-    return sorted.map(e => e.name);
-  }, [sorted]);
-
+  // Enrich top chatters with live Kick data (followers, bio, verified, avatar)
   useEffect(() => {
-    if (!allNames.length) return;
-    const toFetch = allNames.filter(n => !fetchedRef.current.has(n));
+    if (!sorted.length) return;
+    const toFetch = sorted.map(e => e.name).filter(n => !fetchedRef.current.has(n.toLowerCase()));
     if (!toFetch.length) return;
-    toFetch.forEach(n => fetchedRef.current.add(n));
-
+    toFetch.forEach(n => fetchedRef.current.add(n.toLowerCase()));
     let cancelled = false;
-    const results: Record<string, string> = {};
-    const loading: Record<string, boolean> = {};
-    toFetch.forEach(n => { loading[n] = true; });
-    if (!cancelled) setLoadingAvatars(prev => ({ ...prev, ...loading }));
-
     const fetchOne = async (name: string) => {
       try {
-        const res = await fetch('/api/kick?endpoint=' + encodeURIComponent(`https://kick.com/api/v2/channels/${name}`));
-        if (!res.ok) return;
+        const cached = PROFILE_CACHE.get(name.toLowerCase());
+        if (cached) return { name, ...cached };
+        const res = await fetch(KICK_CH(name));
+        if (!res.ok) return null;
         const json = await res.json();
-        const avatar = json?.user?.profile_pic || json?.profile_pic || '';
-        if (avatar) {
-          AVATAR_CACHE.set(name, avatar);
-          results[name] = avatar;
-        }
-      } catch { }
+        const d = json?.data || json;
+        const followers = d?.followers_count != null ? parseInt(String(d.followers_count).replace(/[^\d]/g, ''), 10) || null : null;
+        const out = {
+          name,
+          avatar: d?.user?.profile_pic || '',
+          followers,
+          bio: d?.user?.bio || '',
+          verified: d?.verified === true,
+        };
+        PROFILE_CACHE.set(name.toLowerCase(), { avatar: out.avatar, followers: out.followers, bio: out.bio, verified: out.verified });
+        return out;
+      } catch { return null; }
     };
-
     (async () => {
-      const batchSize = 5;
-      for (let i = 0; i < toFetch.length; i += batchSize) {
-        const batch = toFetch.slice(i, i + batchSize);
-        await Promise.all(batch.map(fetchOne));
+      for (let i = 0; i < toFetch.length; i += 4) {
+        const batch = await Promise.all(toFetch.slice(i, i + 4).map(fetchOne));
         if (cancelled) return;
-      }
-      if (!cancelled) {
-        setAvatars(prev => ({ ...prev, ...results }));
-        const done: Record<string, boolean> = {};
-        toFetch.forEach(n => { done[n] = false; });
-        setLoadingAvatars(prev => {
-          const next = { ...prev };
-          toFetch.forEach(n => { next[n] = false; });
-          return next;
-        });
+        const next: Record<string, { avatar: string; followers: number | null; bio: string; verified: boolean }> = {};
+        batch.forEach(b => { if (b) next[b.name] = { avatar: b.avatar, followers: b.followers, bio: b.bio, verified: b.verified }; });
+        setProfiles(prev => ({ ...prev, ...next }));
       }
     })();
-
     return () => { cancelled = true; };
-  }, [allNames]);
+  }, [sorted]);
 
-  const getAvatar = (name: string) => avatars[name] || AVATAR_CACHE.get(name) || '';
-  const isAvatarLoading = (name: string) => loadingAvatars[name] !== false;
+  const rich: RichEntry[] = useMemo(() => sorted.map(e => ({
+    ...e,
+    avatar: profiles[e.name]?.avatar || '',
+    followers: profiles[e.name]?.followers ?? null,
+    bio: profiles[e.name]?.bio || '',
+    verified: profiles[e.name]?.verified || false,
+    role: roles[e.name.toLowerCase()] || null,
+  })), [sorted, profiles, roles]);
 
-  const renderRankBadge = (rank: number) => {
-    if (rank === 1) return (
-      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[#FFD700] to-[#FFA500] shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-[#FFF8DC] text-black font-black text-xs md:text-sm shrink-0">
-        <svg className="w-3.5 h-3.5 md:w-4 md:h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-    );
-    if (rank === 2) return (
-      <div className="w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-[#E8E8E8] to-[#B0B0B0] shadow-[0_0_15px_rgba(192,192,192,0.3)] border-2 border-white/60 text-black font-black text-[10px] md:text-xs shrink-0">
-        <svg className="w-3 h-3 md:w-3.5 md:h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-    );
-    if (rank === 3) return (
-      <div className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[#E6A373] to-[#8B4513] shadow-[0_0_15px_rgba(205,127,50,0.3)] border-2 border-[#FFDAB9]/50 text-white font-black text-[10px] md:text-xs shrink-0">
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-    );
-    return (
-      <span className="w-5 md:w-6 text-center text-[10px] md:text-xs font-bold text-white/15 font-mono shrink-0">
-        {rank < 10 ? `0${rank}` : rank}
-      </span>
-    );
-  };
+  const maxWatch = Math.max(1, ...rich.map(e => e.watchtime || 0));
+  const totalWatch = rich.reduce((s, e) => s + (e.watchtime || 0), 0);
 
   const t = {
-    title: lang === 'ar' ? 'متداولين البثوث' : 'Stream Regulars',
+    title: lang === 'ar' ? 'أساطير الشات' : 'Chat Legends',
     subtitle: lang === 'ar' ? 'الأكثر تفاعلاً في جميع البثوث' : 'Most active across all streams',
     empty: lang === 'ar' ? 'لا توجد بيانات حالياً' : 'No data available',
-    powered: lang === 'ar' ? 'مدعوم من Botrix' : 'Powered by Botrix',
     level: lang === 'ar' ? 'المستوى' : 'Level',
-    watchtime: lang === 'ar' ? 'وقت المشاهدة' : 'Watch Time',
+    watchtime: lang === 'ar' ? 'مشاهدة' : 'Watched',
     xp: 'XP',
-    points: lang === 'ar' ? 'النقاط' : 'Points',
+    points: lang === 'ar' ? 'نقطة' : 'PTS',
+    followers: lang === 'ar' ? 'متابع' : 'Followers',
+    legends: lang === 'ar' ? 'أسطورة' : 'Legends',
   };
+
+  const podium = rich.slice(0, 3);
+  const rows = rich.slice(3);
+  const ringOf = (rank: number) =>
+    rank === 1 ? 'conic-gradient(from 200deg,#ffe977,#8a6a00,#fff6c8,#8a6a00,#ffe977)'
+    : rank === 2 ? 'conic-gradient(from 200deg,#e8e8e8,#6f7b8a,#ffffff,#6f7b8a,#e8e8e8)'
+    : rank === 3 ? 'conic-gradient(from 200deg,#f0a35e,#6e3c10,#ffd9ae,#6e3c10,#f0a35e)'
+    : 'rgba(255,255,255,0.12)';
 
   return (
     <div className="w-full animate-fade-in-up">
-      <div className="group relative flex flex-col rounded-[28px] md:rounded-[36px] overflow-hidden transition-all duration-700 bg-[#070707] backdrop-blur-lg border border-white/[0.06] shadow-[0_0_80px_-20px_rgba(83,252,24,0.06)] hover:border-white/[0.12] hover:shadow-[0_0_100px_-15px_rgba(83,252,24,0.1)]">
+      <div className="group card-sheen relative rounded-[28px] md:rounded-[36px] overflow-hidden bg-[#070707] border border-white/[0.07] shadow-[0_30px_90px_-20px_rgba(83,252,24,0.12)] [perspective:1200px]">
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-l from-transparent via-[#53FC18]/60 to-transparent" />
+        <div className="absolute -top-24 start-1/4 w-96 h-96 bg-[#53FC18]/[0.07] blur-[110px] pointer-events-none" />
+        <div className="absolute -bottom-32 end-0 w-96 h-96 bg-[#FF2D2D]/[0.06] blur-[110px] pointer-events-none" />
 
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#53FC18] opacity-[0.03] blur-[120px] pointer-events-none rounded-full"></div>
-        <div className="absolute bottom-0 right-0 w-[300px] h-[200px] bg-[#FF2D2D] opacity-[0.02] blur-[100px] pointer-events-none rounded-full"></div>
-
-        <div className="relative p-5 md:p-8 z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#53FC18]/20 blur-xl rounded-2xl"></div>
-              <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#53FC18]/15 to-black border border-[#53FC18]/20 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)]">
-                <svg className="w-6 h-6 md:w-7 md:h-7 text-[#53FC18] drop-shadow-[0_0_10px_rgba(83,252,24,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                </svg>
-              </div>
+        {/* header */}
+        <div className="relative p-5 md:p-8 pb-4 md:pb-5 flex items-center gap-4 [transform-style:preserve-3d]">
+          <div className="relative shrink-0 [transform:translateZ(30px)]">
+            <div className="absolute -inset-2 bg-[#53FC18]/40 blur-2xl opacity-40 group-hover:opacity-80 transition-opacity rounded-full" />
+            <div className="relative w-14 h-14 md:w-[72px] md:h-[72px] rounded-[20px] md:rounded-[22px] bg-gradient-to-b from-[#8dff6a] via-[#53FC18] to-[#2b9e1c] border border-[#c6ffab]/50 shadow-[0_0_36px_rgba(83,252,24,0.4)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-3">
+              <svg className="w-7 h-7 md:w-9 md:h-9 text-black" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
             </div>
-            <div>
-              <h3 className="text-xl md:text-2xl font-black text-white tracking-tight leading-none mb-0.5">{t.title}</h3>
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.25em] bg-gradient-to-r from-[#53FC18] to-emerald-500 bg-clip-text text-transparent">{t.subtitle}</span>
-            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl md:text-3xl font-black text-white tracking-tight leading-none">{t.title}</h3>
+            <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.22em] bg-gradient-to-r from-[#53FC18] to-emerald-500 bg-clip-text text-transparent mt-1.5">{t.subtitle}</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-white/60">{rich.length} {t.legends}</span>
+            <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-[#53FC18]/10 border border-[#53FC18]/30 text-[#53FC18]" dir="ltr">{formatDuration(totalWatch)}</span>
           </div>
         </div>
 
         <div className="relative px-4 md:px-8 pb-4 z-10">
           {!data && (
             <div className="space-y-1.5">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} delay={i * 60} />)}
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} delay={i * 60} />)}
             </div>
           )}
 
           {data && data.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-white/[0.03] flex items-center justify-center mb-4 border border-white/[0.05]">
-                <svg className="w-7 h-7 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                </svg>
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-4 border border-white/[0.06]">
+                <svg className="w-7 h-7 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.72m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
               </div>
               <p className="text-sm text-white/30 font-medium">{t.empty}</p>
             </div>
           )}
 
-          {data && data.length > 0 && (
-            <div className="space-y-1 max-h-[500px] md:max-h-[600px] overflow-y-auto scrollbar-hide">
-              {sorted.map((entry, idx) => {
-                const isTop3 = idx < 3;
-                const avatarUrl = getAvatar(entry.name);
-                const avatarLoading = isAvatarLoading(entry.name);
-                return (
-                  <div
-                    key={entry.name}
-                    className={`relative flex items-center justify-between p-2.5 md:p-3 rounded-xl md:rounded-2xl transition-all duration-300 group/row ${
-                      isTop3
-                        ? 'bg-gradient-to-r from-white/[0.03] via-white/[0.01] to-transparent border border-white/[0.06]'
-                        : 'hover:bg-white/[0.02] border border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 md:gap-3 min-w-0 flex-1">
-                      <div className="shrink-0 flex justify-center w-6 md:w-8">
-                        {renderRankBadge(idx + 1)}
-                      </div>
-
-                      <div className="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden bg-white/[0.04] border border-white/[0.06] shadow-lg">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt={entry.name} className="w-full h-full object-cover" loading="lazy" />
-                        ) : (
-                          <div className={`w-full h-full flex items-center justify-center ${avatarLoading ? 'animate-pulse bg-white/[0.04]' : 'bg-gradient-to-br from-[#53FC18]/10 to-white/[0.02]'}`}>
-                            {!avatarLoading && (
-                              <span className="text-xs md:text-sm font-bold text-white/30">{entry.name.charAt(0).toUpperCase()}</span>
-                            )}
-                          </div>
+          {rich.length > 0 && (
+            <>
+              {/* podium top-3 */}
+              <div className="flex items-end justify-center gap-2 sm:gap-5 [perspective:800px] pt-1 pb-5" dir="ltr">
+                {([podium[1], podium[0], podium[2]].filter(Boolean)).map((e: any, i: number) => {
+                  const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
+                  const step = rank === 1 ? 'h-[86px] sm:h-[110px]' : rank === 2 ? 'h-[64px] sm:h-[86px]' : 'h-[50px] sm:h-[68px]';
+                  return (
+                    <div key={e.name} className="flex flex-col items-center w-[30%] max-w-[200px] opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                      <span className={`relative rounded-full p-[2.5px] block ${rank === 1 ? 'w-14 h-14 sm:w-[72px] sm:h-[72px]' : 'w-11 h-11 sm:w-14 sm:h-14'}`} style={{ background: ringOf(rank), boxShadow: rank === 1 ? '0 0 30px rgba(255,215,0,0.35)' : 'none' }}>
+                        {e.avatar
+                          ? <img src={e.avatar} alt={e.name} loading="lazy" className="w-full h-full rounded-full object-cover bg-black" />
+                          : <span className="w-full h-full rounded-full bg-[#0c0c0c] flex items-center justify-center font-black text-white/70">{e.name.charAt(0).toUpperCase()}</span>}
+                        {rank === 1 && (
+                          <svg className="absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 sm:w-6 sm:h-6 drop-shadow-[0_0_8px_rgba(255,215,0,0.9)]" viewBox="0 0 24 24" fill="none">
+                            <path fill="#FFD700" d="M2.5 8.5 6.5 12l5.5-7 5.5 7 4-3.5L20 18H4L2.5 8.5z" />
+                            <rect x="4" y="18.6" width="16" height="2.2" rx="1.1" fill="#B45309" />
+                          </svg>
                         )}
-                      </div>
-
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className={`text-sm md:text-[15px] font-bold truncate leading-tight ${
-                          idx === 0 ? 'text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]' : 'text-white/80 group-hover/row:text-white'
-                        }`}>
-                          {entry.name}
-                        </span>
-                        <div className="flex items-center gap-2 text-[9px] md:text-[10px] text-white/25 font-medium mt-0.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-yellow-400/60">⭐</span> Lv.{entry.level}
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-white/[0.08]"></span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-[#53FC18]/60">⏱</span> {formatNum(entry.watchtime)}h
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-white/[0.08]"></span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-blue-400/60">⚡</span> {formatNum(entry.xp)} XP
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-white/[0.08]"></span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-purple-400/60">💎</span> {formatNum(entry.points)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`flex items-center gap-2 pl-3 rounded-xl px-2.5 md:px-3 py-2 border transition-all duration-300 shrink-0 ${
-                      idx === 0
-                        ? 'bg-[#53FC18]/10 border-[#53FC18]/20 shadow-[0_0_20px_rgba(83,252,24,0.1)]'
-                        : 'bg-black/40 border-white/[0.04] group-hover/row:border-white/[0.08]'
-                    }`}>
-                      <span className={`text-[10px] md:text-xs font-black tracking-wide leading-none ${
-                        idx === 0 ? 'text-[#53FC18] drop-shadow-[0_0_8px_rgba(83,252,24,0.3)]' : 'text-white/50'
-                      }`}>
-                        {formatNum(entry.watchtime)}h
                       </span>
-                      {idx === 0 && (
-                        <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#53FC18] opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-[#53FC18]"></span>
-                        </span>
-                      )}
+                      <p className="mt-2 text-xs sm:text-sm font-black text-white truncate max-w-full flex items-center gap-1" dir="auto">
+                        {e.name}
+                        {e.verified && <svg className="w-3.5 h-3.5 text-[#53FC18] shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                      </p>
+                      <span className="mt-1 flex items-center gap-1.5">
+                        {e.role && <RoleBadge role={e.role} />}
+                        <span className="text-[10px] sm:text-[11px] font-black text-white/50" dir="ltr">Lv.{e.level}</span>
+                      </span>
+                      <div className={`w-full mt-2 rounded-t-xl border-x border-t border-white/10 bg-white/[0.03] ${step} relative overflow-hidden [transform:rotateX(8deg)] origin-bottom`}>
+                        <span className="absolute inset-0 flex items-start justify-center pt-1.5 font-gaming text-xl sm:text-2xl text-white/25" dir="ltr">{rank}</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div className="h-6"></div>
-            </div>
+                  );
+                })}
+              </div>
+
+              {/* rows */}
+              <div className="space-y-1.5 max-h-[420px] md:max-h-[520px] overflow-y-auto scrollbar-hide">
+                {rich.slice(3).map((e, idx) => {
+                  const rank = idx + 4;
+                  const pct = Math.max(4, Math.round(((e.watchtime || 0) / maxWatch) * 100));
+                  return (
+                    <div key={e.name} className="relative rounded-2xl p-2.5 sm:p-3 border border-transparent hover:border-white/10 hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all duration-300 opacity-0 animate-fade-in-up" style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}>
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <span className="w-7 text-center text-[11px] sm:text-xs font-black text-white/25 shrink-0" dir="ltr">{rank < 10 ? `0${rank}` : rank}</span>
+                        <span className={`relative w-9 h-9 sm:w-11 sm:h-11 rounded-full p-[2px] shrink-0 block`} style={{ background: e.role ? ROLE_RING[e.role] : 'rgba(255,255,255,0.12)' }}>
+                          {e.avatar
+                            ? <img src={e.avatar} alt={e.name} loading="lazy" className="w-full h-full rounded-full object-cover bg-black" />
+                            : <span className="w-full h-full rounded-full bg-white/[0.05] flex items-center justify-center text-xs font-black text-white/50">{e.name.charAt(0).toUpperCase()}</span>}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] sm:text-sm font-bold text-white/90 truncate flex items-center gap-1.5" dir="auto">
+                            <span className="truncate">{e.name}</span>
+                            {e.verified && <svg className="w-3.5 h-3.5 text-[#53FC18] shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                            {e.role && <RoleBadge role={e.role} />}
+                          </p>
+                          <p className="mt-1 flex items-center gap-2 text-[9px] sm:text-[10px] text-white/35 font-bold">
+                            <span className="inline-flex items-center gap-1" dir="ltr"><MiniIcon d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="w-3 h-3 text-[#53FC18]/70" />{formatDuration(e.watchtime)}</span>
+                            <span dir="ltr">Lv.{e.level}</span>
+                            <span className="hidden md:inline" dir="ltr">{formatNum(e.xp)} XP</span>
+                            {e.followers != null && <span className="hidden sm:inline-flex items-center gap-1" dir="ltr"><MiniIcon d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" className="w-3 h-3 text-white/30" />{formatNum(e.followers)}</span>}
+                          </p>
+                          {e.bio && <p className="hidden md:block text-[10px] text-white/25 truncate mt-0.5" dir="auto">{e.bio}</p>}
+                        </div>
+                        <span className="text-[11px] sm:text-xs font-black text-white/60 shrink-0" dir="ltr">{formatDuration(e.watchtime)}</span>
+                      </div>
+                      <div className="mt-1.5 ms-9 sm:ms-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="bar-grow h-full rounded-full bg-gradient-to-l from-[#53FC18] to-emerald-700" style={{ width: `${pct}%`, animationDelay: `${Math.min(idx * 60, 480)}ms`, transformOrigin: lang === 'ar' ? 'right' : 'left' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="h-4"></div>
+              </div>
+            </>
           )}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#070707] via-[#070707]/90 to-transparent pointer-events-none z-20"></div>
 
         <div className="relative px-5 md:px-8 pb-5 md:pb-6 flex items-center justify-center gap-3 z-10">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent"></div>
-          <a href="https://botrix.live" target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-[8px] md:text-[9px] font-bold uppercase tracking-[0.3em] text-white/15 hover:text-[#53FC18]/50 transition-all duration-300 hover:tracking-[0.35em]">
-            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-            </svg>
-            {t.powered}
-          </a>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent"></div>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"></div>
+          <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.3em] text-white/20">
+            {lang === 'ar' ? 'نخبة الشات المباشر' : 'Live chat elite'}
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"></div>
         </div>
       </div>
     </div>
