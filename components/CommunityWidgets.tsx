@@ -124,7 +124,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                {/* color bleed — banner tones wash down the whole card, no boundary */}
                <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
                   <img
-                     src="/12ab6917-943c-4013-a96f-18156e8ed881.png"
+                     src="/discord-banner.jpg"
                      alt=""
                      className="absolute top-0 inset-x-0 h-[48%] w-full object-cover blur-3xl opacity-30"
                      style={{ maskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 25%, transparent 100%)' }}
@@ -135,7 +135,7 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                 {/* banner — melts into body, no hard edge */}
                 <div className="relative h-24 sm:h-28 overflow-hidden shrink-0">
                    <img
-                      src="/12ab6917-943c-4013-a96f-18156e8ed881.png"
+                      src="/discord-banner.jpg"
                       alt=""
                       className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-[2.5s] ease-out"
                    />

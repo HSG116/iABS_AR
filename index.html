@@ -27,7 +27,7 @@
   <meta property="og:url" content="https://kick.com/iabs">
   <meta property="og:title" content="iABS Official | محمد القحطاني - ملك القبول">
   <meta property="og:description" content="تابع محمد القحطاني (iABS) في أقوى البثوث المباشرة. فعاليات، ألعاب، وتفاعل لا يتوقف مع مجتمع الأساطير.">
-  <meta property="og:image" content="/jkgukj.png">
+  <meta property="og:image" content="/og-cover.jpg">
   <meta property="og:site_name" content="iABS">
 
   <!-- Twitter -->
@@ -35,7 +35,7 @@
   <meta name="twitter:url" content="https://kick.com/iabs">
   <meta name="twitter:title" content="iABS Official Hub | محمد القحطاني">
   <meta name="twitter:description" content="تابع iABS مباشرة على كيك وانضم إلى أكبر تجمع للأساطير.">
-  <meta name="twitter:image" content="/jkgukj.png">
+  <meta name="twitter:image" content="/og-cover.jpg">
   <meta name="twitter:site" content="@iABSq">
 
   <link rel="icon" type="image/png" href="/favicon.png">
@@ -62,11 +62,16 @@
     }
   </script>
 
+  <link rel="preload" as="image" href="/bg-mobile.jpg" media="(max-width: 767px)" fetchpriority="high">
+  <link rel="preload" as="image" href="/bg-pc.jpg" media="(min-width: 768px)" fetchpriority="high">
+  <link rel="preload" as="image" href="/favicon.png" fetchpriority="high">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://esm.sh" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800;900&family=Cairo:wght@600;700;800;900&family=Bangers&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Bangers&display=swap"
     rel="stylesheet">
   <script>
     tailwind.config = {
@@ -136,11 +141,11 @@
     ::-webkit-scrollbar-thumb { background: linear-gradient(#FF2D2D, #7a0e0e); border-radius: 99px; border: 2px solid #080808; }
 
     .responsive_bg {
-      background-image: url('/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png');
+      background-image: url('/bg-mobile.jpg');
       background-size: cover; background-position: center top; background-repeat: no-repeat;
     }
     @media (min-width: 768px) {
-      .responsive_bg { background-image: url('/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png'); }
+      .responsive_bg { background-image: url('/bg-pc.jpg'); }
     }
 
     .grain::after {

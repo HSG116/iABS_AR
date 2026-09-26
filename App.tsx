@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { KickIcon, XIcon, SnapchatIcon, DiscordIcon, TikTokIcon, WhatsAppIcon, InstagramIcon, YoutubeIcon, FacebookIcon, MailIcon } from './components/Icons';
 import { SocialLink, Language } from './types';
 import { supabase } from './supabaseClient';
 import { AnnouncementTicker, SponsorsSection, ClipsSection, ScheduleSection, FAQSection } from './components/PublicWidgets';
-import { AdminDashboard } from './components/AdminDashboard';
 import { StreamPlayer } from './components/StreamPlayer';
 import { ChatWidget } from './components/Chat';
-import { StatsSection } from './components/StatsSection';
 import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
-import { AIChat } from './components/AIChat';
+
+// Heavy below-fold / on-demand chunks — split out of the first paint
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const StatsSection = lazy(() => import('./components/StatsSection').then(m => ({ default: m.StatsSection })));
+const AIChat = lazy(() => import('./components/AIChat').then(m => ({ default: m.AIChat })));
 
 // --- Constants (preserved) ---
 const DEFAULT_PROFILE_IMAGE = "/favicon.png";
@@ -16,8 +18,8 @@ import { kickFetch } from './utils/kickApi';
 import { getAllSocialMediaStats, formatFollowerCount, readSocialCache, SOCIAL_TTL_MS } from './utils/socialMediaApi';
 import { getTipLeaderboard, TipDonor, TipInterval } from './utils/supportersApi';
 
-const PC_BACKGROUND = "/84c78815-c9fc-4961-9b6b-c0d79b3a0138.png";
-const MOBILE_BACKGROUND = "/c2a78a6d-22c1-4612-aa04-9a29500bcacc.png";
+const PC_BACKGROUND = "/bg-pc.jpg";
+const MOBILE_BACKGROUND = "/bg-mobile.jpg";
 const CHANNEL_SLUG = 'iabs';
 
 const createSocialLink = (key: string, value: string, followerCount?: string, specialDetail?: string): SocialLink | null => {
@@ -830,27 +832,34 @@ export default function App() {
 
     const fetchPublicData = async () => {
         try {
-            const { data: ann } = await supabase.from('announcements').select('*').eq('id', 1).single();
+            // Parallel: one round-trip instead of 8 sequential ones
+            const [annRes, sponRes, clpRes, schRes, fqRes, schToggleRes, faqToggleRes, seoRes] = await Promise.all([
+                supabase.from('announcements').select('*').eq('id', 1).single(),
+                supabase.from('sponsors').select('*').order('id', { ascending: false }),
+                supabase.from('highlight_clips').select('*').order('id', { ascending: false }),
+                supabase.from('schedule').select('*').order('id', { ascending: true }),
+                supabase.from('faqs').select('*').order('id', { ascending: false }),
+                supabase.from('announcements').select('*').eq('id', 2).single(),
+                supabase.from('announcements').select('*').eq('id', 3).single(),
+                supabase.from('seo_settings').select('*').eq('id', 1).single(),
+            ]);
+            const ann = annRes.data;
             if (ann && (ann.is_active === true || ann.is_active === 'true' || ann.is_active === 1 || ann.is_active === '1')) setAnnouncement(ann);
             else setAnnouncement(null);
 
-            const { data: spon } = await supabase.from('sponsors').select('*').order('id', { ascending: false });
-            setSponsors(spon || []);
-            const { data: clp } = await supabase.from('highlight_clips').select('*').order('id', { ascending: false });
-            setClipsList(clp || []);
-            const { data: sch } = await supabase.from('schedule').select('*').order('id', { ascending: true });
-            setSchedule(sch || []);
-            const { data: fq } = await supabase.from('faqs').select('*').order('id', { ascending: false });
-            setFaqs(fq || []);
+            setSponsors(sponRes.data || []);
+            setClipsList(clpRes.data || []);
+            setSchedule(schRes.data || []);
+            setFaqs(fqRes.data || []);
 
-            const { data: schToggle } = await supabase.from('announcements').select('*').eq('id', 2).single();
+            const schToggle = schToggleRes.data;
             if (schToggle) setIsScheduleActive(schToggle.is_active === true || schToggle.is_active === 'true');
             else setIsScheduleActive(true);
-            const { data: faqToggle } = await supabase.from('announcements').select('*').eq('id', 3).single();
+            const faqToggle = faqToggleRes.data;
             if (faqToggle) setIsFaqActive(faqToggle.is_active === true || faqToggle.is_active === 'true');
             else setIsFaqActive(true);
 
-            const { data: seo } = await supabase.from('seo_settings').select('*').eq('id', 1).single();
+            const seo = seoRes.data;
             if (seo) {
                 document.title = seo.title || "iABS Stream Hub";
                 const setMeta = (name: string, content: string, isProperty = false) => {
@@ -1066,8 +1075,10 @@ export default function App() {
     return (
         <div className={`grain relative min-h-screen w-full overflow-x-hidden ${lang === 'ar' ? 'font-arabic' : 'font-sans'}`}>
             {isAdmin && showAdminDashboard && (
-                <AdminDashboard supabase={supabase} visitorCount={visitorCount} activePoll={activePoll} setActivePoll={setActivePoll}
-                    onLogout={handleAdminLogout} onBack={() => setShowAdminDashboard(false)} fetchLive={fetchPublicData} />
+                <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-[#FF2D2D] animate-spin" /></div>}>
+                    <AdminDashboard supabase={supabase} visitorCount={visitorCount} activePoll={activePoll} setActivePoll={setActivePoll}
+                        onLogout={handleAdminLogout} onBack={() => setShowAdminDashboard(false)} fetchLive={fetchPublicData} />
+                </Suspense>
             )}
             {isAdmin && showAdminDashboard ? null : (
                 <>
@@ -1359,7 +1370,7 @@ export default function App() {
                         </div>
 
                         <section className="pt-12 md:pt-16">
-                            <Reveal><StatsSection lang={lang} /></Reveal>
+                            <Reveal><Suspense fallback={<div className="w-full h-40 rounded-[26px] border border-white/10 bg-white/[0.02] animate-pulse" />}><StatsSection lang={lang} /></Suspense></Reveal>
                         </section>
 
                         {/* ===== FOOTER ===== */}
@@ -1390,7 +1401,7 @@ export default function App() {
                         </footer>
                     </div>
 
-                    <AIChat lang={lang} />
+                    <Suspense fallback={null}><AIChat lang={lang} /></Suspense>
 
                     {showAdminLogin && !isAdmin && (
                         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowAdminLogin(false)}>
