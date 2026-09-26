@@ -213,15 +213,32 @@ const Marquee: React.FC<{ lang: Language }> = ({ lang }) => {
     );
 };
 
-// --- Last Session Report (redesigned, same data) ---
-const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> = ({ lang, data, clips }) => {
+// --- Count-up number (rAF, reduced-motion safe) ---
+const CountUp: React.FC<{ value: number; duration?: number }> = ({ value, duration = 1300 }) => {
+    const [n, setN] = useState(0);
+    useEffect(() => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(value); return; }
+        let raf = 0;
+        const t0 = performance.now();
+        const step = (t: number) => {
+            const p = Math.min(1, (t - t0) / duration);
+            setN(Math.round(value * (1 - Math.pow(1 - p, 3))));
+            if (p < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [value, duration]);
+    return <span dir="ltr">{n.toLocaleString('en-US')}</span>;
+};
+
+// --- Last Session Report: MISSION DEBRIEF edition (rich Kick data) ---
+const LastSessionReport: React.FC<{ lang: Language; data: any; clips: any[]; past?: any[] }> = ({ lang, data, clips, past = [] }) => {
     if (!data && (!clips || clips.length === 0)) return null;
-    const isRTL = lang === 'ar';
     const timeAgo = (date: string) => {
         if (!date) return '---';
-        const now = new Date(); const past = new Date(date);
-        if (isNaN(past.getTime())) return '---';
-        const diff = Math.floor((now.getTime() - past.getTime()) / 1000);
+        const now = new Date(); const pastD = new Date(date);
+        if (isNaN(pastD.getTime())) return '---';
+        const diff = Math.floor((now.getTime() - pastD.getTime()) / 1000);
         if (diff < 60) return lang === 'en' ? `${diff}s ago` : `منذ ${diff} ثانية`;
         if (diff < 3600) return lang === 'en' ? `${Math.floor(diff / 60)}m ago` : `منذ ${Math.floor(diff / 60)} دقيقة`;
         if (diff < 86400) return lang === 'en' ? `${Math.floor(diff / 3600)}h ago` : `منذ ${Math.floor(diff / 3600)} ساعة`;
@@ -234,36 +251,127 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
     };
     const t = TRANSLATIONS[lang] as any;
     const thumbnail = data.thumbnail?.url || data.thumbnail?.src || (typeof data.thumbnail === 'string' ? data.thumbnail : '') || (data.responsive_url) || PC_BACKGROUND;
+    const views = Number(data.views ?? data.video?.views ?? 0);
+    const peak = Number(data.viewer_count ?? 0);
+    const durH = data.duration > 1000000 ? data.duration / 3600000 : (Number(data.duration) || 0) / 3600;
+    const vph = durH > 0.05 ? Math.round(views / durH) : views;
+    const vodUrl = `https://kick.com/${CHANNEL_SLUG}/videos/${data.id}`;
+    const isSubOnly = data.video?.status === 'subscriber_only' || data.video?.is_private === true;
+    const fullDate = (() => { try { return new Date(data.created_at).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } })();
+    const sessions = [data, ...past].slice(0, 4);
+    const maxV = Math.max(1, ...sessions.map((s: any) => Number(s.views ?? s.video?.views ?? 0)));
+    const compact = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : `${v}`;
+    const vodUrlOf = (v: any) => `https://kick.com/${CHANNEL_SLUG}/videos/${v.id}`;
+    const catTags: string[] = [...new Set((data.categories || []).flatMap((c: any) => c.tags || []))].slice(0, 4) as string[];
+    const L = {
+        views: lang === 'en' ? 'VIEWS' : 'المشاهدات',
+        peak: lang === 'en' ? 'PEAK' : 'الذروة',
+        perHour: lang === 'en' ? 'VIEWS / HR' : 'مشاهدة / ساعة',
+        pulse: lang === 'en' ? 'RECENT SESSIONS PULSE' : 'نبض الجلسات الأخيرة',
+        watch: lang === 'en' ? 'WATCH VOD' : 'مشاهدة التسجيل',
+        family: lang === 'en' ? 'FAMILY' : 'عائلي',
+    };
+    const stats = [
+        { label: t.duration, value: <span dir="ltr">{formatDuration(data.duration)}</span>, hot: true, icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+        { label: L.views, value: <CountUp value={views} />, hot: false, icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> },
+        { label: L.peak, value: <CountUp value={peak} />, hot: true, icon: <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 1015 12a3 3 0 00-2.88 3.12z" clipRule="evenodd" /></svg> },
+        { label: L.perHour, value: <CountUp value={vph} />, hot: false, icon: <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg> },
+    ];
     return (
         <Reveal className="w-full">
             <div className="relative overflow-hidden rounded-[28px] md:rounded-[36px] border border-white/10 bg-[#0a0a0a]/85 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+                {/* cinematic ambient from thumbnail */}
+                <img src={thumbnail} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-25 scale-110 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 pointer-events-none" />
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-transparent via-[#FF2D2D] to-transparent" />
-                <div className="absolute -top-24 end-0 w-96 h-96 bg-[#FF2D2D]/10 blur-[110px] pointer-events-none" />
-                <div className="relative p-6 md:p-10">
-                    <div className="flex items-center gap-3 mb-7">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF2D2D] shadow-[0_0_14px_#FF2D2D] animate-pulse" />
+                <div className="relative p-5 sm:p-8 md:p-10">
+                    {/* header */}
+                    <div className="flex flex-wrap items-center gap-3 mb-6 md:mb-8 animate-fade-in-up">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF2D2D] shadow-[0_0_14px_#FF2D2D] animate-pulse shrink-0" />
                         <span className="text-[11px] font-black tracking-[0.35em] text-white/45 uppercase">{t.lastSessionReport}</span>
+                        <span className="ms-auto flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-white/70">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                {fullDate} • {timeAgo(data.created_at)}
+                            </span>
+                            <span className={`text-[10px] font-black px-3 py-1.5 rounded-full border tracking-widest ${isSubOnly ? 'bg-amber-400/10 border-amber-400/40 text-amber-300' : 'bg-[#53FC18]/10 border-[#53FC18]/40 text-[#53FC18]'}`}>
+                                {isSubOnly ? t.subOnly : 'PUBLIC'}
+                            </span>
+                        </span>
                     </div>
-                    <div className="flex flex-col lg:flex-row gap-7 items-start">
-                        <div className="w-full lg:w-[340px] shrink-0 aspect-video rounded-2xl overflow-hidden border border-white/10 relative group">
-                            <img src={thumbnail} alt="Last Session" loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                            <span className="absolute top-3 start-3 text-[10px] font-black px-2.5 py-1 rounded-full bg-black/70 border border-white/15 text-white/80 backdrop-blur">VOD</span>
+
+                    {/* hero */}
+                    <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start">
+                        <div className="[perspective:1200px] w-full lg:w-[380px] shrink-0 animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+                            <a href={vodUrl} target="_blank" rel="noopener noreferrer"
+                                className="group relative block aspect-video rounded-2xl overflow-hidden border border-[#FF2D2D]/30 bg-black shadow-[0_24px_60px_-16px_rgba(255,45,45,0.4)] [transform:rotateY(-7deg)_rotateX(2deg)] hover:[transform:rotateY(0deg)_rotateX(0deg)] transition-transform duration-700">
+                                <img src={thumbnail} alt="Last Session" loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                                <span className="absolute top-3 start-3 text-[10px] font-black px-2.5 py-1 rounded-full bg-black/70 border border-white/15 text-white/80 backdrop-blur">VOD</span>
+                                <span className="absolute inset-0 m-auto w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#FF2D2D]/25 backdrop-blur-md border border-[#FF2D2D]/70 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-[0_0_36px_rgba(255,45,45,0.55)]">
+                                    <svg className="w-6 h-6 text-white fill-current translate-x-[1px] rtl:-translate-x-[1px]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                </span>
+                                <span className="absolute bottom-3 end-3 text-[10px] font-black px-2.5 py-1 rounded-lg bg-black/75 border border-white/15 text-white" dir="ltr">{formatDuration(data.duration)}</span>
+                                <span className="absolute bottom-3 start-3 inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-lg bg-black/75 border border-white/15 text-white" dir="ltr">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    {compact(views)}
+                                </span>
+                            </a>
+                            <span className="mt-3 w-full min-h-[48px] flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ff4d4d] to-[#FF2D2D] text-black font-black text-sm shadow-[0_12px_30px_-10px_rgba(255,45,45,0.6)] active:scale-[0.98] transition-transform">
+                                {L.watch}
+                                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            </span>
                         </div>
+
                         <div className="flex-1 min-w-0 w-full">
-                            <h3 className="text-xl md:text-3xl font-black text-white leading-snug mb-6">{data.session_title || data.title}</h3>
-                            <div className="grid grid-cols-2 gap-3 max-w-md">
-                                <div className="rounded-2xl bg-white/[0.04] border border-white/10 px-5 py-4 text-center">
-                                    <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-1">{t.ago}</p>
-                                    <p className="text-lg md:text-xl font-black text-white">{timeAgo(data.created_at)}</p>
-                                </div>
-                                <div className="rounded-2xl bg-[#FF2D2D]/[0.07] border border-[#FF2D2D]/25 px-5 py-4 text-center">
-                                    <p className="text-[10px] font-bold text-[#FF2D2D]/80 uppercase tracking-widest mb-1">{t.duration}</p>
-                                    <p className="text-lg md:text-xl font-black text-white" dir="ltr">{formatDuration(data.duration)}</p>
-                                </div>
+                            <div className="flex flex-wrap items-center gap-2 mb-3 animate-fade-in-up" style={{ animationDelay: '140ms' }}>
+                                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/[0.07] border border-white/10 text-white/70" dir="ltr">{data.language || 'AR'}</span>
+                                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/[0.07] border border-white/10 text-white/70">{data.is_mature ? '18+' : L.family}</span>
+                                {catTags.map((tag, i) => <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#FF2D2D]/10 border border-[#FF2D2D]/30 text-[#ff8080]" dir="ltr">#{tag}</span>)}
                             </div>
+                            <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug mb-5 animate-fade-in-up" style={{ animationDelay: '180ms' }}>{data.session_title || data.title}</h3>
+                            <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3">
+                                {stats.map((s, i) => (
+                                    <div key={i} className={`card-sheen relative overflow-hidden rounded-2xl border px-4 py-4 text-center backdrop-blur-md animate-fade-in-up ${s.hot ? 'bg-[#FF2D2D]/[0.07] border-[#FF2D2D]/25' : 'bg-white/[0.04] border-white/10'}`} style={{ animationDelay: `${220 + i * 80}ms` }}>
+                                        <span className={`mx-auto w-8 h-8 rounded-xl flex items-center justify-center mb-2 ${s.hot ? 'bg-[#FF2D2D]/15 text-[#ff6b6b]' : 'bg-white/[0.07] text-white/60'}`}>{s.icon}</span>
+                                        <p className="text-lg sm:text-xl md:text-2xl font-black text-white">{s.value}</p>
+                                        <p className="text-[9px] sm:text-[10px] font-bold text-white/35 uppercase tracking-widest mt-1">{s.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* recent sessions pulse */}
+                            {sessions.length > 1 && (
+                                <div className="mt-6 animate-fade-in-up" style={{ animationDelay: '540ms' }}>
+                                    <p className="text-[10px] font-black tracking-[0.25em] text-white/30 uppercase mb-3">{L.pulse}</p>
+                                    <div className="flex items-end gap-2 sm:gap-3 h-28 sm:h-32" dir="ltr">
+                                        {sessions.map((s: any, i: number) => {
+                                            const v = Number(s.views ?? s.video?.views ?? 0);
+                                            const h = Math.max(10, Math.round((v / maxV) * 100));
+                                            const cur = i === 0;
+                                            return (
+                                                <a key={s.id || i} href={vodUrlOf(s)} target="_blank" rel="noopener noreferrer" title={s.session_title || s.title}
+                                                    className="flex-1 h-full flex flex-col items-center justify-end gap-1.5 group/bar min-w-0">
+                                                    <span className={`text-[10px] sm:text-[11px] font-black ${cur ? 'text-[#ff6b6b]' : 'text-white/45'}`} dir="ltr">{compact(v)}</span>
+                                                    <span className="tier-bar w-full max-w-[90px] rounded-t-lg border-x border-t relative overflow-hidden"
+                                                        style={{
+                                                            height: `${h}%`, animationDelay: `${i * 120}ms`,
+                                                            background: cur ? 'linear-gradient(to bottom, #FF2D2D, #FF2D2D55 60%, rgba(0,0,0,0.5))' : 'linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0.06))',
+                                                            borderColor: cur ? '#FF2D2D88' : 'rgba(255,255,255,0.15)',
+                                                            boxShadow: cur ? '0 0 22px -4px rgba(255,45,45,0.7)' : 'none',
+                                                        }}>
+                                                        <span className="absolute top-0 inset-x-2 h-1 rounded-full bg-white/40 blur-[1px]" />
+                                                    </span>
+                                                    <span className={`w-full max-w-[90px] h-1.5 rounded-b bg-black/70 border-x border-b ${cur ? 'border-[#FF2D2D]/50' : 'border-white/10'}`} />
+                                                </a>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             {data.categories?.length > 0 && (
-                                <div className="mt-6">
+                                <div className="mt-6 animate-fade-in-up" style={{ animationDelay: '620ms' }}>
                                     <p className="text-[10px] font-black tracking-[0.25em] text-white/30 uppercase mb-3">{t.categoriesSpent}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {data.categories.map((cat: any, i: number) => {
@@ -271,7 +379,7 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                                             const slug = cat.slug || cat.category?.slug || catName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
                                             const catImg = cat.banner?.url || cat.banner?.responsive || cat.category?.banner?.url || cat.category?.banner?.responsive || cat.responsive_url || cat.thumbnail?.url || cat.category?.responsive_url || cat.category?.thumbnail?.url || `https://files.kick.com/categories/${slug}/fullsize.png`;
                                             return (
-                                                <span key={i} className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full ps-1 pe-3 py-1">
+                                                <span key={i} className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full ps-1 pe-3 py-1 hover:border-[#FF2D2D]/40 transition-colors">
                                                     <span className="w-7 h-7 rounded-full overflow-hidden bg-black border border-white/10 block">
                                                         <img src={catImg} alt={catName} loading="lazy" className="w-full h-full object-cover"
                                                             onError={(e) => { const tg = e.target as HTMLImageElement; tg.src = tg.src.includes('picsum') ? DEFAULT_PROFILE_IMAGE : `https://picsum.photos/seed/${slug}/100/100`; }} />
@@ -285,8 +393,9 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                             )}
                         </div>
                     </div>
+
                     {clips && clips.length > 0 && (
-                        <div className="mt-9 pt-7 border-t border-white/[0.07]">
+                        <div className="mt-8 md:mt-10 pt-7 border-t border-white/[0.07] animate-fade-in-up" style={{ animationDelay: '680ms' }}>
                             <div className="flex items-center gap-2.5 mb-5">
                                 <span className="w-2 h-2 rounded-full bg-neon shadow-[0_0_10px_#53FC18]" />
                                 <span className="text-[11px] font-black tracking-[0.25em] text-white/40 uppercase">{t.highlights}</span>
@@ -294,18 +403,19 @@ const LastSessionReport: React.FC<{ lang: Language, data: any, clips: any[] }> =
                             <div className="grid grid-cols-3 gap-2 md:gap-4">
                                 {clips.slice(0, 3).map((clip: any, i: number) => (
                                     <a key={clip.id || i} href={`https://kick.com/${CHANNEL_SLUG}?clip=${clip.id}`} target="_blank" rel="noopener noreferrer"
-                                        className="group relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/10 bg-black hover:border-[#FF2D2D]/60 transition-colors duration-300">
+                                        className="group relative aspect-video rounded-xl md:rounded-2xl overflow-hidden border border-white/10 bg-black hover:border-[#53FC18]/60 hover:-translate-y-1 transition-all duration-300">
                                         <img src={clip.thumbnail_url || clip.thumbnail?.url || PC_BACKGROUND} alt={clip.title} loading="lazy"
                                             className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+                                        <span className="absolute top-1.5 start-1.5 w-5 h-5 md:w-6 md:h-6 rounded-lg bg-black/70 border border-white/15 text-white/80 text-[9px] md:text-[10px] font-black flex items-center justify-center backdrop-blur" dir="ltr">{i + 1}</span>
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#FF2D2D]/25 backdrop-blur border border-[#FF2D2D]/60 flex items-center justify-center">
+                                            <span className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#53FC18]/25 backdrop-blur border border-[#53FC18]/60 flex items-center justify-center">
                                                 <svg className="w-4 h-4 md:w-5 md:h-5 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                                             </span>
                                         </div>
                                         <div className="absolute bottom-0 inset-x-0 p-2 md:p-3">
                                             <p className="text-[8px] md:text-[11px] font-bold text-white truncate">{clip.title}</p>
-                                            <p className="text-[7px] md:text-[10px] text-white/45 font-medium">{clip.view_count || 0} {lang === 'en' ? 'views' : 'مشاهدة'}</p>
+                                            <p className="text-[7px] md:text-[10px] text-white/45 font-medium" dir="ltr">{clip.view_count || 0} {lang === 'en' ? 'views' : 'مشاهدة'}</p>
                                         </div>
                                     </a>
                                 ))}
@@ -696,6 +806,7 @@ export default function App() {
 
     const [socials, setSocials] = useState<SocialLink[]>([]);
     const [lastSession, setLastSession] = useState<any>(null);
+    const [pastSessions, setPastSessions] = useState<any[]>([]);
     const [clips, setClips] = useState<any[]>([]);
     const [supporters, setSupporters] = useState<any[]>([]);
 
@@ -916,10 +1027,10 @@ export default function App() {
                 }
                 const videosRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true);
                 const videosArray = videosRawData?.videos || (Array.isArray(videosRawData) ? videosRawData : []);
-                if (videosArray?.length > 0) setLastSession(videosArray[0]);
+                if (videosArray?.length > 0) { setLastSession(videosArray[0]); setPastSessions(videosArray.slice(1, 4)); }
                 else {
                     const streams = data.previous_livestreams || data.recent_streams || [];
-                    if (streams?.length > 0) setLastSession(streams[0]);
+                    if (streams?.length > 0) { setLastSession(streams[0]); setPastSessions(streams.slice(1, 4)); }
                 }
                 const clipsRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=5`, true);
                 const clipsData = clipsRawData?.data || clipsRawData;
@@ -1232,7 +1343,7 @@ export default function App() {
                         {/* ===== LAST SESSION ===== */}
                         {!streamInfo.isLive && (
                             <section className="pt-12 md:pt-16">
-                                <LastSessionReport lang={lang} data={lastSession} clips={clips} />
+                                <LastSessionReport lang={lang} data={lastSession} clips={clips} past={pastSessions} />
                             </section>
                         )}
 
