@@ -15,6 +15,13 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(num || 0);
 };
 
+const fmtDur = (ms: number) => {
+  const s = Math.floor((ms > 1000000 ? ms / 1000 : ms) || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
 // Skeleton Primitive
 const Skeleton: React.FC<{ className: string }> = ({ className }) => (
   <div className={`bg-white/5 animate-pulse rounded-xl ${className}`}></div>
@@ -500,58 +507,71 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         {/* --- CLIPS & VODS GRID --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 pt-8 border-t border-white/5">
 
-          {/* CLIPS */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center text-[#FF2D2D] shadow-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          {/* CLIPS — neon reel */}
+          <div className="space-y-5 [perspective:1200px]">
+            <div className="flex items-center gap-3.5">
+              <div className="relative shrink-0 [transform:translateZ(24px)]">
+                <div className="absolute -inset-1.5 bg-[#FF2D2D]/50 blur-xl opacity-40 rounded-2xl" />
+                <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-b from-[#ff6b6b] to-[#a31212] border border-[#ffb3b3]/40 shadow-[0_10px_28px_-8px_rgba(255,45,45,0.6)] flex items-center justify-center transition-transform duration-500 hover:rotate-6 hover:scale-105">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </div>
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">{t.recentClips}</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">{t.recentClips}</h3>
+                <p className="text-[10px] sm:text-[11px] font-bold text-white/35 uppercase tracking-[0.22em] mt-1" dir="ltr">{clips?.length || 0} CLIPS</p>
+              </div>
+              <a href="https://kick.com/iabs/clips" target="_blank" rel="noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-black px-3.5 py-2 rounded-full border border-white/10 text-white/55 hover:text-white hover:border-[#FF2D2D]/50 hover:shadow-[0_0_18px_rgba(255,45,45,0.35)] active:scale-95 transition-all">
+                {lang === 'en' ? 'ALL' : 'الكل'}
+                <svg className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </a>
             </div>
 
             {clips ? (
               clips.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {clips.map((clip) => (
-                    <a
-                      key={clip.id}
-                      href={`https://kick.com/iabs?clip=${clip.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#050505] cursor-pointer shadow-lg hover:shadow-[#FF2D2D]/10 hover:border-[#FF2D2D]/30 transition-all duration-500"
-                    >
-                      <img
-                        src={clip.thumbnail_url || FALLBACK_IMAGE}
-                        alt={clip.title}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                        }}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                      />
-                      {/* Play overlay */}
-                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
-                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <svg className="w-5 h-5 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                        </div>
-                      </div>
-
-                      {/* Content gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
-
-                      <div className="absolute bottom-0 inset-x-0 p-3">
-                        <p className="text-xs font-bold text-white truncate drop-shadow-md">{clip.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1 text-[10px] text-white/70">
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            <span>{formatNumber(clip.view_count)}</span>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {clips.map((clip, i) => (
+                    <div key={clip.id} className="opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
+                      <a
+                        href={`https://kick.com/iabs?clip=${clip.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group relative block aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#050505] shadow-lg hover:border-[#FF2D2D]/50 hover:shadow-[0_18px_44px_-12px_rgba(255,45,45,0.45)] hover:[transform:perspective(800px)_rotateX(5deg)_rotateY(-5deg)_translateY(-4px)] transition-all duration-500 [transform-style:preserve-3d]"
+                      >
+                        <img
+                          src={clip.thumbnail_url || FALLBACK_IMAGE}
+                          alt={clip.title}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                          }}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
+                          <div className="relative w-12 h-12 rounded-full bg-[#FF2D2D]/30 backdrop-blur-md border border-[#FF2D2D]/60 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_28px_rgba(255,45,45,0.5)]">
+                            <svg className="w-5 h-5 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                           </div>
                         </div>
-                      </div>
-                    </a>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 pointer-events-none"></div>
+                        <span className="absolute top-2 start-2 min-w-[22px] h-[22px] px-1.5 rounded-lg bg-black/70 backdrop-blur border border-[#FF2D2D]/40 text-[#ff8080] text-[10px] font-black flex items-center justify-center" dir="ltr">#{i + 1}</span>
+                        <div className="absolute bottom-0 inset-x-0 p-2.5 sm:p-3">
+                          <p className="text-[11px] sm:text-xs font-bold text-white truncate drop-shadow-md">{clip.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-white/70">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                              <span dir="ltr">{formatNumber(clip.view_count)}</span>
+                            </span>
+                            {(clip.creator as any)?.username && (
+                              <span className="text-[9px] sm:text-[10px] text-[#ff8080] font-bold truncate" dir="auto">@{(clip.creator as any).username}</span>
+                            )}
+                          </div>
+                        </div>
+                      </a>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-8 rounded-2xl bg-white/5 border border-white/5 text-center text-white/30 text-sm italic">{t.noData}</div>
+                <div className="p-8 rounded-2xl bg-white/5 border border-dashed border-white/10 text-center text-white/30 text-sm">{t.noData}</div>
               )
             ) : (
               <div className="grid grid-cols-2 gap-4">
@@ -560,64 +580,81 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
             )}
           </div>
 
-          {/* VIDEOS (DIRECT LINKS) */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center text-white shadow-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {/* VIDEOS — cinema archive */}
+          <div className="space-y-5 [perspective:1200px]">
+            <div className="flex items-center gap-3.5">
+              <div className="relative shrink-0 [transform:translateZ(24px)]">
+                <div className="absolute -inset-1.5 bg-white/30 blur-xl opacity-30 rounded-2xl" />
+                <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-b from-[#3a3a3a] to-[#0c0c0c] border border-white/20 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.8)] flex items-center justify-center transition-transform duration-500 hover:rotate-6 hover:scale-105">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">{t.recentVods}</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">{t.recentVods}</h3>
+                <p className="text-[10px] sm:text-[11px] font-bold text-white/35 uppercase tracking-[0.22em] mt-1" dir="ltr">{videos?.length || 0} VODS</p>
+              </div>
+              <a href="https://kick.com/iabs/videos" target="_blank" rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-black px-3.5 py-2 rounded-full border border-white/10 text-white/55 hover:text-white hover:border-[#FF2D2D]/50 hover:shadow-[0_0_18px_rgba(255,45,45,0.35)] active:scale-95 transition-all">
+                {lang === 'en' ? 'ALL' : 'الكل'}
+                <svg className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </a>
             </div>
 
             {videos ? (
               videos.length > 0 ? (
-                <div className="space-y-4">
-                  {videos.map((video) => {
+                <div className="space-y-3 sm:space-y-4">
+                  {videos.map((video, i) => {
                     // Kick UUID is usually at root or nested in video.video for V2
                     const videoUUID = video.uuid || video.video?.uuid || video.id;
+                    const dur = (video as any).duration || 0;
                     return (
-                      <a
-                        key={video.id}
-                        href={`https://kick.com/iabs/videos/${videoUUID}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex gap-4 p-3 rounded-2xl bg-[#080808] hover:bg-[#111] border border-white/5 hover:border-white/10 transition-all group cursor-pointer shadow-lg hover:shadow-xl animate-fade-in-up"
-                      >
-                        <div className="relative w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner">
-                          <img
-                            src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
-                            alt={video.session_title || video.title}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                            }}
-                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
-                            <div className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                              <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                      <div key={video.id} className="opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                        <a
+                          href={`https://kick.com/iabs/videos/${videoUUID}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-2xl bg-[#080808]/90 border border-white/[0.06] hover:border-[#FF2D2D]/40 hover:bg-[#0e0a0a] hover:-translate-y-1 hover:shadow-[0_18px_40px_-14px_rgba(255,45,45,0.4)] active:scale-[0.99] transition-all duration-300 cursor-pointer"
+                        >
+                          <div className="relative w-32 sm:w-40 aspect-video rounded-xl overflow-hidden shrink-0 bg-black shadow-inner [transform:perspective(600px)_rotateY(-7deg)] group-hover:[transform:perspective(600px)_rotateY(0deg)] transition-transform duration-500 border border-white/10 group-hover:border-[#FF2D2D]/40">
+                            <img
+                              src={video.thumbnail?.url || video.thumbnail?.src || (typeof video.thumbnail === 'string' ? video.thumbnail : '') || FALLBACK_IMAGE}
+                              alt={video.session_title || video.title}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                              }}
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-transparent transition-colors">
+                              <div className="w-8 h-8 rounded-full bg-[#FF2D2D]/80 backdrop-blur-sm flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform shadow-[0_0_18px_rgba(255,45,45,0.6)]">
+                                <svg className="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                              </div>
+                            </div>
+                            {dur > 0 && <span className="absolute bottom-1.5 end-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-md bg-black/80 border border-white/15 text-white" dir="ltr">{fmtDur(dur)}</span>}
+                          </div>
+                          <div className="min-w-0 flex-1 flex flex-col justify-center gap-1.5 py-0.5">
+                            <h4 className="text-[13px] sm:text-sm font-bold text-white truncate group-hover:text-[#ff8080] transition-colors">
+                              {video.session_title || video.title || 'Past Stream'}
+                            </h4>
+                            <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] text-white/40 font-medium">
+                              <span className="truncate">{video.created_at ? new Date(video.created_at).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short' }) : 'Recent'}</span>
+                              <span className="w-1 h-1 rounded-full bg-white/20 shrink-0"></span>
+                              <span className="inline-flex items-center gap-1 shrink-0" dir="ltr">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                {formatNumber(video.views || video.view_count || 0)}
+                              </span>
                             </div>
                           </div>
-                        </div>
-                        <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-                          <h4 className="text-sm font-bold text-white truncate group-hover:text-[#FF2D2D] transition-colors">
-                            {video.session_title || video.title || 'Past Stream'}
-                          </h4>
-                          <div className="flex items-center gap-3 text-[11px] text-white/40 font-medium">
-                            <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Recent'}</span>
-                            <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                              {formatNumber(video.views || video.view_count || 0)}
-                            </span>
-                          </div>
-                        </div>
-                      </a>
+                          <span className="self-center shrink-0 w-8 h-8 rounded-full border border-white/10 hidden sm:flex items-center justify-center text-white/40 group-hover:text-white group-hover:border-[#FF2D2D]/60 group-hover:bg-[#FF2D2D]/15 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-all">
+                            <svg className={`w-4 h-4 ${lang === 'ar' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                          </span>
+                        </a>
+                      </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="p-8 rounded-2xl bg-white/5 border border-white/5 text-center text-white/30 text-sm italic">{t.noData}</div>
+                <div className="p-8 rounded-2xl bg-white/5 border border-dashed border-white/10 text-center text-white/30 text-sm">{t.noData}</div>
               )
             ) : (
               <div className="space-y-4">
