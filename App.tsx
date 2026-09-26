@@ -449,7 +449,7 @@ const RankAvatar: React.FC<{ name: string; rank: number; size: string }> = ({ na
 // Rank square: mint (right) melting through violet into coral (left)
 const RankBadge: React.FC<{ rank: number; big?: boolean }> = ({ rank, big = false }) => (
     <span
-        className={`${big ? 'w-12 h-12 text-xl' : 'w-11 h-11 text-lg'} rounded-xl font-gaming shrink-0 flex items-center justify-center text-white`}
+        className={`${big ? 'w-12 h-12 text-xl' : 'w-9 h-9 text-base sm:w-11 sm:h-11 sm:text-lg'} rounded-xl font-gaming shrink-0 flex items-center justify-center text-white`}
         dir="ltr"
         style={{
             background: 'linear-gradient(to left, #6FF2C4 0%, #8B5CF6 52%, #FF7A59 100%)',
@@ -459,6 +459,36 @@ const RankBadge: React.FC<{ rank: number; big?: boolean }> = ({ rank, big = fals
     >
         {rank}
     </span>
+);
+
+// Special alert tiers — 3D metal bars ladder
+const TIERS = [
+    { amount: '25$', c: '#CD7F32', name: 'BRONZE', h: '28%' },
+    { amount: '99$', c: '#C0C0C0', name: 'SILVER', h: '42%' },
+    { amount: '300$', c: '#FFD700', name: 'GOLD', h: '60%' },
+    { amount: '505$', c: '#00BFFF', name: 'DIAMOND', h: '80%' },
+    { amount: '999$', c: '#FF2D2D', name: 'RUBY', h: '100%' },
+];
+
+const AlertTiers: React.FC<{ title: string; note: string }> = ({ title, note }) => (
+    <div className="card-sheen mt-6 rounded-[26px] border border-white/10 bg-black/50 backdrop-blur-xl p-5 md:p-6 overflow-hidden">
+        <p className="text-center text-[10px] md:text-[11px] font-black text-white/50 tracking-[0.3em] uppercase mb-5">{title}</p>
+        <div className="flex items-end justify-center gap-2 sm:gap-4 h-44 sm:h-52" dir="ltr">
+            {TIERS.map((tr, i) => (
+                <div key={tr.amount} className="flex flex-col items-center justify-end h-full w-[17%] max-w-[110px] min-w-0">
+                    <p className="text-sm sm:text-lg font-black tracking-wider mb-1.5" style={{ color: tr.c, textShadow: '0 2px 0 #000' }} dir="ltr">{tr.amount}</p>
+                    <div className="tier-bar relative w-full rounded-t-xl border-x border-t overflow-hidden"
+                        style={{ height: tr.h, background: `linear-gradient(to bottom, ${tr.c}, ${tr.c}66 55%, rgba(0,0,0,0.55))`, borderColor: `${tr.c}77`, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -8px 16px rgba(0,0,0,0.5), 0 0 24px -6px ${tr.c}88`, animationDelay: `${i * 110}ms` }}>
+                        <div className="absolute top-0 inset-x-2 h-1.5 rounded-full bg-white/50 blur-[1px]" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                    </div>
+                    <div className="w-full h-2 rounded-b-md bg-black/70 border-x border-b border-white/10" />
+                    <p className="text-[8px] sm:text-[9px] font-black tracking-[0.22em] text-white/40 mt-1.5">{tr.name}</p>
+                </div>
+            ))}
+        </div>
+        <p className="text-center text-[10px] text-white/30 mt-4 font-medium">{note}</p>
+    </div>
 );
 
 // Static-3D donate gate with true brand identities + ambient effects (3D stays fixed)
@@ -544,10 +574,6 @@ const SupportArena: React.FC<{ lang: Language; supporters: Supporter[] }> = ({ l
     }, [tab, supporters]);
     const top3 = (board || []).slice(0, 3);
     const rows = (board || []).slice(3);
-    const tiers = [
-        { amount: '25$', c: '#CD7F32' }, { amount: '99$', c: '#C0C0C0' }, { amount: '300$', c: '#FFD700' },
-        { amount: '505$', c: '#00BFFF' }, { amount: '999$', c: '#FF2D2D' },
-    ];
     const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
     const stepH = [ 'h-[74px] sm:h-[92px]', 'h-[104px] sm:h-[128px]', 'h-[58px] sm:h-[72px]' ];
     const tabs: { id: TipInterval; ar: string; en: string }[] = [
@@ -626,16 +652,16 @@ const SupportArena: React.FC<{ lang: Language; supporters: Supporter[] }> = ({ l
                                     );
                                 })}
                             </div>
-                            {/* ranks wall — name + rank only */}
+                            {/* ranks wall — name + rank only, 2×2 on mobile */}
                             {rows.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                     {rows.map((d, i) => (
                                         <div key={`${tab}-${d.rank}-${d.name}`}
-                                            className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#6FF2C4]/50 hover:shadow-[0_14px_36px_-12px_rgba(111,242,196,0.4)] animate-fade-in-up"
+                                            className="group flex items-center gap-2 sm:gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-2.5 sm:p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#6FF2C4]/50 hover:shadow-[0_14px_36px_-12px_rgba(111,242,196,0.4)] animate-fade-in-up"
                                             style={{ animationDelay: `${Math.min(i * 60, 420)}ms` }}>
                                             <RankBadge rank={d.rank} />
-                                            <p className="flex-1 min-w-0 text-sm sm:text-[15px] font-black text-white truncate" dir="auto">{d.name}</p>
-                                            <span className="text-[9px] font-black tracking-[0.2em] text-white/30 uppercase shrink-0" dir="ltr">RANK #{d.rank}</span>
+                                            <p className="flex-1 min-w-0 text-xs sm:text-[15px] font-black text-white truncate" dir="auto">{d.name}</p>
+                                            <span className="hidden sm:block text-[9px] font-black tracking-[0.2em] text-white/30 uppercase shrink-0" dir="ltr">RANK #{d.rank}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -653,19 +679,7 @@ const SupportArena: React.FC<{ lang: Language; supporters: Supporter[] }> = ({ l
                 </div>
             </div>
 
-            {/* tiers */}
-            <div className="mt-6 rounded-[26px] border border-white/10 bg-black/50 backdrop-blur-xl p-5 md:p-6">
-                <p className="text-center text-[10px] md:text-[11px] font-black text-white/50 tracking-[0.3em] uppercase mb-4">{t.tiersTitle}</p>
-                <div className="flex flex-wrap justify-center gap-2 md:gap-3" dir="ltr">
-                    {tiers.map((item, idx) => (
-                        <span key={idx} className="px-4 py-2 md:px-5 md:py-2.5 rounded-xl border bg-[#0a0a0a] transition-transform duration-300 hover:-translate-y-0.5"
-                            style={{ borderColor: `${item.c}66`, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -3px 0 rgba(0,0,0,0.6), 0 4px 0 rgba(0,0,0,0.5)` }}>
-                            <span className="text-sm md:text-base font-black tracking-widest" style={{ color: item.c, textShadow: '0 2px 0 #000' }}>{item.amount}</span>
-                        </span>
-                    ))}
-                </div>
-                <p className="text-center text-[10px] text-white/30 mt-4 font-medium">{lang === 'en' ? 'Donations are non-refundable' : 'التبرعات غير قابلة للاسترداد'}</p>
-            </div>
+            <AlertTiers title={t.tiersTitle} note={lang === 'en' ? 'Donations are non-refundable' : 'التبرعات غير قابلة للاسترداد'} />
         </div>
     );
 };
