@@ -359,33 +359,33 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         {/* --- KICK FORTRESS: followers + sub badges in 3D --- */}
         {channelInfo ? (
           <div className="relative [perspective:1200px]">
-            <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-b from-[#53FC18]/15 via-transparent to-transparent blur-2xl pointer-events-none" aria-hidden="true" />
-            <div className="group card-sheen relative overflow-hidden rounded-[30px] border border-[#53FC18]/20 bg-[#070a06]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(83,252,24,0.25)] [transform-style:preserve-3d]">
-              <div aria-hidden="true" className="absolute -end-8 -bottom-12 opacity-[0.07] scale-[3.2] origin-bottom-right pointer-events-none text-[#53FC18]">
+            <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-b from-[#FF2D2D]/15 via-transparent to-transparent blur-2xl pointer-events-none" aria-hidden="true" />
+            <div className="group card-sheen relative overflow-hidden rounded-[30px] border border-[#FF2D2D]/25 bg-[#0d0505]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(255,45,45,0.3)] [transform-style:preserve-3d]">
+              <div aria-hidden="true" className="absolute -end-8 -bottom-12 opacity-[0.07] scale-[3.2] origin-bottom-right pointer-events-none text-[#FF2D2D]">
                 <KickIcon className="w-24 h-24" />
               </div>
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-l from-transparent via-[#53FC18]/70 to-transparent" />
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-l from-transparent via-[#FF2D2D]/70 to-transparent" />
               <div className="relative p-5 sm:p-8 flex flex-col lg:flex-row items-center gap-6 lg:gap-10 [transform-style:preserve-3d]">
 
                 {/* 3D K emblem + live followers */}
-                <div className="flex items-center gap-5 shrink-0">
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 [transform:translateZ(36px)]">
-                    <KickIcon className="absolute inset-0 m-auto w-10 h-10 sm:w-12 sm:h-12 translate-x-[6px] translate-y-[7px] text-[#123f0c]" aria-hidden="true" />
-                    <KickIcon className="absolute inset-0 m-auto w-10 h-10 sm:w-12 sm:h-12 translate-x-[3px] translate-y-[3px] text-[#1e6b12]" aria-hidden="true" />
-                    <div className="absolute inset-0 rounded-[24px] bg-gradient-to-b from-[#8dff6a] via-[#53FC18] to-[#2b9e1c] border border-[#c6ffab]/60 shadow-[0_0_44px_rgba(83,252,24,0.5),inset_0_2px_0_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
-                      <KickIcon className="w-10 h-10 sm:w-12 sm:h-12 text-black" />
+                <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 shrink-0 w-full sm:w-auto">
+                  <div className="relative w-[72px] h-[72px] sm:w-24 sm:h-24 shrink-0 [transform:translateZ(36px)]">
+                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[6px] translate-y-[7px] text-[#3d0a0a]" aria-hidden="true" />
+                    <KickIcon className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 translate-x-[3px] translate-y-[3px] text-[#7a1010]" aria-hidden="true" />
+                    <div className="absolute inset-0 rounded-[22px] sm:rounded-[24px] bg-gradient-to-b from-[#ff9a9a] via-[#FF2D2D] to-[#a31212] border border-[#ffb3b3]/60 shadow-[0_0_44px_rgba(255,45,45,0.55),inset_0_2px_0_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
+                      <KickIcon className="w-9 h-9 sm:w-12 sm:h-12 text-black" />
                     </div>
                   </div>
-                  <div className="min-w-0 [transform:translateZ(18px)]">
-                    <p className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.25em] text-[#53FC18] uppercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#53FC18] animate-pulse shadow-[0_0_8px_#53FC18]" />
+                  <div className="min-w-0 text-center sm:text-start [transform:translateZ(18px)]">
+                    <p className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-[0.25em] text-[#ff6b6b] uppercase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF2D2D] animate-pulse shadow-[0_0_8px_#FF2D2D]" />
                       {t.followers} • KICK
                     </p>
                     <p className="text-4xl sm:text-5xl font-black text-white tracking-tighter leading-none mt-1 drop-shadow-lg">
                       <KickCount value={channelInfo.followers_count} />
                     </p>
                     <a href="https://kick.com/iabs" target="_blank" rel="noopener noreferrer"
-                      className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-black px-4 py-2 rounded-full border border-[#53FC18]/50 text-[#53FC18] hover:bg-[#53FC18] hover:text-black active:scale-95 transition-all duration-300">
+                      className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-black px-5 py-2.5 rounded-full border border-[#FF2D2D]/60 text-[#ff6b6b] hover:bg-[#FF2D2D] hover:text-black hover:shadow-[0_0_24px_rgba(255,45,45,0.6)] active:scale-95 transition-all duration-300">
                       {lang === 'en' ? 'FOLLOW' : 'تابع الآن'}
                       <svg className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>
@@ -398,12 +398,12 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
                     <>
                       <div className="flex items-center justify-center lg:justify-end gap-2.5 mb-4">
                         <span className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{t.subBadges}</span>
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#53FC18]/15 border border-[#53FC18]/40 text-[#53FC18]" dir="ltr">{channelInfo.subscriber_badges.length}</span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FF2D2D]/15 border border-[#FF2D2D]/40 text-[#ff6b6b]" dir="ltr">{channelInfo.subscriber_badges.length}</span>
                       </div>
                       <div className="flex flex-wrap justify-center lg:justify-end gap-2.5 sm:gap-3.5">
                         {[...channelInfo.subscriber_badges].sort((a, b) => a.months - b.months).map((badge, i) => (
                           <div key={badge.id} className="flex flex-col items-center opacity-0 animate-fade-in-up" style={{ animationDelay: `${i * 90}ms` }}>
-                            <div className="group/badge relative w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 p-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#53FC18]/60 hover:shadow-[0_14px_30px_-8px_rgba(83,252,24,0.5)]">
+                            <div className="group/badge relative w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 p-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#FF2D2D]/60 hover:shadow-[0_14px_30px_-8px_rgba(255,45,45,0.55)]">
                               <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-white/40 to-transparent" />
                               <img
                                 src={badge.badge_image.src}
