@@ -67,12 +67,30 @@
   <link rel="preload" as="image" href="/favicon.png" fetchpriority="high">
   <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Bangers&display=swap">
   <link
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Bangers&display=swap"
-    rel="stylesheet">
+    rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Bangers&display=swap"
+    rel="stylesheet"></noscript>
+  <style>
+    html, body { margin: 0; padding: 0; background: #050505; }
+    #boot { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255,45,45,0.14), transparent 70%), #050505; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #boot .b-wrap { position: relative; width: 108px; height: 108px; display: flex; align-items: center; justify-content: center; }
+    #boot .b-spin { position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; border-top-color: #FF2D2D; border-right-color: rgba(255,45,45,0.35); animation: bspin 0.9s linear infinite; }
+    @keyframes bspin { to { transform: rotate(360deg); } }
+    #boot .b-logo { width: 82px; height: 82px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 44px rgba(255,45,45,0.4); }
+    #boot .b-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #boot .b-name { color: #fff; font-weight: 900; font-size: 26px; letter-spacing: 0.35em; text-indent: 0.35em; }
+    #boot .b-name span { color: #FF2D2D; }
+    #boot .b-bar { width: 150px; height: 3px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    #boot .b-bar i { display: block; height: 100%; width: 40%; border-radius: 99px; background: #FF2D2D; animation: bslide 1.1s ease-in-out infinite; }
+    @keyframes bslide { 0% { transform: translateX(-110%); } 100% { transform: translateX(380%); } }
+  </style>
   <script>
     tailwind.config = {
       theme: {
@@ -243,7 +261,7 @@
 </head>
 
 <body class="bg-black text-white overflow-x-hidden antialiased">
-  <div id="root"></div>
+  <div id="root"><div id="boot" aria-hidden="true"><div class="b-wrap"><div class="b-spin"></div><div class="b-logo"><img src="/favicon.png" alt="" fetchpriority="high"></div></div><div class="b-name"><span>i</span>ABS</div><div class="b-bar"><i></i></div></div></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 
