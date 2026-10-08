@@ -1,13 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-
-interface BotrixEntry {
-  level: number;
-  watchtime: number;
-  xp: number;
-  points: number;
-  name: string;
-}
+import { fetchBotrixLeaderboard, type BotrixEntry } from '../utils/botrixApi';
 
 interface RichEntry extends BotrixEntry {
   avatar: string;
@@ -21,7 +14,6 @@ interface BotrixLeaderboardProps {
   lang: 'en' | 'ar';
 }
 
-const API_URL = '/api/kick?endpoint=' + encodeURIComponent('https://botrix.live/api/public/leaderboard?platform=kick&user=iabs');
 const KICK_CH = (name: string) => '/api/kick?endpoint=' + encodeURIComponent(`https://kick.com/api/v2/channels/${name}`);
 
 const formatDuration = (seconds: number) => {
@@ -87,11 +79,10 @@ const BotrixLeaderboard: React.FC<BotrixLeaderboardProps> = ({ lang }) => {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(API_URL)
-      .then(r => r.json())
-      .then((json: BotrixEntry[]) => {
-        if (!cancelled && Array.isArray(json)) setData(json);
-        else if (!cancelled) setData([]);
+    // المصدر الموحد (كاش 5 دقائق مشترك مع AIChat)
+    fetchBotrixLeaderboard()
+      .then((json) => {
+        if (!cancelled) setData(Array.isArray(json) ? json : []);
       })
       .catch(() => { if (!cancelled) setData([]); });
     // staff roles (admin-curated, graceful when table missing)

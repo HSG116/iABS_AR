@@ -82,19 +82,33 @@ async function getTikTok(): Promise<{ count: number; source: string }> {
 }
 
 async function getYouTube(): Promise<{ count: number; source: string }> {
-  // 1) Mixerno — exact subscriber count
+  // 1) LemnosLife operational API — exact subscriber count, no key
+  try {
+    const d = await fetchJson(`https://yt.lemnoslife.com/noKey/channels?part=statistics&id=${HANDLES.youtube}`);
+    const n = parseCompact(d?.items?.[0]?.statistics?.subscriberCount);
+    if (n) return { count: n, source: 'lemnoslife' };
+  } catch {}
+  // 2) Mixerno — exact subscriber count
   try {
     const d = await fetchJson(`https://mixerno.space/api/youtube-channel-counter/user/${HANDLES.youtube}`);
     const entry = Array.isArray(d?.counts) ? d.counts.find((c: any) => c?.value === 'subscribers') : null;
     const n = parseCompact(entry?.count);
     if (n) return { count: n, source: 'mixerno' };
   } catch {}
-  // 2) Piped
-  try {
-    const d = await fetchJson(`https://pipedapi.kavin.rocks/channel/${HANDLES.youtube}`);
-    const n = parseCompact(d?.subscriberCount);
-    if (n) return { count: n, source: 'piped' };
-  } catch {}
+  // 3) Piped mirrors (kavin.rocks is often dead — try several)
+  const mirrors = [
+    'https://pipedapi.adminforge.de',
+    'https://pipedapi.reallyaweso.me',
+    'https://pipedapi.leptons.xyz',
+    'https://pipedapi.kavin.rocks',
+  ];
+  for (const m of mirrors) {
+    try {
+      const d = await fetchJson(`${m}/channel/${HANDLES.youtube}`);
+      const n = parseCompact(d?.subscriberCount);
+      if (n) return { count: n, source: `piped:${new URL(m).hostname}` };
+    } catch {}
+  }
   throw new Error('youtube: all sources failed');
 }
 

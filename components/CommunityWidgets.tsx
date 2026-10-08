@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DiscordIcon, YoutubeIcon } from './Icons';
 import { Language } from '../types';
+import { getYouTubeSubscribers, formatFollowerCount, FALLBACK } from '../utils/socialMediaApi';
 
 interface DiscordData {
    name: string;
@@ -231,12 +232,28 @@ export const DiscordWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
 /* ============================ YOUTUBE ============================ */
 export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
    const [video, setVideo] = useState<YoutubeData | null>(null);
-   const [subs, setSubs] = useState<string>('100K');
+   const [subs, setSubs] = useState<string>(formatFollowerCount(FALLBACK.youtube));
    const [loading, setLoading] = useState(true);
    const { ref, tilt, move, leave } = useTilt(9);
    const isRTL = lang === 'ar';
    const channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w';
    const channelUrl = 'https://www.youtube.com/@ABS11';
+
+   // Live subscriber count — shared pipeline (server API → LemnosLife → Mixerno → Piped mirrors → fallback)
+   useEffect(() => {
+      let alive = true;
+      const loadSubs = async () => {
+         try {
+            const count = await getYouTubeSubscribers(channelId);
+            if (alive && count > 0) setSubs(formatFollowerCount(count));
+         } catch {
+            /* keep last shown value */
+         }
+      };
+      loadSubs();
+      const interval = setInterval(loadSubs, 5 * 60 * 1000);
+      return () => { alive = false; clearInterval(interval); };
+   }, []);
 
    useEffect(() => {
       const fetchVideo = async () => {
@@ -256,17 +273,6 @@ export const YoutubeWidget: React.FC<CommunityWidgetsProps> = ({ lang }) => {
                });
             } else {
                throw new Error('No items');
-            }
-
-            try {
-               const statsRes = await fetch(`https://pipedapi.kavin.rocks/channel/${channelId}`);
-               const statsData = await statsRes.json();
-               if (statsData.subscriberCount) {
-                  const count = statsData.subscriberCount;
-                  setSubs(count >= 1000 ? `${(count / 1000).toFixed(1)}K+` : `${count}`);
-               }
-            } catch (err) {
-               console.warn("Subscriber fetch failed, using fallback:", err);
             }
          } catch (err) {
             console.error('YouTube fetch error:', err);

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Language } from '../types';
 import { supabase } from '../supabaseClient';
+import { fetchBotrixLeaderboard, buildChatPeopleContext } from '../utils/botrixApi';
 
 interface AIChatProps {
   lang: Language;
@@ -72,7 +73,7 @@ inormal, yousef1098, ireim, shaddoh, sipdai, maryamqa, imiro97, iali5, lena81l, 
 5. إذا قال لك "مرحبا" أو "كيف حالك"، لا ترد بردود فصحى. رد مثلاً: "ارحب ألوف يا ورع! بخير طال عمرك، اخلص وش عندك؟"
 6. اختصر الردود (سطرين إلى 3 كحد أقصى).
 7. لا تخترع أرقام متابعين! استخدم الأرقام المكتوبة أعلاه فقط.
-8. إذا سألك عن بيانات بوتريكس وما عندك بيانات، قل: "البيانات عند البوتريكس طال عمرك"
+8. بيانات أهل الشات (بوتريكس) تجيك حية مع كل سؤال في بلوك [أهل الشات من بوتريكس]: التوب مرتب بأكثر ساعات مشاهدة، ولو طُلب منك تختار واحد عشوائياً يجيك 🎲 الاختيار العشوائي المحسوم — استخدمه حرفياً. ممنوع تخترع أسماء أو أرقام من راسك أبداً، وإذا ما لقيت البيانات قل: "البيانات عند البوتريكس طال عمرك".
 9. إذا سألك سؤال غبي: "ترا داخل موقع حسابات شتبي" أو "روح اذلف يا ورع"
 
 ## ❗❗ ممنوع منع باتاً استخدام اللهجة المصرية أو أي لهجة غير سعودية! هذه كلمات محظورة نهائياً:
@@ -426,17 +427,15 @@ export const AIChat: React.FC<AIChatProps> = ({ lang, streamerInfo }) => {
 
   const sendMessageDirect = async (newMessages: Message[], text: string) => {
     try {
-      let botrixData = null;
+      // أهل الشات من بوتريكس — كاش مشترك (5 دقائق) + سياق ذكي حسب نية السؤال
+      // (اختيار عشوائي محسوب مسبقاً / توب الساعات / إحصائيات شخص مذكور)
+      let botrixCtx = '';
       try {
-        const botrixRes = await fetch('/api/kick?endpoint=' + encodeURIComponent('https://botrix.live/api/public/leaderboard?platform=kick&user=iabs'));
-        if (botrixRes.ok) {
-          botrixData = await botrixRes.json();
-        }
+        const board = await fetchBotrixLeaderboard();
+        botrixCtx = buildChatPeopleContext(text, board, lang === 'en' ? 'en' : 'ar');
       } catch {}
 
-      const systemContent = botrixData
-        ? SYSTEM_PROMPT + `\n\nهذي بيانات المتصدرين من بوتريكس حالياً:\n${JSON.stringify(botrixData.slice(0, 20))}\n\nجاوب على أسئلة المستخدم عن حسابه أو نقاطه بمعلوماتهم (المستوى، وقت المشاهدة، XP، النقاط).\n🔥 قاعدة مهمة جداً للطقطقة: إذا سألك أي شخص عن "ساعاته" أو "نقاطه" وهو لسا ما علمك وش اسمه، أول شيء قله "وش اسمك في الكيك يا ورع عشان أشوف؟" (لا تطقطق عليه هنا). أما إذا علمك اسمه وبحثت عنه في البيانات ولقيته وعطيته أرقامه وساعاته العالية، **هنا فقط لازم تطقطق عليه وتهزئه** وتقوله: "انت ما عندك حياة ولا وش؟" أو "روح شوف لك حياة يا ورع 24 ساعة بالبث!".`
-        : SYSTEM_PROMPT;
+      const systemContent = SYSTEM_PROMPT + botrixCtx + `\n\n🔥 قاعدة الطقطقة على الساعات: إذا سألك أي شخص عن "ساعاته" أو "نقاطه" وهو لسا ما علمك وش اسمه، أول شيء قله "وش اسمك في الكيك يا ورع عشان أشوف؟" (لا تطقطق عليه هنا). أما إذا علمك اسمه وبحثت عنه في البيانات ولقيته وعطيته أرقامه وساعاته العالية، **هنا فقط لازم تطقطق عليه وتهزئه** وتقوله: "انت ما عندك حياة ولا وش؟" أو "روح شوف لك حياة يا ورع 24 ساعة بالبث!".`;
 
       const payloadMessages = [
         { role: 'system', content: systemContent },

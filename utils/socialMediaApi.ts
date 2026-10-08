@@ -89,13 +89,33 @@ export async function getTwitterFollowers(username = 'iABSq'): Promise<number> {
 export async function getYouTubeSubscribers(channelId = 'UCdIM7MB-8G-FgE7ld3XAQ8w'): Promise<number> {
   const via = await viaServerApi('youtube');
   if (via) return via;
-  // Layer 2 — Mixerno (usually CORS-open)
+  // Layer 2a — LemnosLife operational API (no key, CORS-open, mirrors YouTube statistics)
+  try {
+    const d = await fetchJson(`https://yt.lemnoslife.com/noKey/channels?part=statistics&id=${channelId}`);
+    const n = num(d?.items?.[0]?.statistics?.subscriberCount);
+    if (n) return n;
+  } catch {}
+  // Layer 2b — Mixerno (usually CORS-open)
   try {
     const d = await fetchJson(`https://mixerno.space/api/youtube-channel-counter/user/${channelId}`);
     const entry = Array.isArray(d?.counts) ? d.counts.find((c: any) => c?.value === 'subscribers') : null;
     const n = num(entry?.count);
     if (n) return n;
   } catch {}
+  // Layer 2c — Piped mirrors (kavin.rocks is often dead, try several)
+  const mirrors = [
+    'https://pipedapi.adminforge.de',
+    'https://pipedapi.reallyaweso.me',
+    'https://pipedapi.leptons.xyz',
+    'https://pipedapi.kavin.rocks',
+  ];
+  for (const m of mirrors) {
+    try {
+      const d = await fetchJson(`${m}/channel/${channelId}`, 7000);
+      const n = num(d?.subscriberCount);
+      if (n) return n;
+    } catch {}
+  }
   return FALLBACK.youtube;
 }
 
