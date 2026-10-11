@@ -50,9 +50,24 @@ interface ModProfile {
   live: boolean;
 }
 
-const CACHE_KEY = 'iabs_mods_cache_v2';
+const CACHE_KEY = 'iabs_mods_cache_v3';
+const LEGACY_CACHE_KEY = 'iabs_mods_cache_v2';
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const REFRESH_MS = 10 * 60 * 1000;
+
+/**
+ * يضبط مقاس صورة البانر من CDN.
+ * المقاسات المتاحة فعلياً عند pbs.twimg.com: 1500x500 (59KB) · 600x200 (15KB) · 300x100 (6KB)
+ * Anything else يرجع 404 — لذلك نحصرها هنا ومعها fallback عند فشل التحميل.
+ */
+const BANNER_SIZES = ['1500x500', '600x200', '300x100'] as const;
+
+const stripBannerSize = (url: string): string => url.split('?')[0].replace(/\/$/, '').replace(/\/(1500x500|600x200|300x100|normal)$/, '');
+
+const bannerAt = (url: string, size: typeof BANNER_SIZES[number]): string => {
+  if (!url) return '';
+  return `${stripBannerSize(url)}/${size}`;
+};
 
 const compact = (n: number | null | undefined) => {
   if (n == null || !Number.isFinite(n)) return '---';
@@ -92,13 +107,19 @@ async function fetchMod(handle: string): Promise<ModProfile | null> {
     }
   }
   if (!user) return null;
+
+  // ===== مقاسات صور معقولة =====
+  // البانر يُعرض بحجم ~96px ارتفاع فقط — تحميل 1500x500 كان يستهلك مئات
+  // الكيلوبايت لكل مشرف (20 مشرف) ويسبّب تعليق الموقع. الآن 500x150.
   const avatarRaw: string = user.avatar_url || '';
   const bannerRaw: string = user.banner_url || '';
+
   return {
     name: user.name || handle,
     handle: user.screen_name || handle,
-    avatar: avatarRaw ? avatarRaw.replace('_normal.', '_400x400.') : '',
-    banner: bannerRaw ? `${bannerRaw}/1500x500` : '',
+    // الصورة تُعرض بحجم 56px (أو 96px للبوس) — 200x200 أكثر من كافٍ
+    avatar: avatarRaw ? avatarRaw.replace('_normal.', '_200x200.') : '',
+    banner: bannerAt(bannerRaw, '600x200'),
     bio: user.description || '',
     followers: typeof user.followers === 'number' ? user.followers : null,
     tweets: typeof user.tweets === 'number' ? user.tweets : null,
@@ -108,7 +129,7 @@ async function fetchMod(handle: string): Promise<ModProfile | null> {
 
 function readCache(): { at: number; data: Record<string, ModProfile> } | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || !parsed.data) return null;
@@ -193,10 +214,20 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
     };
 
     load(true);
-    const timer = setInterval(() => load(false), REFRESH_MS);
+    // تحديث صامت كل 10 دقائق، ويتوقف كلياً والتبويب مخفي (20 طلب شبكة لكل دورة)
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const startRefresh = () => { if (!timer) timer = setInterval(() => load(false), REFRESH_MS); };
+    const stopRefresh = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const onVis = () => {
+      if (document.visibilityState === 'visible') startRefresh();
+      else stopRefresh();
+    };
+    startRefresh();
+    document.addEventListener('visibilitychange', onVis);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      stopRefresh();
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, []);
 
@@ -237,7 +268,16 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
           {/* بانر */}
           <div className="relative h-36 sm:h-48 lg:h-56 overflow-hidden">
             {bossP.banner ? (
-              <img src={bossP.banner} alt="" loading="lazy" className="w-full h-full object-cover" />
+              <img
+                src={bannerAt(bossP.banner, '1500x500')}
+                alt="" loading="lazy" decoding="async" width={1500} height={500}
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  const base = stripBannerSize(bossP.banner);
+                  if (!img.src.endsWith(base)) img.src = base;
+                }}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full bg-gradient-to-l from-[#C9A24B]/30 via-[#8B5CF6]/20 to-black" />
             )}
@@ -254,37 +294,45 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
           </div>
           {/* الهوية */}
           <div className="relative px-5 sm:px-8 pb-6 sm:pb-8 -mt-10 sm:-mt-12">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-              <div className="relative shrink-0">
+            <div className="flex flex-row items-end gap-4 sm:gap-5">
+              {/* الحاوية بمقاس ثابت حتى يبقى التاج والنقطة ملتصقين بالصورة دائماً */}
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
                 <span
-                  className="relative rounded-full p-[3px] w-20 h-20 sm:w-24 sm:h-24 block"
+                  className="absolute inset-0 block rounded-full p-[3px]"
                   style={{
                     background: 'conic-gradient(from 200deg,#ffe977,#8a6a00,#fff6c8,#8a6a00,#ffe977)',
                     boxShadow: '0 0 44px rgba(255,215,106,0.55)',
                   }}
                 >
-                  {bossP.avatar ? (
-                    <img src={bossP.avatar} alt={bossP.name} className="w-full h-full rounded-full object-cover bg-black" />
-                  ) : (
-                    <span className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center font-black text-3xl text-[#FFE9B8]">
-                      {boss.kick.charAt(0).toUpperCase()}
-                    </span>
+                  {/* الحرف البديل تحت الصورة — يظهر دائماً لو الصورة ما وصلت */}
+                  <span className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center font-black text-3xl text-[#FFE9B8]">
+                    {boss.kick.charAt(0).toUpperCase()}
+                  </span>
+                  {bossP.avatar && (
+                    <img
+                      src={bossP.avatar} alt={bossP.name} loading="lazy" decoding="async"
+                      width={200} height={200}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      className="absolute inset-[3px] rounded-full object-cover bg-black"
+                    />
                   )}
                 </span>
-                <CrownIcon className="absolute -top-5 left-1/2 -translate-x-1/2 w-7 h-7 drop-shadow-[0_0_10px_rgba(255,215,106,0.9)] animate-float-soft" />
+                <CrownIcon className="absolute -top-6 left-1/2 -translate-x-1/2 w-7 h-7 drop-shadow-[0_0_10px_rgba(255,215,106,0.9)] animate-float-soft" />
                 {bossP.live && (
-                  <span className="absolute bottom-1 end-1 w-4 h-4 rounded-full bg-[#53FC18] border-[3px] border-[#080808] shadow-[0_0_10px_#53FC18]" />
+                  <span className="absolute bottom-0 end-0 w-4 h-4 rounded-full bg-[#53FC18] border-[3px] border-[#080808] shadow-[0_0_10px_#53FC18]" />
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xl sm:text-2xl font-black text-white truncate" dir="ltr">
-                  {bossP.name}
-                </p>
-                <p className="flex items-center gap-2 mt-1 flex-wrap" dir="ltr">
-                  <span className="text-[12px] font-bold text-[#53FC18]">@{bossP.handle}</span>
-                  <span className="text-[10px] font-bold text-[#C9A24B]/80">KICK: {boss.kick}</span>
-                </p>
-                <div className="flex items-center gap-2.5 mt-3">
+              <div className="min-w-0 flex-1 flex items-end justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-xl sm:text-2xl font-black text-white truncate" dir="ltr">
+                    {bossP.name}
+                  </p>
+                  <p className="flex items-center gap-2 mt-1 flex-wrap" dir="ltr">
+                    <span className="text-[12px] font-bold text-[#53FC18]">@{bossP.handle}</span>
+                    <span className="text-[10px] font-bold text-[#C9A24B]/80">KICK: {boss.kick}</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0">
                   <span className="inline-flex flex-col items-center px-4 py-2 rounded-2xl bg-[#FFE9B8]/10 border border-[#FFE9B8]/30">
                     <span className="text-base sm:text-lg font-black text-[#FFE9B8]" dir="ltr">
                       {compact(bossP.followers)}
@@ -304,8 +352,7 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
               <p className="text-[13px] sm:text-sm text-white/60 font-medium leading-relaxed mt-4 max-w-3xl" dir="auto">
                 {bossP.bio}
               </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2.5 mt-4">
+            )}            <div className="flex flex-wrap items-center gap-2.5 mt-4">
               <a
                 href={`https://x.com/${boss.x}`}
                 target="_blank"
@@ -327,7 +374,7 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
           return (
             <div
               key={m.x}
-              className="group relative rounded-[22px] border border-white/10 bg-white/[0.03] backdrop-blur-xl overflow-hidden hover:border-[#C9A24B]/50 hover:-translate-y-1 hover:shadow-[0_24px_60px_-16px_rgba(201,162,75,0.35)] transition-all duration-300 opacity-0 animate-fade-in-up"
+              className="group relative overflow-hidden rounded-[22px] border border-white/10 bg-[#0b0b0b]/85 transition-colors hover:border-[#C9A24B]/50 hover:-translate-y-1 hover:shadow-[0_24px_60px_-16px_rgba(201,162,75,0.35)] duration-300 opacity-0 animate-fade-in-up"
               style={{ animationDelay: `${Math.min(i * 60, 480)}ms` }}
             >
               {/* بانر */}
@@ -337,6 +384,14 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
                     src={p.banner}
                     alt=""
                     loading="lazy"
+                    decoding="async"
+                    width={600}
+                    height={200}
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      const base = stripBannerSize(p.banner);
+                      if (!img.src.endsWith(base)) img.src = base;
+                    }}
                     className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                   />
                 )}
@@ -358,17 +413,21 @@ const ModeratorsSection: React.FC<{ lang: Language }> = ({ lang }) => {
               {/* الهوية */}
               <div className="relative px-4 pb-4 -mt-7">
                 <div className="flex items-end gap-3">
-                  <div className="relative shrink-0">
+                  <div className="relative w-14 h-14 shrink-0">
                     <span
-                      className="relative rounded-full p-[2px] w-14 h-14 block"
+                      className="absolute inset-0 block rounded-full p-[2px]"
                       style={{ background: 'conic-gradient(from 200deg,#ffe977,#8a6a00,#fff6c8,#8a6a00,#ffe977)' }}
                     >
-                      {p.avatar ? (
-                        <img src={p.avatar} alt={p.name} loading="lazy" className="w-full h-full rounded-full object-cover bg-black" />
-                      ) : (
-                        <span className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center font-black text-xl text-[#FFE9B8]">
-                          {m.kick.charAt(0).toUpperCase()}
-                        </span>
+                      <span className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center font-black text-xl text-[#FFE9B8]">
+                        {m.kick.charAt(0).toUpperCase()}
+                      </span>
+                      {p.avatar && (
+                        <img
+                          src={p.avatar} alt={p.name} loading="lazy" decoding="async"
+                          width={200} height={200}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          className="absolute inset-[2px] rounded-full object-cover bg-black"
+                        />
                       )}
                     </span>
                     {p.live && (

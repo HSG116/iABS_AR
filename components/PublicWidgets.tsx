@@ -1,66 +1,5 @@
 import React, { useState } from 'react';
 
-export const AnnouncementTicker = ({ announcement }: { announcement: any }) => {
-    if (!announcement || (announcement.is_active !== true && announcement.is_active !== 'true') || !announcement.message) return null;
-    
-    return (
-        <div className="flex-1 max-w-2xl mx-4 hidden md:flex overflow-hidden relative z-50 animate-fade-in-down rounded-full border border-[#FF2D2D]/30 bg-[#0a0a0a]/80 shadow-[0_0_20px_rgba(255,45,45,0.15)]">
-            <div className="flex items-center w-full h-10">
-                {/* News Badge */}
-                <div className="flex items-center justify-center bg-gradient-to-r from-[#FF2D2D] to-[#cc0000] px-4 h-full shrink-0 z-10 relative overflow-hidden border-r rtl:border-l rtl:border-r-0 border-[#FF2D2D]/50">
-                    <div className="absolute inset-0 bg-white/20 skew-x-12 -translate-x-full animate-shine"></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white] animate-pulse mr-2 rtl:ml-2 rtl:mr-0"></div>
-                    <span className="text-white text-[11px] font-black tracking-widest uppercase">عاجل</span>
-                </div>
-                
-                {/* Scrolling Text */}
-                <div className="flex-1 overflow-hidden relative h-full flex items-center banner-mask">
-                    <div className="marquee-content inline-flex whitespace-nowrap items-center text-white/90 font-bold text-[12px] tracking-wide">
-                        <span className="px-8">{announcement.message}</span>
-                        <span className="text-[#FF2D2D] text-[8px] animate-pulse">◆</span>
-                        <span className="px-8">{announcement.message}</span>
-                        <span className="text-[#FF2D2D] text-[8px] animate-pulse">◆</span>
-                        <span className="px-8">{announcement.message}</span>
-                        <span className="text-[#FF2D2D] text-[8px] animate-pulse">◆</span>
-                        <span className="px-8">{announcement.message}</span>
-                    </div>
-                </div>
-            </div>
-            <style>{`
-                .banner-mask {
-                    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-                    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-                }
-                .marquee-content {
-                    width: max-content;
-                    padding-left: 100%;
-                    animation: scrollText 15s linear infinite;
-                }
-                @keyframes scrollText {
-                    from { transform: translateX(0); }
-                    to { transform: translateX(-100%); }
-                }
-                [dir="rtl"] .marquee-content, html[dir="rtl"] .marquee-content {
-                    padding-left: 0;
-                    padding-right: 100%;
-                    animation: scrollTextRTL 15s linear infinite;
-                }
-                @keyframes scrollTextRTL {
-                    from { transform: translateX(0); }
-                    to { transform: translateX(100%); }
-                }
-                .animate-shine {
-                    animation: shine 4s infinite;
-                }
-                @keyframes shine {
-                    0% { transform: translateX(-150%) skewX(12deg); }
-                    20%, 100% { transform: translateX(150%) skewX(12deg); }
-                }
-            `}</style>
-        </div>
-    );
-};
-
 export const SponsorsSection = ({ sponsors, className = '' }: { sponsors: any[], className?: string }) => {
     if (!sponsors || sponsors.length === 0) return null;
     
@@ -72,7 +11,7 @@ export const SponsorsSection = ({ sponsors, className = '' }: { sponsors: any[],
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 {sponsors.map((sponsor) => (
-                    <div key={sponsor.id} className="w-full bg-[#050505]/80 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 relative overflow-hidden group hover:-translate-y-2 transition-all duration-300 shadow-2xl hover:shadow-[0_20px_40px_rgba(255,45,45,0.15)] flex flex-col justify-between">
+                    <div key={sponsor.id} className="w-full bg-[#050505]/90 border border-white/10 rounded-[32px] p-6 relative overflow-hidden group hover:-translate-y-2 transition-all duration-300 shadow-2xl hover:shadow-[0_20px_40px_rgba(255,45,45,0.15)] flex flex-col justify-between">
                         <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#FF2D2D]/10 blur-[50px] rounded-full group-hover:bg-[#FF2D2D]/20 transition-colors pointer-events-none"></div>
                         <h3 className="text-xl md:text-2xl font-black text-white mb-2 relative z-10">{sponsor.brand_name}</h3>
                         <p className="text-xs md:text-sm text-white/60 mb-6 font-bold relative z-10">{sponsor.discount_desc}</p>
@@ -125,7 +64,7 @@ export const ClipsSection = ({ clips, className = '' }: { clips: any[], classNam
                 {clips.map((clip) => {
                     const isVertical = clip.platform === 'tiktok' || clip.video_url?.includes('youtube.com/shorts/') || clip.video_url?.includes('instagram.com/reel/') || clip.platform === 'instagram';
                     return (
-                        <div key={clip.id} className="w-full bg-[#050505]/80 backdrop-blur-xl border border-white/10 rounded-[32px] overflow-hidden group hover:border-[#FF2D2D]/50 transition-colors shadow-2xl flex flex-col h-fit">
+                        <div key={clip.id} className="w-full bg-[#050505]/90 border border-white/10 rounded-[32px] overflow-hidden group hover:border-[#FF2D2D]/50 transition-colors shadow-2xl flex flex-col h-fit">
                             <div className={`${isVertical ? 'aspect-[9/16]' : 'aspect-video'} bg-black relative`}>
                                 <iframe src={getEmbedUrl(clip.video_url)} className="w-full h-full" allowFullScreen></iframe>
                             </div>
@@ -149,7 +88,7 @@ export const ScheduleSection = ({ schedule }: { schedule: any[] }) => {
                 <h2 className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-lg">جدول البثوث 📅</h2>
                 <div className="flex-1 h-px bg-gradient-to-r from-[#FF2D2D]/50 to-transparent"></div>
             </div>
-            <div className="bg-[#050505]/80 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 overflow-hidden shadow-2xl">
+            <div className="bg-[#050505]/90 border border-white/10 rounded-[32px] p-6 overflow-hidden shadow-2xl">
                 <div className="flex flex-col gap-2">
                     {schedule.map((day, index) => (
                         <div key={day.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl ${index % 2 === 0 ? 'bg-white/5' : 'bg-transparent'} hover:bg-white/10 transition-colors border border-transparent hover:border-white/10`}>
@@ -185,7 +124,7 @@ export const FAQSection = ({ faqs }: { faqs: any[] }) => {
                 {faqs.map((faq) => (
                     <div 
                         key={faq.id} 
-                        className={`bg-[#050505]/80 backdrop-blur-xl border ${openId === faq.id ? 'border-[#FF2D2D]/50 shadow-[0_0_20px_rgba(255,45,45,0.1)]' : 'border-white/10'} rounded-3xl overflow-hidden transition-all duration-300`}
+                        className={`bg-[#050505]/90 border ${openId === faq.id ? 'border-[#FF2D2D]/50 shadow-[0_0_20px_rgba(255,45,45,0.1)]' : 'border-white/10'} rounded-3xl overflow-hidden transition-all duration-300`}
                     >
                         <button 
                             onClick={() => setOpenId(openId === faq.id ? null : faq.id)}

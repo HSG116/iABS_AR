@@ -22,8 +22,8 @@ export const LatestYoutube: React.FC<LatestYoutubeProps> = ({ lang }) => {
 
         if (data.items && data.items.length > 0) {
           const latest = data.items[0];
-          // Try to get higher res thumbnail
-          const highResThumbnail = latest.thumbnail.replace('hqdefault.jpg', 'maxresdefault.jpg');
+          // hqdefault بدل maxresdefault: أصغر بعشر مرات والمقاس المعروض لا يحتاج أكثر
+          const highResThumbnail = latest.thumbnail.replace(/maxresdefault\.jpg.*$/, 'hqdefault.jpg');
           
           setVideo({
             title: latest.title,

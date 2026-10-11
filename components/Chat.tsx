@@ -170,8 +170,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang, isDemo }) => {
       {/* top red energy line */}
       <div className="absolute top-0 inset-x-8 h-[2px] rounded-full bg-gradient-to-l from-transparent via-[#FF2D2D] to-transparent shadow-[0_0_12px_#FF2D2D] z-30 pointer-events-none" />
       {/* ambient glow */}
-      <div className="absolute -top-16 -end-16 w-48 h-48 bg-[#FF2D2D]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -start-16 w-48 h-48 bg-[#53FC18]/[0.05] rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-16 -end-16 w-48 h-48 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(255,45,45,0.11) 0%, transparent 68%)' }} />
+      <div className="absolute -bottom-20 -start-16 w-48 h-48 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(83,252,24,0.06) 0%, transparent 68%)' }} />
 
       {/* --- Premium Header --- */}
       <div className="shrink-0 z-20 bg-gradient-to-b from-white/[0.07] to-white/[0.02] border-b border-white/[0.07] backdrop-blur-md">

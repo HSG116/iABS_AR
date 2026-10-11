@@ -268,6 +268,21 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      // تقسيم الحزم: تحميل متوازٍ + كاش أفضل بين التحديثات
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('react-dom') || id.includes('\\react\\') || id.includes('/react/') || id.includes('scheduler')) return 'vendor-react';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('pusher-js') || id.includes('pusher-js')) return 'vendor-pusher';
+            if (id.includes('hls.js')) return 'vendor-hls';
+            return 'vendor';
+          }
+        }
+      }
     }
   };
 });

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 
 import { KickIcon, XIcon, SnapchatIcon, DiscordIcon, TikTokIcon, WhatsAppIcon, InstagramIcon, YoutubeIcon, FacebookIcon, MailIcon } from './components/Icons';
 import { SocialLink, Language } from './types';
 import { supabase } from './supabaseClient';
-import { AnnouncementTicker, SponsorsSection, ClipsSection, ScheduleSection, FAQSection } from './components/PublicWidgets';
+import { SponsorsSection, ClipsSection, ScheduleSection, FAQSection } from './components/PublicWidgets';
 import { StreamPlayer } from './components/StreamPlayer';
-import { ChatWidget } from './components/Chat';
+import { Challenge60, Challenge60Mini } from './components/Challenge60';
 import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
 
 // Heavy below-fold / on-demand chunks — split out of the first paint
@@ -12,9 +12,11 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m =
 const StatsSection = lazy(() => import('./components/StatsSection').then(m => ({ default: m.StatsSection })));
 const AIChat = lazy(() => import('./components/AIChat').then(m => ({ default: m.AIChat })));
 const ModeratorsSection = lazy(() => import('./components/ModeratorsSection'));
+// الشات يجيب معه pusher-js (~70KB) — ينزّل فقط وقت البث المباشر
+const ChatWidget = lazy(() => import('./components/Chat').then(m => ({ default: m.ChatWidget })));
 
 // --- Constants (preserved) ---
-const DEFAULT_PROFILE_IMAGE = "/favicon.png";
+const DEFAULT_PROFILE_IMAGE = "/favicon-192.png";
 import { kickFetch } from './utils/kickApi';
 import { getAllSocialMediaStats, formatFollowerCount, readSocialCache, SOCIAL_TTL_MS } from './utils/socialMediaApi';
 import { getTipLeaderboard, TipDonor, TipInterval } from './utils/supportersApi';
@@ -131,60 +133,125 @@ const ArenaBackground: React.FC = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: true });
         if (!ctx) return;
-        let raf = 0; let w = 0; let h = 0;
-        const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+
+        const isMobile = window.matchMedia('(max-width: 767px)').matches;
+        // الجسيمات أقل على الجوال + إطار أبطأ = بطارية وسرعة
+        const MIN_DT = isMobile ? 50 : 33; // ~20fps جوال / ~30fps ديسكتوب
+        const DPR = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+
+        let raf = 0;
+        let running = true;
+        let scrolling = false;
+        let scrollTimer = 0;
+        let last = 0;
+        let w = 0;
+        let h = 0;
+
         type P = { x: number; y: number; r: number; vy: number; vx: number; a: number; red: boolean };
         let parts: P[] = [];
+
+        /* --- Glowing balls are pre-rendered once into a sprite ---
+           (shadowBlur on every frame is one of the most expensive operations in canvas) */
+        const makeSprite = (core: string, glow: string) => {
+            const size = 64;
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const g = c.getContext('2d')!;
+            const grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+            grd.addColorStop(0, core);
+            grd.addColorStop(0.18, core);
+            grd.addColorStop(0.42, glow);
+            grd.addColorStop(1, 'rgba(0,0,0,0)');
+            g.fillStyle = grd;
+            g.fillRect(0, 0, size, size);
+            return c;
+        };
+        const spriteRed = makeSprite('rgba(255,90,90,0.95)', 'rgba(255,45,45,0.35)');
+        const spriteWhite = makeSprite('rgba(255,255,255,0.85)', 'rgba(255,255,255,0.12)');
+
         const resize = () => {
-            w = window.innerWidth; h = window.innerHeight;
-            canvas.width = w * DPR; canvas.height = h * DPR;
-            canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = Math.round(w * DPR);
+            canvas.height = Math.round(h * DPR);
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-            const n = Math.min(70, Math.floor(w / 22));
+            const n = Math.min(isMobile ? 30 : 52, Math.floor(w / 30));
             parts = Array.from({ length: n }, () => ({
                 x: Math.random() * w, y: Math.random() * h,
-                r: 0.6 + Math.random() * 2.2,
+                r: 0.8 + Math.random() * 2.4,
                 vy: -(0.15 + Math.random() * 0.55), vx: (Math.random() - 0.5) * 0.25,
-                a: 0.15 + Math.random() * 0.5, red: Math.random() > 0.72,
+                a: 0.18 + Math.random() * 0.55, red: Math.random() > 0.72,
             }));
         };
-        resize();
-        window.addEventListener('resize', resize);
-        const tick = () => {
+
+        const draw = (now: number) => {
+            raf = requestAnimationFrame(draw);
+            // يتوقف الرسم كلياً أثناء التمرير النشط — التمرير أولاً، والجسيمات بعده
+            if (!running || scrolling) { last = now; return; }
+            if (now - last < MIN_DT) return;
+            last = now;
+
             ctx.clearRect(0, 0, w, h);
             for (const p of parts) {
-                p.y += p.vy; p.x += p.vx;
+                p.y += p.vy;
+                p.x += p.vx;
                 if (p.y < -8) { p.y = h + 8; p.x = Math.random() * w; }
-                if (p.x < -8) p.x = w + 8; if (p.x > w + 8) p.x = -8;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = p.red ? `rgba(255,45,45,${p.a})` : `rgba(255,255,255,${p.a * 0.55})`;
-                ctx.shadowBlur = p.red ? 12 : 0;
-                ctx.shadowColor = 'rgba(255,45,45,0.8)';
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                if (p.x < -8) p.x = w + 8;
+                if (p.x > w + 8) p.x = -8;
+
+                const s = p.r * 10;
+                ctx.globalAlpha = p.a;
+                ctx.drawImage(p.red ? spriteRed : spriteWhite, p.x - s / 2, p.y - s / 2, s, s);
             }
-            raf = requestAnimationFrame(tick);
+            ctx.globalAlpha = 1;
         };
-        raf = requestAnimationFrame(tick);
-        return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+
+        /* --- Stop completely when the tab is hidden: saves battery + CPU --- */
+        const onVisibility = () => {
+            running = document.visibilityState === 'visible';
+            last = 0;
+        };
+
+        resize();
+        window.addEventListener('resize', resize, { passive: true });
+        document.addEventListener('visibilitychange', onVisibility);
+        const onScroll = () => {
+            scrolling = true;
+            window.clearTimeout(scrollTimer);
+            scrollTimer = window.setTimeout(() => { scrolling = false; last = 0; }, 220);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        raf = requestAnimationFrame(draw);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            window.clearTimeout(scrollTimer);
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('scroll', onScroll);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, []);
     return (
         <div className="fixed inset-0 z-0 bg-[#050505] overflow-hidden" aria-hidden="true">
             <div className="absolute inset-0 responsive_bg scale-105 opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-[#050505]" />
             <div className="absolute inset-0 grid-lines opacity-70" />
-            <div className="absolute -top-40 right-[-10%] w-[55vw] h-[55vw] max-w-[720px] max-h-[720px] rounded-full bg-[#FF2D2D]/20 blur-[140px] animate-aurora" />
-            <div className="absolute top-[30%] left-[-12%] w-[42vw] h-[42vw] max-w-[560px] max-h-[560px] rounded-full bg-[#FF2D2D]/10 blur-[130px] animate-aurora" style={{ animationDelay: '-6s' }} />
-            <div className="absolute bottom-[-20%] right-[20%] w-[36vw] h-[36vw] max-w-[480px] max-h-[480px] rounded-full bg-[#53FC18]/[0.06] blur-[120px] animate-aurora" style={{ animationDelay: '-3s' }} />
+            {/* Glowing circles using radial gradients (no blur filter) — same look, much cheaper */}
+            <div className="absolute -top-40 right-[-10%] w-[55vw] h-[55vw] max-w-[720px] max-h-[720px] rounded-full animate-aurora"
+                style={{ background: 'radial-gradient(circle, rgba(255,45,45,0.26) 0%, rgba(255,45,45,0.11) 38%, transparent 68%)' }} />
+            <div className="absolute top-[30%] left-[-12%] w-[42vw] h-[42vw] max-w-[560px] max-h-[560px] rounded-full animate-aurora"
+                style={{ animationDelay: '-6s', background: 'radial-gradient(circle, rgba(255,45,45,0.14) 0%, rgba(255,45,45,0.06) 38%, transparent 68%)' }} />
+            <div className="absolute bottom-[-20%] right-[20%] w-[36vw] h-[36vw] max-w-[480px] max-h-[480px] rounded-full animate-aurora"
+                style={{ animationDelay: '-3s', background: 'radial-gradient(circle, rgba(83,252,24,0.08) 0%, rgba(83,252,24,0.035) 38%, transparent 68%)' }} />
             <canvas ref={canvasRef} className="absolute inset-0 opacity-80" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
         </div>
     );
 };
-
 const SectionHeading: React.FC<{ no: string; title: string; sub?: string; en?: string }> = ({ no, title, sub, en }) => (
     <div className="flex items-end gap-3 md:gap-4 mb-6 md:mb-9">
         <span className="font-gaming text-3xl sm:text-4xl md:text-6xl leading-none text-stroke-red select-none shrink-0" dir="ltr">{no}</span>
@@ -199,13 +266,30 @@ const SectionHeading: React.FC<{ no: string; title: string; sub?: string; en?: s
     </div>
 );
 
-const Marquee: React.FC<{ lang: Language }> = ({ lang }) => {
-    const items = lang === 'ar'
+// --- تحميل مؤجل: ما ينزّل كود القسم إلا لما الزائر يقرب منه ---
+const DeferredMount: React.FC<{ children: React.ReactNode; rootMargin?: string; minHeight?: number }> = ({ children, rootMargin = '700px', minHeight = 220 }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [show, setShow] = useState(false);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        if (typeof IntersectionObserver === 'undefined') { setShow(true); return; }
+        const obs = new IntersectionObserver(
+            (entries) => { if (entries.some(e => e.isIntersecting)) { setShow(true); obs.disconnect(); } },
+            { rootMargin, threshold: 0 }
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+    }, [rootMargin]);
+    return <div ref={ref} className="h-full" style={show ? undefined : { minHeight }}>{show ? children : null}</div>;
+};
+
+const Marquee: React.FC<{ lang: Language }> = ({ lang }) => {    const items = lang === 'ar'
         ? ['بث يومي مباشر', 'ملك القبول', 'مجتمع الأساطير', 'تفاعل لا يتوقف', 'جوائز ودروبس', 'ألعاب وتحديات', 'سوالف وفعاليات']
         : ['DAILY LIVE', 'KING OF ACCEPTANCE', 'LEGENDS COMMUNITY', 'NONSTOP HYPE', 'DROPS & REWARDS', 'GAMES & CHALLENGES', 'CHATTING & EVENTS'];
     const row = [...items, ...items];
     return (
-        <div className="relative -mx-3 sm:-mx-4 md:-mx-8 overflow-hidden border-y border-white/10 bg-black/60 backdrop-blur-md marquee-mask" dir="ltr" aria-hidden="true">
+        <div className="relative -mx-3 sm:-mx-4 md:-mx-8 overflow-hidden border-y border-white/10 bg-black/75 marquee-mask" dir="ltr" aria-hidden="true">
             <div className="flex w-max animate-marquee gap-0 py-2.5 md:py-3">
                 {row.map((t, i) => (
                     <span key={i} className="flex items-center gap-6 px-6 whitespace-nowrap text-[12px] md:text-sm font-black tracking-[0.25em] text-white/60">
@@ -284,9 +368,9 @@ const LastSessionReport: React.FC<{ lang: Language; data: any; clips: any[]; pas
     ];
     return (
         <Reveal className="w-full">
-            <div className="relative overflow-hidden rounded-[28px] md:rounded-[36px] border border-white/10 bg-[#0a0a0a]/85 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
+            <div className="relative overflow-hidden rounded-[28px] md:rounded-[36px] border border-white/10 bg-[#0a0a0a]/92 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
                 {/* cinematic ambient from thumbnail */}
-                <img src={thumbnail} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-25 scale-110 pointer-events-none" />
+                <img src={thumbnail} alt="" aria-hidden="true" className="hidden sm:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-25 scale-110 pointer-events-none" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 pointer-events-none" />
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-transparent via-[#FF2D2D] to-transparent" />
                 <div className="relative p-5 sm:p-8 md:p-10">
@@ -460,7 +544,7 @@ const SocialCard: React.FC<{ social: SocialLink; index: number; featured?: boole
     };
     const active = hover || launching;
     const card = (
-        <div className={`card-sheen relative h-full rounded-[22px] border bg-[#0b0b0b]/92 backdrop-blur-xl overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-active:translate-y-0 group-active:scale-[0.985] ${launching ? 'glitch-active' : ''} ${pressed ? 'scale-[0.985]' : ''}`}
+        <div className={`card-sheen relative h-full rounded-[22px] border bg-[#0b0b0b]/92 overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-active:translate-y-0 group-active:scale-[0.985] ${launching ? 'glitch-active' : ''} ${pressed ? 'scale-[0.985]' : ''}`}
             style={{ borderColor: launching ? brand : active ? `${brand}99` : 'rgba(255,255,255,0.09)', boxShadow: active ? `0 18px 44px -16px ${brand}66, inset 0 1px 0 rgba(255,255,255,0.08)` : '0 10px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
             {/* brand wash */}
             <div className="absolute inset-0 pointer-events-none transition-opacity duration-500" style={{ background: BRAND_GRADIENTS[social.name] || `linear-gradient(135deg, ${brand}22, transparent 60%)`, opacity: active ? 1 : 0.75 }} />
@@ -586,7 +670,7 @@ const TIERS = [
 ];
 
 const AlertTiers: React.FC<{ title: string; note: string }> = ({ title, note }) => (
-    <div className="card-sheen mt-6 rounded-[26px] border border-white/10 bg-black/50 backdrop-blur-xl p-5 md:p-6 overflow-hidden">
+    <div className="card-sheen mt-6 rounded-[26px] border border-white/10 bg-black/70 p-5 md:p-6 overflow-hidden">
         <p className="text-center text-[10px] md:text-[11px] font-black text-white/50 tracking-[0.3em] uppercase mb-5">{title}</p>
         <div className="flex items-end justify-center gap-2 sm:gap-4 h-44 sm:h-52" dir="ltr">
             {TIERS.map((tr, i) => (
@@ -636,7 +720,7 @@ const DonateGate: React.FC<{
     return (
         <a href={url} onClick={go} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
             className="group relative block rounded-[26px] [perspective:900px]" aria-label={`${title} donation`}>
-            <div className="absolute -inset-1 rounded-[28px] blur-2xl pointer-events-none transition-opacity duration-300 animate-pulse-slow" style={{ background: glowBg, opacity: hover ? 1 : 0.45 }} />
+            <div className="absolute -inset-1 rounded-[28px] pointer-events-none transition-opacity duration-300 animate-pulse-slow" style={{ background: glowBg, opacity: hover ? 0.9 : 0.45 }} />
             <div className="rounded-[26px] p-[2px] transition-transform duration-300 group-hover:scale-[1.01]" style={{ background: frame }}>
                 <div className="card-sheen relative rounded-[24px] bg-[#0b0b0b] overflow-hidden [transform-style:preserve-3d]">
                     <div className="absolute inset-0 pointer-events-none" style={{ background: wash }} />
@@ -700,8 +784,9 @@ const SupportArena: React.FC<{ lang: Language; supporters: Supporter[] }> = ({ l
         <div className="w-full">
             {/* gates — true brand identities from official logos */}
             <div className="relative">
-                <div className="absolute -top-10 right-0 w-64 h-64 rounded-full bg-[#6FF2C4]/15 blur-[90px] animate-aurora pointer-events-none" aria-hidden="true" />
-                <div className="absolute -bottom-10 left-0 w-72 h-72 rounded-full bg-[#8B5CF6]/20 blur-[100px] animate-aurora pointer-events-none" style={{ animationDelay: '-7s' }} aria-hidden="true" />
+                <div className="absolute -top-10 right-0 w-64 h-64 rounded-full animate-aurora pointer-events-none" aria-hidden="true"
+                    style={{ background: 'radial-gradient(circle, rgba(111,242,196,0.16) 0%, rgba(111,242,196,0.07) 40%, transparent 68%)' }} />
+                <div className="absolute -bottom-10 left-0 w-72 h-72 rounded-full animate-aurora pointer-events-none" style={{ animationDelay: '-7s', background: 'radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.09) 40%, transparent 68%)' }} aria-hidden="true" />
                 {/* locked direction: Streamlabs (mint) always right, Dokan (coral/violet) always left */}
                 <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5" dir="rtl">
                     <DonateGate lang={lang} title="PAYPAL" url="https://streamlabs.com/iabs/tip" color="#6FF2C4" markImg="/streamlabs-mark.png"
@@ -713,7 +798,7 @@ const SupportArena: React.FC<{ lang: Language; supporters: Supporter[] }> = ({ l
             </div>
 
             {/* hall of legends — live Streamlabs leaderboard */}
-            <div className="mt-6 md:mt-8 rounded-[26px] border border-white/10 bg-[#080b10]/95 backdrop-blur-xl overflow-hidden">
+            <div className="mt-6 md:mt-8 rounded-[26px] border border-white/10 bg-[#080b10]/95 overflow-hidden">
                 <div className="h-[3px] bg-gradient-to-l from-[#6FF2C4] via-[#8B5CF6] to-[#FF7A59]" />
                 <div className="p-5 sm:p-7">
                     <div className="text-center mb-5">
@@ -825,7 +910,6 @@ export default function App() {
     const [visitorCount, setVisitorCount] = useState(0);
     const [activePoll, setActivePoll] = useState<any>(null);
 
-    const [announcement, setAnnouncement] = useState<any>(null);
     const [sponsors, setSponsors] = useState<any[]>([]);
     const [clipsList, setClipsList] = useState<any[]>([]);
     const [schedule, setSchedule] = useState<any[]>([]);
@@ -836,8 +920,7 @@ export default function App() {
     const fetchPublicData = async () => {
         try {
             // Parallel: one round-trip instead of 8 sequential ones
-            const [annRes, sponRes, clpRes, schRes, fqRes, schToggleRes, faqToggleRes, seoRes] = await Promise.all([
-                supabase.from('announcements').select('*').eq('id', 1).single(),
+            const [sponRes, clpRes, schRes, fqRes, schToggleRes, faqToggleRes, seoRes] = await Promise.all([
                 supabase.from('sponsors').select('*').order('id', { ascending: false }),
                 supabase.from('highlight_clips').select('*').order('id', { ascending: false }),
                 supabase.from('schedule').select('*').order('id', { ascending: true }),
@@ -846,9 +929,6 @@ export default function App() {
                 supabase.from('announcements').select('*').eq('id', 3).single(),
                 supabase.from('seo_settings').select('*').eq('id', 1).single(),
             ]);
-            const ann = annRes.data;
-            if (ann && (ann.is_active === true || ann.is_active === 'true' || ann.is_active === 1 || ann.is_active === '1')) setAnnouncement(ann);
-            else setAnnouncement(null);
 
             setSponsors(sponRes.data || []);
             setClipsList(clpRes.data || []);
@@ -908,17 +988,22 @@ export default function App() {
         const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => setAdminSessionUserId(session?.user?.id ?? null));
 
         const fetchLive = async () => {
-            const { data: statData } = await supabase.from('site_stats').select('visits').eq('id', 1).single();
-            if (statData) setVisitorCount(statData.visits);
-            const { data: pollData } = await supabase.from('polls').select('*').eq('is_active', true).order('id', { ascending: false }).limit(1).single();
-            setActivePoll(pollData || null);
-            const { data: annToggle } = await supabase.from('announcements').select('*').eq('id', 1).single();
-            if (annToggle && (annToggle.is_active === true || annToggle.is_active === 'true' || annToggle.is_active === 1 || annToggle.is_active === '1')) setAnnouncement(annToggle);
-            else setAnnouncement(null);
+            const [statRes, pollRes] = await Promise.all([
+                supabase.from('site_stats').select('visits').eq('id', 1).single(),
+                supabase.from('polls').select('*').eq('is_active', true).order('id', { ascending: false }).limit(1).single(),
+            ]);
+            if (statRes.data) setVisitorCount(statRes.data.visits);
+            setActivePoll(pollRes.data || null);
         };
         fetchLive();
-        const interval = setInterval(fetchLive, 30000);
-        return () => { clearInterval(interval); authSub?.subscription?.unsubscribe(); };
+        // يتوقف التحديث التلقائي والتبويب مخفي
+        let interval: ReturnType<typeof setInterval> | null = null;
+        const startLive = () => { if (!interval) interval = setInterval(fetchLive, 30000); };
+        const stopLive = () => { if (interval) { clearInterval(interval); interval = null; } };
+        const onVis = () => { if (document.visibilityState === 'visible') { fetchLive(); startLive(); } else stopLive(); };
+        startLive();
+        document.addEventListener('visibilitychange', onVis);
+        return () => { stopLive(); authSub?.subscription?.unsubscribe(); document.removeEventListener('visibilitychange', onVis); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -949,8 +1034,13 @@ export default function App() {
             getAllSocialMediaStats().then(stats => { if (!dead) apply(stats); }).catch(() => {});
         };
         refreshSocials();
-        const socialInterval = setInterval(refreshSocials, SOCIAL_TTL_MS);
-        return () => { dead = true; clearInterval(socialInterval); };
+        let socialInterval: ReturnType<typeof setInterval> | null = null;
+        const startSocials = () => { if (!socialInterval) socialInterval = setInterval(refreshSocials, SOCIAL_TTL_MS); };
+        const stopSocials = () => { if (socialInterval) { clearInterval(socialInterval); socialInterval = null; } };
+        const onVis = () => { if (document.visibilityState === 'visible') startSocials(); else stopSocials(); };
+        startSocials();
+        document.addEventListener('visibilitychange', onVis);
+        return () => { dead = true; stopSocials(); document.removeEventListener('visibilitychange', onVis); };
     }, []);
 
     const refreshIsAdmin = async (userId: string | null) => {
@@ -1020,7 +1110,14 @@ export default function App() {
 
     const fetchKickStatus = useCallback(async () => {
         try {
-            const data = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`, true);
+            // الثلاث طلبات مع بعض بدل ما تكون متتابعة
+            const [channelData, videosRawData, clipsRawData] = await Promise.all([
+                kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}`, true),
+                kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true),
+                kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=5`, true),
+            ]);
+
+            const data = channelData;
             if (data) {
                 const livestreamData = data.livestream || data.live_stream;
                 const isLive = livestreamData && (livestreamData.is_live === true || livestreamData.is_live === 1);
@@ -1037,25 +1134,31 @@ export default function App() {
                     const count = data.followers_count;
                     setSocialStats(prev => ({ ...prev, 'KICK': count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count.toString() }));
                 }
-                const videosRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/videos`, true);
-                const videosArray = videosRawData?.videos || (Array.isArray(videosRawData) ? videosRawData : []);
-                if (videosArray?.length > 0) { setLastSession(videosArray[0]); setPastSessions(videosArray.slice(1, 4)); }
-                else {
-                    const streams = data.previous_livestreams || data.recent_streams || [];
-                    if (streams?.length > 0) { setLastSession(streams[0]); setPastSessions(streams.slice(1, 4)); }
-                }
-                const clipsRawData = await kickFetch(`https://kick.com/api/v2/channels/${CHANNEL_SLUG}/clips?limit=5`, true);
-                const clipsData = clipsRawData?.data || clipsRawData;
-                const clipsArray = clipsData?.clips || (Array.isArray(clipsData) ? clipsData : (clipsData?.data && Array.isArray(clipsData.data) ? clipsData.data : []));
-                setClips(clipsArray.slice(0, 3));
             }
+
+            const videosArray = videosRawData?.videos || (Array.isArray(videosRawData) ? videosRawData : []);
+            if (videosArray?.length > 0) { setLastSession(videosArray[0]); setPastSessions(videosArray.slice(1, 4)); }
+            else {
+                const streams = data?.previous_livestreams || data?.recent_streams || [];
+                if (streams?.length > 0) { setLastSession(streams[0]); setPastSessions(streams.slice(1, 4)); }
+            }
+
+            const clipsData = clipsRawData?.data || clipsRawData;
+            const clipsArray = clipsData?.clips || (Array.isArray(clipsData) ? clipsData : (clipsData?.data && Array.isArray(clipsData.data) ? clipsData.data : []));
+            setClips(Array.isArray(clipsArray) ? clipsArray.slice(0, 3) : []);
         } catch { /* silent */ }
     }, []);
 
     useEffect(() => {
         fetchKickStatus();
-        const kickInterval = setInterval(fetchKickStatus, 60000);
-        return () => clearInterval(kickInterval);
+        // ما نسأل السيرفر والتبويب مخفي — يوفّر باقة الداتا والبطارية
+        let timer: ReturnType<typeof setInterval> | null = null;
+        const start = () => { if (!timer) timer = setInterval(fetchKickStatus, 60000); };
+        const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+        const onVis = () => { if (document.visibilityState === 'visible') { fetchKickStatus(); start(); } else stop(); };
+        start();
+        document.addEventListener('visibilitychange', onVis);
+        return () => { stop(); document.removeEventListener('visibilitychange', onVis); };
     }, [fetchKickStatus]);
 
     const handleShare = async () => {
@@ -1090,8 +1193,9 @@ export default function App() {
 
                         {/* ===== NAV — urgent edition ===== */}
                         <header className="sticky top-2 md:top-5 z-50">
-                            <div className="absolute -top-8 inset-x-8 h-16 bg-[#FF2D2D]/15 blur-[50px] rounded-full pointer-events-none" aria-hidden="true" />
-                            <nav className="glass relative flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 py-2.5 rounded-2xl border border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.55)] overflow-hidden" aria-label="Main">
+                            <div className="absolute -top-8 inset-x-8 h-16 rounded-full pointer-events-none" aria-hidden="true"
+                                style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 50%, rgba(255,45,45,0.16) 0%, transparent 70%)' }} />
+                            <nav className="relative flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 py-2.5 rounded-2xl bg-[#0b0b0d]/92 border border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.55)] overflow-hidden" aria-label="Main">
                                 <span className="absolute top-0 inset-x-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[#FF2D2D]/80 to-transparent pointer-events-none" aria-hidden="true" />
                                 <a href="#top" className="flex items-center gap-2.5 shrink-0 min-w-0">
                                     <span className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-[#FF2D2D]/50 shadow-[0_0_18px_rgba(255,45,45,0.4)] block shrink-0">
@@ -1113,6 +1217,7 @@ export default function App() {
                                     <a href="#schedule" className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Schedule' : 'الجدول'}</a>
                                 </div>
                                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                    <Challenge60Mini lang={lang} />
                                     <span className={`hidden sm:inline-flex items-center gap-2 text-[11px] font-black px-3 py-2 rounded-full border ${streamInfo.isLive ? 'border-[#53FC18]/50 bg-[#53FC18]/10 text-[#53FC18]' : 'border-white/15 bg-white/5 text-white/50'}`}>
                                         <span className={`w-2 h-2 rounded-full shrink-0 ${streamInfo.isLive ? 'bg-[#53FC18] animate-pulse shadow-[0_0_10px_#53FC18]' : 'bg-white/30'}`} />
                                         {streamInfo.isLive ? t.status : t.statusOffline}
@@ -1128,9 +1233,9 @@ export default function App() {
                                     </button>
                                 </div>
                             </nav>
-                            {/* mobile: fused status + breaking box */}
+                            {/* mobile: status strip */}
                             <div className="sm:hidden mt-2 rounded-2xl p-[1px] bg-gradient-to-b from-white/15 via-white/[0.06] to-transparent">
-                                <div className="rounded-[15px] bg-black/70 backdrop-blur-md overflow-hidden">
+                                <div className="rounded-[15px] bg-black/70 overflow-hidden">
                                     <div className={`h-[2px] ${streamInfo.isLive ? 'bg-gradient-to-l from-[#53FC18] via-[#53FC18]/40 to-transparent' : 'bg-gradient-to-l from-[#FF2D2D] via-[#FF2D2D]/40 to-transparent'}`} />
                                     <div className="px-4 py-2.5 flex items-center justify-center gap-2">
                                         <span className={`w-2 h-2 rounded-full shrink-0 ${streamInfo.isLive ? 'bg-[#53FC18] animate-pulse shadow-[0_0_10px_#53FC18]' : 'bg-[#FF2D2D] animate-pulse shadow-[0_0_10px_#FF2D2D]'}`} />
@@ -1138,25 +1243,17 @@ export default function App() {
                                             {streamInfo.isLive ? `${t.status}${streamInfo.viewers > 0 ? ` • ${streamInfo.viewers.toLocaleString()} ${t.viewers}` : ''}` : t.statusOffline}
                                         </p>
                                     </div>
-                                    {announcement?.message && (
-                                        <>
-                                            <div className="mx-4 h-px bg-gradient-to-l from-transparent via-white/15 to-transparent" />
-                                            <div className="px-4 py-2.5 flex items-center gap-2.5">
-                                                <span className="shrink-0 text-[9px] font-black px-2.5 py-1 rounded-lg bg-gradient-to-b from-[#ff4d4d] to-[#FF2D2D] text-black tracking-widest shadow-[0_0_14px_rgba(255,45,45,0.5)]">{lang === 'en' ? 'LIVE' : 'عاجل'}</span>
-                                                <p className="text-xs font-bold text-white/85 truncate flex-1">{announcement.message}</p>
-                                                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#FF2D2D] animate-pulse" />
-                                            </div>
-                                        </>
-                                    )}
                                 </div>
-                            </div>
-                            <div className="mt-2 hidden md:flex justify-start px-1">
-                                <AnnouncementTicker announcement={announcement} />
                             </div>
                         </header>
 
+                        {/* ===== تحدي الـ60 يوم ===== */}
+                        <div id="challenge60" className="scroll-mt-28">
+                            <Challenge60 lang={lang} />
+                        </div>
+
                         {/* ===== HERO ===== */}
-                        <section id="top" className="pt-8 md:pt-16 pb-6 md:pb-8 overflow-clip">
+                        <section id="top" className="pt-6 md:pt-10 pb-6 md:pb-8 overflow-clip">
                             <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-10 items-center justify-items-center lg:justify-items-stretch">
                                 <div className="animate-fade-in-up w-full max-w-xl text-center lg:text-start order-2 lg:order-1">
                                     <div className="inline-flex items-center gap-2.5 rounded-full border border-[#FF2D2D]/35 bg-[#FF2D2D]/[0.08] px-4 py-1.5 mb-5">
@@ -1267,13 +1364,16 @@ export default function App() {
                         {/* ===== LIVE THEATER — CINEMA EDITION ===== */}
                         {streamInfo.isLive && (
                             <section id="live" className="relative pt-12 md:pt-16 scroll-mt-28 animate-slide-down">
-                                {/* ambient stage glow */}
-                                <div className="pointer-events-none absolute -top-10 right-[10%] w-[420px] h-[220px] bg-[#FF2D2D]/15 blur-[110px] rounded-full" />
-                                <div className="pointer-events-none absolute bottom-0 left-[5%] w-[300px] h-[180px] bg-[#53FC18]/[0.05] blur-[100px] rounded-full" />
+                                {/* ambient stage glow (تدرّج شعاعي بدون فلتر) */}
+                                <div className="pointer-events-none absolute -top-10 right-[10%] w-[420px] h-[220px] rounded-full"
+                                    style={{ background: 'radial-gradient(ellipse, rgba(255,45,45,0.16) 0%, transparent 68%)' }} />
+                                <div className="pointer-events-none absolute bottom-0 left-[5%] w-[300px] h-[180px] rounded-full"
+                                    style={{ background: 'radial-gradient(ellipse, rgba(83,252,24,0.06) 0%, transparent 68%)' }} />
                                 <Reveal><SectionHeading no="02" title={t.theaterTitle} sub={`${streamInfo.viewers.toLocaleString()} ${t.viewers}`} en="LIVE THEATER" /></Reveal>
                                 <div className="relative rounded-[30px] p-[1.5px] bg-gradient-to-b from-[#FF2D2D]/70 via-[#FF2D2D]/15 to-white/10 shadow-[0_30px_90px_rgba(255,45,45,0.22)]">
-                                    <div className="absolute -inset-3 rounded-[36px] bg-[#FF2D2D]/10 blur-2xl pointer-events-none" />
-                                    <div className="relative rounded-[29px] bg-[#0a0a0c]/95 backdrop-blur-xl overflow-hidden">
+                                    <div className="absolute -inset-3 rounded-[36px] pointer-events-none"
+                                        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,45,45,0.14) 0%, transparent 70%)' }} />
+                                    <div className="relative rounded-[29px] bg-[#0a0a0c]/95 overflow-hidden">
                                         {/* theater top strip */}
                                         <div className="flex items-center gap-2.5 px-4 md:px-5 py-3 border-b border-white/[0.07] bg-gradient-to-b from-white/[0.06] to-transparent">
                                             <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full bg-[#FF2D2D] text-black tracking-[0.18em] shadow-[0_0_18px_rgba(255,45,45,0.6)]">
@@ -1331,7 +1431,9 @@ export default function App() {
                                             </div>
                                             <div className="w-full xl:w-[370px] shrink-0 p-3 md:p-4 xl:ps-0 flex flex-col min-h-0 xl:h-full">
                                                 <div className="h-[480px] md:h-[540px] xl:h-full xl:flex-1 xl:min-h-0 shrink-0 rounded-2xl overflow-hidden border border-white/10 bg-[#0b0d0f] shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col min-h-0">
-                                                    <ChatWidget lang={lang} isDemo={false} />
+                                                    <Suspense fallback={<div className="h-full w-full animate-pulse bg-white/[0.02]" />}>
+                                                        <ChatWidget lang={lang} isDemo={false} />
+                                                    </Suspense>
                                                 </div>
                                             </div>
                                         </div>
@@ -1343,9 +1445,9 @@ export default function App() {
                         {/* ===== COMMUNITY ===== */}
                         <section className="pt-12 md:pt-16">
                             <Reveal><SectionHeading no={streamInfo.isLive ? '03' : '02'} title={t.communityTitle} en="COMMUNITY HQ" /></Reveal>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-                                <Reveal delay={0}><DiscordWidget lang={lang} /></Reveal>
-                                <Reveal delay={100}><YoutubeWidget lang={lang} /></Reveal>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 items-stretch">
+                                <Reveal delay={0} className="h-full"><DeferredMount minHeight={260}><DiscordWidget lang={lang} /></DeferredMount></Reveal>
+                                <Reveal delay={100} className="h-full"><DeferredMount minHeight={260}><YoutubeWidget lang={lang} /></DeferredMount></Reveal>
                             </div>
                         </section>
 
@@ -1360,7 +1462,9 @@ export default function App() {
                             <Reveal><SectionHeading no={streamInfo.isLive ? '05' : '04'} title={t.modsTitle} en="MODERATORS" /></Reveal>
                             <Reveal delay={80}>
                                 <Suspense fallback={<div className="w-full h-64 rounded-[26px] border border-white/10 bg-white/[0.02] animate-pulse" />}>
-                                    <ModeratorsSection lang={lang} />
+                                    <DeferredMount minHeight={280}>
+                                        <ModeratorsSection lang={lang} />
+                                    </DeferredMount>
                                 </Suspense>
                             </Reveal>
                         </section>
@@ -1369,7 +1473,7 @@ export default function App() {
                         {activePoll && (
                             <section className="pt-12 md:pt-16">
                                 <Reveal>
-                                    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0a0a]/85 backdrop-blur-xl p-6 md:p-9 shadow-2xl">
+                                    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0a0a]/92 p-6 md:p-9 shadow-2xl">
                                         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-transparent via-[#FF2D2D] to-transparent" />
                                         <div className="flex items-center justify-center gap-3 mb-7">
                                             <span className="w-2 h-2 rounded-full bg-[#FF2D2D] shadow-[0_0_10px_#FF2D2D] animate-pulse" />
@@ -1418,11 +1522,15 @@ export default function App() {
                         </div>
 
                         <section className="pt-12 md:pt-16">
-                            <Reveal><Suspense fallback={<div className="w-full h-40 rounded-[26px] border border-white/10 bg-white/[0.02] animate-pulse" />}><StatsSection lang={lang} /></Suspense></Reveal>
+                            <Reveal><Suspense fallback={<div className="w-full h-40 rounded-[26px] border border-white/10 bg-white/[0.02] animate-pulse" />}>
+                                <DeferredMount minHeight={180}>
+                                    <StatsSection lang={lang} />
+                                </DeferredMount>
+                            </Suspense></Reveal>
                         </section>
 
                         {/* ===== FOOTER ===== */}
-                        <footer className="mt-16 md:mt-24 rounded-[28px] border border-white/10 bg-black/60 backdrop-blur-xl overflow-hidden relative">
+                        <footer className="mt-16 md:mt-24 rounded-[28px] border border-white/10 bg-black/85 overflow-hidden relative">
                             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-l from-transparent via-[#FF2D2D]/70 to-transparent" />
                             <div className="p-8 md:p-12 text-center relative">
                                 <p className="font-gaming text-[18vw] md:text-[120px] leading-none text-stroke opacity-40 select-none" dir="ltr" aria-hidden="true">iABS</p>

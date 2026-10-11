@@ -178,7 +178,7 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
     return (
       <div className={`
                  relative flex flex-col items-center justify-center p-6 text-center rounded-[26px] overflow-hidden
-                 bg-[#080808]/80 backdrop-blur-xl border border-dashed border-white/10
+                 bg-[#080808]/90 border border-dashed border-white/10
                  transition-all duration-500 hover:border-white/20 group
                  ${isMain ? 'lg:-mt-4 z-10 min-h-[300px] md:min-h-[440px]' : 'min-h-[250px] md:min-h-[380px]'}
                  ${className}
@@ -205,7 +205,7 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, subtitle, data
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="absolute -inset-1.5 rounded-[28px] blur-2xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none" style={{ background: `linear-gradient(180deg, rgba(${config.glowColor},0.35), transparent 60%)` }} />
-      <div className="card-sheen relative rounded-[24.5px] bg-[#080808]/95 backdrop-blur-xl overflow-hidden perspective-1000 [transform-style:preserve-3d]">
+      <div className="card-sheen relative rounded-[24.5px] bg-[#080808]/95 overflow-hidden perspective-1000 [transform-style:preserve-3d]">
         <div className="absolute top-0 inset-x-8 h-[2px] rounded-full opacity-80" style={{ background: `linear-gradient(90deg, transparent, rgba(${config.glowColor},0.9), transparent)` }} />
 
         {/* Header with 3D medallion — stacks vertically in narrow half-cards */}
