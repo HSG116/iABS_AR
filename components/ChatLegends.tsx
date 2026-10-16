@@ -45,7 +45,12 @@ const K = (v: number) => (v >= 1e3 ? (v / 1e3).toFixed(1) + 'K' : `${v}`);
 const hueOf = (name: string) => ([...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) * 37) % 360;
 const dayWord = (n: number) => (n === 1 ? 'يوم' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوماً`);
 
-const dayNow = () => Math.max(0, Math.min(TOTAL, Math.floor((Date.now() - +new Date(DAY1)) / DAY_MS)));
+const dayNow = () => {
+  const n = new Date();
+  const todayMid = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  const startMid = new Date(2026, 8, 18).getTime();
+  return Math.max(1, Math.min(TOTAL, Math.round((todayMid - startMid) / DAY_MS) + 1));
+};
 const progressNow = () => Math.min(100, (Date.now() - +new Date(DAY1)) / (TOTAL * DAY_MS) * 100);
 
 const Avatar: React.FC<{ name: string; img?: string }> = ({ name, img }) => {
@@ -319,7 +324,12 @@ export const ChatLegends: React.FC = () => {
       nbs?.forEach((el, i) => {
         el.textContent = String(Math.floor(v[i])).padStart(2, '0');
       });
-      if (dayRef.current) dayRef.current.textContent = `يوم ${Math.min(TOTAL, Math.floor((now - t0) / DAY_MS))} / ${TOTAL}`;
+      if (dayRef.current) {
+        const nd = new Date();
+        const tMid = new Date(nd.getFullYear(), nd.getMonth(), nd.getDate()).getTime();
+        const sMid = new Date(2026, 8, 18).getTime();
+        dayRef.current.textContent = `يوم ${Math.max(1, Math.min(TOTAL, Math.round((tMid - sMid) / DAY_MS) + 1))} / ${TOTAL}`;
+      }
       if (!(window as any).__mpLock) root.style.setProperty('--mp', `${Math.min(1, (now - t0) / (TOTAL * DAY_MS))}`);
       if (pbRef.current) pbRef.current.style.width = `${Math.min(100, ((now - t0) / (TOTAL * DAY_MS)) * 100)}%`;
       if (!ms) done();
