@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Hls from 'hls.js';
 import { Language, LeaderboardData, Clip, Video, ChannelInfo, LeaderboardEntry } from '../types';
 import { KickIcon } from './Icons';
-import BotrixLeaderboard from './BotrixLeaderboard';
+import { ChatLegends } from './ChatLegends';
 import { kickFetch } from '../utils/kickApi';
 
 interface StatsSectionProps {
@@ -499,9 +499,9 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
           )}
         </div>
 
-        {/* --- BOTRIX LEADERBOARD (Most Active Across Streams) --- */}
+        {/* --- CHAT LEGENDS (أساطير الشات — نفس تصميم 98765890.html) --- */}
         <div className="pt-8 border-t border-white/5">
-          <BotrixLeaderboard lang={lang} />
+          <ChatLegends />
         </div>
 
         {/* --- CLIPS & VODS GRID --- */}
