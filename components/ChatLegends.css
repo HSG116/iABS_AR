@@ -374,3 +374,10 @@ linear-gradient(62deg,transparent 70%,rgba(255,255,255,.12) 72%,transparent 78%)
 /* ملاحظة الترتيب النشط */
 .cl .cl-sortnote{text-align:center;font-size:12px;color:#8b8b8b;margin:10px 0 0;font-weight:700}
 .cl .cl-sortnote b{color:#ff6b6b}
+
+/* ===== الجوال: عمود واحد — الثلج والآيفون فوق، والنص والقائمة تحته ===== */
+@media(max-width:820px){
+  .cl .hero{grid-template-columns:1fr}
+  .cl .hero .vis{order:-1}
+  .cl .hero .info{order:0}
+}
