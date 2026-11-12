@@ -477,6 +477,32 @@ export const ChatLegends: React.FC = () => {
           </div>
         </div>
 
+        <div className="edcta">
+          <span className="eic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7.5" height="7.5" rx="2.2" />
+              <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" />
+              <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.2" />
+              <path d="M17.25 13.5v7.5M13.5 17.25H21" />
+            </svg>
+          </span>
+          <span className="etxt">
+            <span className="ebdg"><i></i> جديد · تحدي الـ60 يوم</span>
+            <h3>جدار الإيديتات والرسائل</h3>
+            <p>شارك إيديتك <b>صورة أو فيديو</b> على جدار برغندي فخم، أو اترك رسالتك باسمك أو كمجهول — <b>الرسائل تُنشر فوراً</b>. لوحة عرض متوازنة على قد المحتوى، إعجابات وبلاغات وإدارة كاملة.</p>
+          </span>
+          <span className="ebtns">
+            <a className="ebtn pri" href="60day/#submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16" /></svg>
+              شارك إيديتك
+            </a>
+            <a className="ebtn sec" href="60day/#messages">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z" /></svg>
+              جدار الرسائل
+            </a>
+          </span>
+        </div>
+
         <div className="card ogc">
           <h3>جوائز الـ OG</h3>
           <p className="note" style={{ textAlign: 'start', margin: '-4px 0 14px' }}>

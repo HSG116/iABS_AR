@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://upload.imagekit.io; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جدار الإيديتات — تحدي الـ60 يوم | iABS</title>
+<meta name="description" content="جدار إيديتات ورسائل مجتمع أساطير الشات — تحدي الـ60 يوم على آيفون 18 برو برغندي. شارك إيديتك أو اترك رسالتك.">
+<meta name="theme-color" content="#14070D">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+/* ================= نافذة علوية ================= */
+.topnav { position: fixed; top: 0; inset-inline: 0; z-index: 60; background: rgba(18, 7, 13, 0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.topnav:after { content: ""; position: absolute; bottom: -1px; inset-inline: 12%; height: 1.5px; background: linear-gradient(90deg, transparent, var(--rose), var(--champ), transparent); opacity: 0.7; }
+.topnav .in { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand .mark { width: 40px; height: 40px; border-radius: 13px; flex: none; display: grid; place-items: center; background: linear-gradient(150deg, var(--wine-400), var(--wine-700) 70%); border: 1px solid rgba(255, 157, 177, 0.4); box-shadow: 0 0 22px -4px rgba(255, 77, 126, 0.55); }
+.brand .mark svg { width: 21px; height: 21px; color: var(--champ); }
+.brand b { font-size: 15px; font-weight: 900; display: block; line-height: 1.25; }
+.brand small { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: 0.14em; color: var(--rose-soft); }
+.nav-links { display: flex; gap: 2px; margin-inline-start: auto; }
+.nav-links a { padding: 8px 14px; border-radius: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); transition: 0.25s; }
+.nav-links a:hover, .nav-links a.on { color: var(--text); background: rgba(255, 77, 126, 0.1); }
+.nav-acts { display: flex; gap: 8px; align-items: center; }
+.day-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 99px; border: 1px solid rgba(234, 201, 168, 0.35); background: rgba(234, 201, 168, 0.07); color: var(--champ); font-size: 11.5px; font-weight: 900; white-space: nowrap; }
+@media (max-width: 860px) { .nav-links { display: none; } .brand small { display: none; } }
+@media (max-width: 480px) { .day-pill span.lbl { display: none; } .brand b { font-size: 13px; } }
+
+/* ================= هيرو ================= */
+.hero { padding: 118px 0 34px; display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 26px; align-items: center; }
+.hero h1 { font-size: clamp(34px, 5.6vw, 58px); font-weight: 900; line-height: 1.18; margin: 12px 0 10px; }
+.hero h1 .grad { background: linear-gradient(115deg, #fff 10%, var(--rose-soft) 45%, var(--rose) 70%, var(--champ)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lead { color: var(--muted); font-size: 14.5px; font-weight: 600; max-width: 520px; margin: 0 0 18px; }
+.hero-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.hstat { flex: 1; min-width: 108px; padding: 12px 16px; border-radius: 17px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(36, 19, 25, 0.85), rgba(20, 9, 15, 0.9)); }
+.hstat b { display: block; font-size: 24px; font-weight: 900; line-height: 1.2; color: var(--champ); }
+.hstat span { font-size: 10.5px; font-weight: 800; color: var(--muted); letter-spacing: 0.04em; }
+.hero-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.hero-day { max-width: 520px; }
+.hero-day .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; font-size: 11.5px; font-weight: 800; color: var(--muted); }
+.hero-day .row b { color: var(--rose-soft); font-size: 13px; }
+.hero-day .pbar { height: 8px; }
+.hero-day .note { font-size: 11px; color: var(--faint); margin-top: 7px; font-weight: 700; }
+.hero-day .note b { color: var(--champ); }
+
+/* آيفون برغندي */
+.hero-vis { position: relative; display: grid; place-items: center; min-height: 380px; perspective: 900px; }
+.hero-vis .ring { position: absolute; width: 330px; height: 330px; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 18%, rgba(255, 77, 126, 0.5) 30%, transparent 46%, rgba(234, 201, 168, 0.45) 62%, transparent 78%, rgba(140, 36, 71, 0.6) 90%, transparent); filter: blur(2px); animation: ringspin 16s linear infinite; opacity: 0.8; }
+.hero-vis .ring:after { content: ""; position: absolute; inset: 14px; border-radius: 50%; background: var(--bg); }
+@keyframes ringspin { to { transform: rotate(360deg); } }
+.hero-vis .glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 77, 126, 0.28), rgba(107, 27, 54, 0.18) 45%, transparent 70%); filter: blur(24px); }
+.phone3d { position: relative; width: 290px; height: 290px; scale: 1.3; translate: 0 -22px; transform-style: preserve-3d; transition: transform 0.5s var(--ease); }
+.phone3d .phone-model { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(-12deg) rotateY(-20deg); }
+.phone3d .duo { position: absolute; left: 43px; bottom: 20px; width: 204px; height: 231px; scale: 0.86; transform-origin: 50% 100%; transform-style: preserve-3d; }
+.phone3d .ip { position: absolute; top: 0; width: 110px; height: 231px; border-radius: 25px; }
+.phone3d .ipb { left: 0; z-index: 2; transform: translateZ(16px); background: linear-gradient(155deg, #7d2b41 0%, #531a2b 48%, #3a1220 100%); box-shadow: inset 0 0 0 1.5px #c07a90aa, inset 0 0 0 3px #00000040, inset 0 -10px 18px #0006, 0 18px 30px #000b, 0 0 22px #b02a4a33; }
+.phone3d .ipf { left: 94px; z-index: 1; transform: translateZ(-12px); background: linear-gradient(145deg, #94384f, #4f1627 60%, #3a101d); box-shadow: inset 0 0 0 1.5px #c9889caa, 0 18px 30px #000b; }
+.phone3d .plat { position: absolute; left: 0; right: 0; top: 0; height: 65px; border-radius: 25px 25px 17px 17px; background: linear-gradient(150deg, #8d3149, #62203a 55%, #561a30); box-shadow: inset 0 0 0 1px #e6a2b655, inset 0 -3px 8px #0005, 0 5px 10px #0007; }
+.phone3d .gp { position: absolute; left: 5px; right: 5px; top: 71px; bottom: 5px; border-radius: 17px 17px 21px 21px; background: linear-gradient(165deg, rgba(255,255,255,.09), rgba(255,255,255,.015) 60%); box-shadow: inset 0 0 0 1px #ffc0d018, inset 0 0 14px #00000030; }
+.phone3d .lens { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #7c8cc6 0 7%, #201b30 30%, #07060c 70%); border: 3.5px solid #5a1b2f; box-shadow: 0 0 0 1px #e29ab077, 0 3px 6px #000b, inset 0 0 5px #000; }
+.phone3d .lens:after { content: ""; position: absolute; inset: 4px; border-radius: 50%; border: 1px solid #ffffff22; }
+.phone3d .fls { position: absolute; right: 15px; top: 14px; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #d8d8d8 60%, #9a9a9a); box-shadow: 0 0 0 2px #5a1b2f, 0 0 6px #fff8; }
+.phone3d .mc { position: absolute; right: 20px; top: 33px; width: 2px; height: 2px; border-radius: 50%; background: #1a0a10; }
+.phone3d .ld { position: absolute; right: 14px; top: 41px; width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2a2a, #050505 70%); box-shadow: 0 0 0 1px #00000088; }
+.phone3d .apl { position: absolute; left: 50%; top: 131px; width: 24px; height: 24px; margin-left: -13px; fill: #6e2338; filter: drop-shadow(0 1px 0 #ffb8c822); }
+.phone3d .shine { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(118deg, transparent 28%, #ffffff26 46%, transparent 62%); pointer-events: none; }
+.phone3d .scr { position: absolute; inset: 3.5px; border-radius: 21.5px; overflow: hidden; background: radial-gradient(120% 60% at 85% 20%, #5e1b30, transparent 70%), linear-gradient(180deg, #3a0f1c, #220710); box-shadow: inset 0 0 0 1px #000; }
+.phone3d .wa { position: absolute; border: 1.2px solid rgba(255,170,195,.75); background: linear-gradient(135deg, #4b1526, #2a0914); box-shadow: 0 0 7px rgba(255,110,150,.55), inset 0 0 12px rgba(255,120,155,.4); }
+.phone3d .a1 { right: -2px; top: 16px; width: 70px; height: 66px; border-radius: 0 0 0 36px; }
+.phone3d .a2 { left: -2px; top: 88px; width: 76px; height: 58px; border-radius: 0 36px 0 0; }
+.phone3d .a3 { right: -2px; top: 152px; width: 70px; height: 62px; border-radius: 0 0 0 36px; }
+.phone3d .a4 { left: -2px; top: -4px; width: 34px; height: 44px; border-radius: 0 0 22px 0; }
+.phone3d .di2 { position: absolute; left: 50%; top: 6px; width: 32px; height: 9px; margin-left: -16px; border-radius: 9px; background: #000; box-shadow: 0 0 0 .5px #ffffff18; }
+.phone3d .sb { position: absolute; left: -1.5px; width: 2px; border-radius: 2px; background: #a85a70; }
+.phone3d .s1 { top: 50px; height: 10px; }
+.phone3d .s2 { top: 68px; height: 18px; }
+.phone3d .s3 { top: 90px; height: 18px; }
+.fchip { position: absolute; display: flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: 13px; background: rgba(30, 11, 20, 0.88); border: 1px solid var(--line-strong); backdrop-filter: blur(8px); font-size: 11px; font-weight: 900; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.7); animation: chipfloat 6s ease-in-out infinite; }
+.fchip svg { width: 15px; height: 15px; }
+.fchip.c1 { top: 12%; right: 6%; color: var(--rose-soft); animation-delay: 0.4s; }
+.fchip.c2 { bottom: 16%; right: 12%; color: var(--champ); animation-delay: 1.6s; }
+.fchip.c3 { top: 40%; left: 2%; color: var(--info); animation-delay: 2.7s; }
+@keyframes chipfloat { 50% { transform: translateY(-11px); } }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; padding-top: 104px; } .hero-vis { min-height: 330px; order: -1; } .phone3d { scale: 0.93; translate: 0 -14px; } .hero-vis .ring { width: 260px; height: 260px; } }
+
+/* ================= قسم الإرسال ================= */
+.submit-sec { padding: 26px 0 8px; }
+.submit-grid { display: grid; grid-template-columns: 1.12fr 0.88fr; gap: 0; }
+.submit-main { padding: 24px; }
+.submit-side { padding: 24px; border-inline-start: 1px solid var(--line); background: radial-gradient(360px 260px at 100% 0%, rgba(107, 27, 54, 0.25), transparent 70%); border-radius: 0 var(--r-lg) var(--r-lg) 0; }
+@media (max-width: 900px) { .submit-grid { grid-template-columns: 1fr; } .submit-side { border-inline-start: none; border-top: 1px solid var(--line); border-radius: 0 0 var(--r-lg) var(--r-lg); } }
+.submit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.submit-head h2 { margin: 0; font-size: 20px; font-weight: 900; }
+.steps { display: grid; gap: 12px; margin-top: 14px; }
+.step { display: flex; gap: 12px; align-items: flex-start; }
+.step .n { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center; font-weight: 900; font-size: 13px; background: linear-gradient(145deg, var(--wine-400), var(--wine-700)); border: 1px solid rgba(255, 157, 177, 0.35); color: var(--champ); }
+.step b { display: block; font-size: 13px; font-weight: 900; }
+.step p { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); font-weight: 600; line-height: 1.7; }
+.rules { margin-top: 18px; padding: 13px 15px; border-radius: 14px; border: 1px dashed rgba(234, 201, 168, 0.3); background: rgba(234, 201, 168, 0.04); font-size: 11.5px; color: var(--muted); font-weight: 700; line-height: 1.9; }
+.rules b { color: var(--champ); }
+
+/* دروب زون */
+.dropzone { position: relative; border: 1.8px dashed rgba(255, 157, 177, 0.35); border-radius: 18px; background: rgba(14, 6, 11, 0.55); min-height: 168px; display: grid; place-items: center; text-align: center; cursor: pointer; transition: 0.3s var(--ease); overflow: hidden; }
+.dropzone:hover, .dropzone.drag { border-color: var(--rose); background: rgba(255, 77, 126, 0.06); box-shadow: 0 0 0 4px rgba(255, 77, 126, 0.08); }
+.dropzone .dz-in { padding: 26px 18px; }
+.dropzone .dz-ic { width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(145deg, var(--wine-500), var(--wine-800)); border: 1px solid var(--line-strong); color: var(--rose-soft); }
+.dropzone .dz-ic svg { width: 24px; height: 24px; }
+.dropzone b { display: block; font-size: 13.5px; font-weight: 900; }
+.dropzone small { color: var(--faint); font-size: 11px; font-weight: 700; }
+.dropzone.has-file { border-style: solid; border-color: rgba(61, 220, 151, 0.45); cursor: default; }
+.dz-preview { position: relative; width: 100%; }
+.dz-preview img, .dz-preview video { width: 100%; max-height: 280px; object-fit: contain; display: block; background: #000; }
+.dz-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: rgba(20, 8, 14, 0.9); font-size: 11.5px; font-weight: 800; }
+.dz-meta .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.upbar { margin-top: 12px; }
+.upbar .lbl { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 5px; }
+.form-ok { text-align: center; padding: 34px 16px; }
+.form-ok .big { width: 66px; height: 66px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; background: rgba(61, 220, 151, 0.12); border: 1.5px solid rgba(61, 220, 151, 0.5); color: var(--ok); animation: okpop 0.6s var(--ease); }
+.form-ok .big svg { width: 30px; height: 30px; }
+@keyframes okpop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.12); } }
+.form-ok b { display: block; font-size: 17px; font-weight: 900; margin-bottom: 5px; }
+.form-ok p { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; }
+
+/* أفاتار الرسالة */
+.msg-avatar-row { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; padding: 12px 14px; border-radius: 15px; border: 1px solid var(--line); background: rgba(14, 6, 11, 0.5); }
+.msg-avatar-row .av { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex: none; border: 2px solid rgba(234, 201, 168, 0.35); box-shadow: 0 0 18px -4px rgba(255, 77, 126, 0.5); }
+.msg-avatar-row .info { flex: 1; min-width: 0; }
+.msg-avatar-row .info b { display: block; font-size: 12.5px; font-weight: 900; }
+.msg-avatar-row .info small { color: var(--faint); font-size: 10.5px; font-weight: 700; }
+
+/* ================= الجدار ================= */
+.wall-sec { padding: 34px 0 20px; }
+.wall-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.gallery-seg { display: inline-flex; gap: 5px; padding: 5px; border-radius: 17px; background: rgba(14, 6, 11, 0.8); border: 1px solid var(--line-strong); box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.8); }
+.gallery-seg button { display: inline-flex; align-items: center; gap: 9px; border: none; background: transparent; color: var(--muted); font-weight: 900; font-size: 13.5px; padding: 12px 20px; border-radius: 13px; transition: 0.3s var(--ease); }
+.gallery-seg button svg { width: 17px; height: 17px; }
+.gallery-seg button .n { font-size: 10.5px; padding: 2px 9px; border-radius: 99px; background: rgba(255, 255, 255, 0.09); font-variant-numeric: tabular-nums; }
+.gallery-seg button.on { background: linear-gradient(135deg, var(--wine-400), var(--rose-deep) 80%); color: #fff; box-shadow: 0 10px 26px -8px rgba(255, 77, 126, 0.65); }
+.gallery-seg button.on .n { background: rgba(255, 255, 255, 0.22); }
+.wall-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.wall-tools .count { margin-inline-start: auto; font-size: 11.5px; font-weight: 800; color: var(--faint); }
+.wall-cols { display: flex; align-items: flex-start; gap: 12px; }
+.wall-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+/* كارت الميديا — قياسات 60day.md */
+.wcard { position: relative; border-radius: 22px; overflow: hidden; border: 1px solid rgba(234, 201, 168, 0.14); background: linear-gradient(160deg, rgba(36, 19, 25, 0.95), rgba(20, 10, 15, 0.92)); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4); cursor: pointer; transition: transform 0.5s var(--ease), border-color 0.5s, box-shadow 0.5s; opacity: 0; transform: translateY(30px); animation: cardin 0.55s var(--ease) forwards; animation-delay: var(--dl, 0s); }
+@keyframes cardin { to { opacity: 1; transform: none; } }
+.wcard:hover { transform: translateY(-6px); border-color: rgba(255, 77, 126, 0.5); box-shadow: 0 14px 45px rgba(255, 77, 126, 0.18), 0 0 60px rgba(234, 201, 168, 0.08); }
+.wcard .media { position: relative; width: 100%; overflow: hidden; background: rgba(0, 0, 0, 0.5); }
+.wcard .media img, .wcard .media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wcard .media img.thumb { transition: transform 0.7s var(--ease); }
+.wcard:hover .media img.thumb { transform: scale(1.1); }
+.wcard .media .shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.1) 45%, transparent); pointer-events: none; }
+.wcard .playbtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(6px); border: 1.5px solid rgba(255, 77, 126, 0.55); color: #fff; opacity: 0; transition: 0.35s var(--ease); pointer-events: none; }
+.wcard .playbtn svg { width: 20px; height: 20px; margin-inline-start: 2px; }
+.wcard:hover .playbtn { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.wcard .vbadge { position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 99px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(234, 201, 168, 0.3); font-size: 9.5px; font-weight: 900; letter-spacing: 0.08em; color: var(--champ); pointer-events: none; }
+.wcard .vbadge svg { width: 11px; height: 11px; }
+.wcard .likepill { position: absolute; top: 12px; right: 12px; z-index: 3; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 99px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.14); color: #fff; font-size: 11px; font-weight: 900; transition: 0.25s; }
+.wcard .likepill svg { width: 13px; height: 13px; color: #FF5C6E; transition: transform 0.3s var(--ease); }
+.wcard .likepill:hover { border-color: rgba(255, 92, 110, 0.6); background: rgba(60, 10, 20, 0.7); }
+.wcard .likepill.liked { border-color: rgba(255, 92, 110, 0.7); background: rgba(80, 12, 26, 0.8); }
+.wcard .likepill.liked svg { transform: scale(1.15); }
+.wcard .likepill.pop svg { animation: heartpop 0.45s var(--ease); }
+@keyframes heartpop { 40% { transform: scale(1.6); } }
+.wcard .repbtn { position: absolute; top: 12px; left: 12px; z-index: 3; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.75); transition: 0.25s; }
+.wcard .repbtn svg { width: 12px; height: 12px; }
+.wcard .repbtn:hover { color: var(--warn); border-color: rgba(255, 176, 32, 0.6); }
+.wcard.has-vbadge .repbtn { top: 46px; }
+.wcard .body { padding: 16px; }
+.wcard .who { font-size: 11px; font-weight: 900; letter-spacing: 0.14em; color: var(--champ); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wcard .cap { font-size: 13.5px; line-height: 1.75; color: rgba(248, 240, 235, 0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; word-break: break-word; }
+.wcard .when { font-size: 10.5px; letter-spacing: 0.1em; color: rgba(248, 240, 235, 0.28); margin-top: 7px; font-weight: 700; }
+.wcard .broken { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); font-size: 11px; font-weight: 800; background: linear-gradient(135deg, rgba(45, 15, 28, 0.9), rgba(14, 6, 11, 0.95)); }
+
+/* كارت الرسالة */
+.mcard { position: relative; border-radius: 22px; border: 1px solid rgba(234, 201, 168, 0.14); background: linear-gradient(160deg, rgba(36, 19, 25, 0.95), rgba(20, 10, 15, 0.92)); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4); padding: 18px; transition: transform 0.5s var(--ease), border-color 0.5s, box-shadow 0.5s; opacity: 0; transform: translateY(30px); animation: cardin 0.55s var(--ease) forwards; animation-delay: var(--dl, 0s); overflow: hidden; }
+.mcard:before { content: ""; position: absolute; top: 0; inset-inline: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--ac, var(--rose)), transparent); opacity: 0.75; }
+.mcard:hover { transform: translateY(-6px) rotate(var(--tilt, 0deg)); border-color: rgba(255, 77, 126, 0.45); box-shadow: 0 14px 45px rgba(255, 77, 126, 0.16); }
+.mcard .head { display: flex; align-items: center; gap: 11px; margin-bottom: 11px; }
+.mcard .av { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex: none; border: 2px solid rgba(234, 201, 168, 0.3); }
+.mcard .head .nm { min-width: 0; }
+.mcard .head b { display: block; font-size: 13px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mcard .head small { font-size: 10px; color: var(--faint); font-weight: 800; letter-spacing: 0.06em; }
+.mcard .txt { font-size: 14.5px; line-height: 1.95; color: rgba(248, 240, 235, 0.88); word-break: break-word; white-space: pre-wrap; }
+.mcard .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; padding-top: 11px; border-top: 1px solid rgba(234, 201, 168, 0.09); }
+.mcard .when { font-size: 10px; color: rgba(248, 240, 235, 0.3); font-weight: 800; letter-spacing: 0.08em; }
+.mcard .likepill { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 11px; border-radius: 99px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--muted); font-size: 11px; font-weight: 900; transition: 0.25s; }
+.mcard .likepill svg { width: 12px; height: 12px; color: #FF5C6E; }
+.mcard .likepill:hover { border-color: rgba(255, 92, 110, 0.55); color: var(--text); }
+.mcard .likepill.liked { border-color: rgba(255, 92, 110, 0.65); background: rgba(80, 12, 26, 0.55); color: var(--text); }
+.mcard .likepill.pop svg { animation: heartpop 0.45s var(--ease); }
+.mcard .anon-badge { font-size: 9px; padding: 2px 8px; border-radius: 99px; background: rgba(106, 184, 255, 0.1); border: 1px solid rgba(106, 184, 255, 0.35); color: var(--info); font-weight: 900; }
+
+/* ================= لايت بوكس ================= */
+.lb-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(8, 3, 6, 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); display: none; }
+.lb-backdrop.open { display: flex; align-items: center; justify-content: center; animation: lbin 0.3s; }
+@keyframes lbin { from { opacity: 0; } }
+.lb { display: grid; grid-template-columns: minmax(0, 1fr) 330px; grid-template-rows: minmax(0, 1fr); width: min(1180px, 96vw); height: min(84dvh, 860px); border-radius: 24px; overflow: hidden; border: 1px solid var(--line-strong); background: #150910; box-shadow: 0 60px 120px -40px #000; }
+.lb .stage { position: relative; background: #000; min-width: 0; min-height: 0; overflow: hidden; }
+.lb .stage img, .lb .stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.lb .stage video { direction: ltr; }
+.lb .stage video:fullscreen { object-fit: contain; background: #000; }
+.lb .side { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 22px; border-inline-start: 1px solid var(--line); overflow-y: auto; }
+.lb .side .who { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-bottom: 12px; }
+.lb .side .who .badge { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(145deg, var(--wine-400), var(--wine-700)); border: 1px solid rgba(255, 157, 177, 0.4); color: var(--champ); font-weight: 900; font-size: 16px; flex: none; }
+.lb .side .who b { font-size: 15px; font-weight: 900; display: block; }
+.lb .side .who small { color: var(--faint); font-size: 10.5px; font-weight: 800; }
+.lb .side .cap { min-height: 0; overflow-y: auto; font-size: 13.5px; line-height: 1.9; color: rgba(248, 240, 235, 0.8); word-break: break-word; white-space: pre-wrap; margin-bottom: 16px; }
+.lb .side .acts { margin-top: auto; display: grid; gap: 9px; flex-shrink: 0; }
+.lb .navbtn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 44px; height: 44px; border-radius: 50%; background: rgba(20, 8, 14, 0.75); border: 1px solid var(--line-strong); color: #fff; display: grid; place-items: center; backdrop-filter: blur(8px); transition: 0.25s; }
+.lb .navbtn:hover { background: var(--wine-500); border-color: var(--rose); }
+.lb .navbtn svg { width: 18px; height: 18px; }
+.lb .navbtn.prev { right: 14px; }
+.lb .navbtn.next { left: 14px; }
+.lb .closebtn { position: absolute; top: 14px; left: 14px; z-index: 6; }
+.lb .counter { position: absolute; top: 14px; right: 16px; height: fit-content; pointer-events: none; z-index: 5; font-size: 11px; font-weight: 900; color: rgba(255, 255, 255, 0.6); background: rgba(0, 0, 0, 0.5); padding: 4px 12px; border-radius: 99px; backdrop-filter: blur(6px); }
+@media (max-width: 860px) {
+  .lb { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; width: 100vw; height: 100dvh; border-radius: 0; border: none; }
+  .lb .side { border-inline-start: none; border-top: 1px solid var(--line); max-height: 38dvh; padding: 16px; }
+  .lb .side .acts { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 860px) and (orientation: landscape) {
+  .lb { grid-template-columns: minmax(0, 1fr) min(280px, 42vw); grid-template-rows: minmax(0, 1fr); }
+  .lb .side { max-height: none; border-top: none; border-inline-start: 1px solid var(--line); }
+  .lb .side .acts .btn { padding: 9px 6px; font-size: 10.5px; }
+}
+
+/* بلاغ */
+.reasons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.reasons button { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); color: var(--muted); font-size: 12px; font-weight: 800; transition: 0.25s; }
+.reasons button:hover { color: var(--text); border-color: var(--line-strong); }
+.reasons button.on { background: rgba(255, 176, 32, 0.12); border-color: rgba(255, 176, 32, 0.55); color: var(--warn); }
+
+/* ================= فوتر ================= */
+.footer { margin-top: 46px; border-top: 1px solid var(--line); background: linear-gradient(180deg, transparent, rgba(20, 7, 13, 0.9)); }
+.footer .in { padding: 30px 0 36px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.footer .powered { font-size: 10.5px; font-weight: 900; letter-spacing: 0.3em; color: var(--faint); }
+.footer a.own { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--muted); padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); transition: 0.25s; }
+.footer a.own:hover { color: var(--champ); border-color: var(--line-strong); }
+.footer a.own img { width: 20px; height: 20px; border-radius: 6px; }
+
+/* سكيلتون الجدار */
+.skel-card { border-radius: 22px; }
+.notice { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border-radius: 17px; border: 1px solid rgba(255, 176, 32, 0.4); background: rgba(255, 176, 32, 0.06); margin-bottom: 16px; }
+.notice svg { width: 20px; height: 20px; color: var(--warn); flex: none; margin-top: 2px; }
+.notice b { display: block; font-size: 13px; font-weight: 900; color: var(--warn); }
+.notice p { margin: 3px 0 0; font-size: 12px; color: var(--muted); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="bg-stage"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="grain"></div>
+
+<!-- ===== نافذة علوية ===== -->
+<nav class="topnav">
+  <div class="wrap in">
+    <a class="brand" href="#top">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3.4"/><circle cx="10" cy="7" r="1.5"/><circle cx="14" cy="10.5" r="1.5"/><circle cx="10" cy="14" r="1.5"/></svg></span>
+      <span><b>جدار الإيديتات</b><small>أساطير الشات · 60 يوم</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#wall" class="on">الجدار</a>
+      <a href="#submit">شارك</a>
+      <a href="../">الموقع الرئيسي</a>
+    </div>
+    <div class="nav-acts">
+      <span class="day-pill"><span class="dot pulse" style="color:var(--rose)"></span><span class="lbl">يوم</span> <b class="mono-num" id="navDay">—</b> / 60</span>
+      <a class="btn btn-icon btn-ghost" href="admin/" title="لوحة الإدارة" aria-label="لوحة الإدارة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== هيرو ===== -->
+<header class="hero wrap" id="top">
+  <div>
+    <span class="eyebrow">تحدي الـ60 يوم · آيفون 18 برو برغندي</span>
+    <h1>إيديتاتك تصنع<br><span class="grad">أسطورة الشات</span></h1>
+    <p class="lead">جدار المجتمع الرسمي للتحدي — ارفع إيديتك صورة أو فيديو، أو اترك رسالة على جدار الأساطير. كل مشاركة تقرّبنا من اليوم الستين.</p>
+    <div class="hero-stats">
+      <div class="hstat"><b class="mono-num" id="stEdits">0</b><span>إيديت معتمد</span></div>
+      <div class="hstat"><b class="mono-num" id="stPeople">0</b><span>مشارك</span></div>
+      <div class="hstat"><b class="mono-num" id="stMsgs">0</b><span>رسالة</span></div>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#submit" id="ctaEdit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg> شارك إيديتك</a>
+      <button class="btn" id="ctaMsg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z"/></svg> اكتب رسالة</button>
+    </div>
+    <div class="hero-day">
+      <div class="row"><span>تقدّم التحدي</span><b class="mono-num" id="dayLabel">يوم — / 60</b></div>
+      <div class="pbar"><i id="dayBar" style="width:0%"></i></div>
+      <p class="note" id="dayNote">ذاب الثلج <b>—%</b> · الباقي على الآيفون — يوم</p>
+    </div>
+  </div>
+  <div class="hero-vis" id="heroVis">
+    <div class="glow"></div>
+    <div class="ring"></div>
+    <div class="phone3d" id="phone3d" role="img" aria-label="آيفون 18 برو برغندي — الواجهة الأمامية والخلفية">
+      <div class="phone-model">
+        <div class="duo">
+          <div class="ip ipb">
+            <div class="plat">
+              <i class="lens" style="left:2px;top:8px"></i>
+              <i class="lens" style="left:30px;top:21px"></i>
+              <i class="lens" style="left:2px;top:35px"></i>
+              <i class="fls"></i>
+              <i class="mc"></i>
+              <i class="ld"></i>
+            </div>
+            <div class="gp"></div>
+            <svg class="apl" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+            </svg>
+            <div class="shine"></div>
+          </div>
+          <div class="ip ipf">
+            <div class="scr">
+              <i class="wa a1"></i>
+              <i class="wa a2"></i>
+              <i class="wa a3"></i>
+              <i class="wa a4"></i>
+              <i class="di2"></i>
+              <div class="shine"></div>
+            </div>
+            <i class="sb s1"></i>
+            <i class="sb s2"></i>
+            <i class="sb s3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="fchip c1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L6 21"/></svg> صور</span>
+    <span class="fchip c2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg> فيديوهات</span>
+    <span class="fchip c3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.7-10-9.3C.4 8.6 2.4 4.5 6.2 4.5c2.2 0 3.9 1.2 5.8 3.4 1.9-2.2 3.6-3.4 5.8-3.4 3.8 0 5.8 4.1 4.2 7.2C19.5 16.3 12 21 12 21z"/></svg> تفاعل</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ===== الإرسال ===== -->
+  <section class="submit-sec rv" id="submit">
+    <div class="grad-border panel-glow">
+      <div class="panel submit-grid">
+        <div class="submit-main">
+          <div class="submit-head">
+            <h2 id="formTitle">شارك إيديتك</h2>
+            <div class="seg" id="formSeg">
+              <button type="button" class="on" data-form="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L6 21"/></svg> إيديت</button>
+              <button type="button" data-form="msg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z"/></svg> رسالة</button>
+            </div>
+          </div>
+
+          <!-- فورم الإيديت -->
+          <form id="editForm">
+            <div class="field">
+              <label for="edName">اسمك أو معرفك *</label>
+              <input class="inp" id="edName" maxlength="40" placeholder="مثال: @Taif" required>
+            </div>
+            <div class="field">
+              <label for="edCap">وصف الإيديت (اختياري)</label>
+              <textarea class="inp" id="edCap" maxlength="300" rows="2" placeholder="عن ماذا يتحدث إيديتك؟"></textarea>
+              <div class="counter"><span id="edCapN">0</span> / 300</div>
+            </div>
+            <div class="field">
+              <label>الصورة أو الفيديو *</label>
+              <div class="dropzone" id="dz" tabindex="0" role="button" aria-label="اختر صورة أو فيديو">
+                <div class="dz-in" id="dzIn">
+                  <div class="dz-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg></div>
+                  <b>اسحب الملف هنا أو اضغط للاختيار</b>
+                  <small>صورة حتى 20MB · فيديو حتى 100MB</small>
+                </div>
+              </div>
+              <input type="file" id="edFile" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,video/x-m4v,video/ogg,.m4v,.mov" class="hidden">
+            </div>
+            <div class="upbar hidden" id="upbar">
+              <div class="lbl"><span id="upLabel">جارِ الرفع…</span><span class="mono-num" id="upPct">0%</span></div>
+              <div class="pbar"><i id="upFill" style="width:0%"></i></div>
+            </div>
+            <button class="btn btn-primary" id="edSubmit" type="submit" style="width:100%;padding:14px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+              أرسل الإيديت للمراجعة
+            </button>
+          </form>
+
+          <!-- فورم الرسالة -->
+          <form id="msgForm" class="hidden">
+            <div class="msg-avatar-row">
+              <span class="av" id="msgAv"></span>
+              <span class="info"><b>شخصيتك على الجدار</b><small>تُختار عشوائياً — بدّلها لو حبيت</small></span>
+              <button class="btn btn-sm" type="button" id="avDice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor"/></svg> بدّل</button>
+            </div>
+            <div class="field">
+              <label for="mgName">اسمك *</label>
+              <input class="inp" id="mgName" maxlength="40" placeholder="مثال: @3ZX">
+            </div>
+            <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap-:10px">
+              <label class="switch" style="margin:0"><input type="checkbox" id="mgAnon"><i></i><span>أظهرني كمجهول</span></label>
+              <span class="chip chip-info" style="font-size:10px">الرسائل تُنشر فوراً بدون مراجعة</span>
+            </div>
+            <div class="field">
+              <label for="mgBody">رسالتك *</label>
+              <textarea class="inp" id="mgBody" maxlength="600" rows="4" placeholder="اكتب رسالتك للأساطير… دعم، ذكرى، أو كلمة حلوة"></textarea>
+              <div class="counter"><span id="mgBodyN">0</span> / 600</div>
+            </div>
+            <button class="btn btn-primary" id="mgSubmit" type="submit" style="width:100%;padding:14px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+              انشر الرسالة الآن
+            </button>
+          </form>
+
+          <!-- نجاح -->
+          <div class="form-ok hidden" id="formOk">
+            <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <b id="okTitle">وصل إيديتك!</b>
+            <p id="okText">بيظهر على الجدار بعد مراجعة الإدارة.</p>
+            <button class="btn" type="button" id="okAgain">أرسل مشاركة أخرى</button>
+          </div>
+        </div>
+
+        <aside class="submit-side">
+          <span class="eyebrow">كيف تشارك؟</span>
+          <div class="steps">
+            <div class="step"><span class="n">1</span><div><b>جهّز إيديتك</b><p>صورة أو فيديو من إبداعك عن التحدي أو البث أو الآيفون البرغندي.</p></div></div>
+            <div class="step"><span class="n">2</span><div><b>اكتب اسمك ووصفك</b><p>الاسم يظهر على الكارت، والوصف اختياري حتى 300 حرف.</p></div></div>
+            <div class="step"><span class="n">3</span><div><b>ارفع وانتظر الاعتماد</b><p>الإيديتات تمر بمراجعة سريعة. الرسائل تظهر فوراً بدون مراجعة.</p></div></div>
+          </div>
+          <div class="rules">
+            <b>قواعد الجدار:</b> محتوى نظيف ومناسب للجميع · بدون حقوق نشر مسروقة · بدون سبام أو إعلانات · الإدارة تقدر تسحب أي مشاركة مخالفة.
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== الجدار ===== -->
+  <section class="wall-sec" id="wall">
+    <div class="wall-head rv">
+      <div>
+        <span class="eyebrow">جدار المجتمع</span>
+        <h2 class="sec-title" id="wallTitle">الإيديتات</h2>
+        <p class="sec-note" id="wallNote">ترتيب متوازن — لا عمود أطول من الثاني</p>
+      </div>
+      <div class="gallery-seg" id="gallerySeg" role="tablist">
+        <button type="button" class="on" data-gal="media" role="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L6 21"/></svg> الصور والفيديوهات <span class="n" id="galMediaN">0</span></button>
+        <button type="button" data-gal="messages" role="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z"/></svg> الرسائل <span class="n" id="galMsgN">0</span></button>
+      </div>
+    </div>
+
+    <div class="wall-tools rv" id="mediaTools">
+      <div class="seg" id="sortSeg">
+        <button type="button" class="on" data-sort="balanced"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.1 6.5L21 10l-6.9 1.5L12 18l-2.1-6.5L3 10l6.9-1.5z"/></svg> متوازن</button>
+        <button type="button" data-sort="newest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg> الأحدث</button>
+        <button type="button" data-sort="top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.7-10-9.3C.4 8.6 2.4 4.5 6.2 4.5c2.2 0 3.9 1.2 5.8 3.4 1.9-2.2 3.6-3.4 5.8-3.4 3.8 0 5.8 4.1 4.2 7.2C19.5 16.3 12 21 12 21z"/></svg> الأكثر إعجاباً</button>
+      </div>
+      <label class="switch"><input type="checkbox" id="videosOnly"><i></i><span>فيديوهات فقط</span></label>
+      <button class="btn btn-sm btn-ghost" id="refreshWall" title="تحديث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-2.6-6.3M21 3v6h-6"/></svg></button>
+      <span class="count" id="wallCount"></span>
+    </div>
+    <div class="wall-tools rv hidden" id="msgTools">
+      <div class="seg" id="msgSortSeg">
+        <button type="button" class="on" data-msort="newest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg> الأحدث</button>
+        <button type="button" data-msort="random"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.1 6.5L21 10l-6.9 1.5L12 18l-2.1-6.5L3 10l6.9-1.5z"/></svg> عشوائي</button>
+        <button type="button" data-msort="top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.7-10-9.3C.4 8.6 2.4 4.5 6.2 4.5c2.2 0 3.9 1.2 5.8 3.4 1.9-2.2 3.6-3.4 5.8-3.4 3.8 0 5.8 4.1 4.2 7.2C19.5 16.3 12 21 12 21z"/></svg> الأكثر إعجاباً</button>
+      </div>
+      <span class="count" id="msgCount"></span>
+    </div>
+
+    <div id="wallNotice"></div>
+    <div class="wall-cols" id="wallCols" aria-live="polite"></div>
+    <div id="wallEmpty"></div>
+  </section>
+</main>
+
+<!-- ===== فوتر ===== -->
+<footer class="footer">
+  <div class="wrap in">
+    <div>
+      <p class="powered">POWERED BY HSG</p>
+      <p class="muted" style="font-size:11.5px;margin:6px 0 0;font-weight:700">جدار إيديتات أساطير الشات — تحدي الـ60 يوم على آيفون 18 برو برغندي</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="own" href="../"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg> الموقع الرئيسي</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== لايت بوكس ===== -->
+<div class="lb-backdrop" id="lb" role="dialog" aria-modal="true" aria-label="عرض الإيديت">
+  <div class="lb">
+    <div class="stage" id="lbStage">
+      <button class="btn btn-icon closebtn" id="lbClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <button class="navbtn prev" id="lbPrev" aria-label="السابق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="navbtn next" id="lbNext" aria-label="التالي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <span class="counter mono-num" id="lbCount"></span>
+    </div>
+    <div class="side">
+      <div class="who">
+        <span class="badge" id="lbBadge">?</span>
+        <span style="min-width:0"><b id="lbName"></b><small id="lbWhen"></small></span>
+      </div>
+      <p class="cap" id="lbCap"></p>
+      <div class="acts">
+        <button class="btn btn-primary" id="lbLike"></button>
+        <button class="btn btn-warn" id="lbReport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4c4-2.5 8 2.5 12 0v10c-4 2.5-8-2.5-12 0"/></svg> بلاغ</button>
+        <button class="btn" id="lbCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/></svg> نسخ الرابط</button>
+        <a class="btn btn-ghost" id="lbOpen" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> الملف الأصلي</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== بلاغ ===== -->
+<div class="modal-backdrop" id="reportModal">
+  <div class="modal" style="position:relative">
+    <button class="btn btn-icon btn-sm modal-x" id="repClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <h3>بلاغ عن مشاركة</h3>
+    <p class="sub">وصل بلاغك للإدارة مباشرة. اختر السبب:</p>
+    <div class="reasons" id="repReasons">
+      <button type="button" data-r="محتوى غير لائق">محتوى غير لائق</button>
+      <button type="button" data-r="سبام أو إعلان">سبام أو إعلان</button>
+      <button type="button" data-r="حقوق نشر">حقوق نشر</button>
+      <button type="button" data-r="مسيء لشخص">مسيء لشخص</button>
+      <button type="button" data-r="آخر">آخر</button>
+    </div>
+    <div class="field">
+      <label for="repText">تفاصيل (اختياري)</label>
+      <textarea class="inp" id="repText" maxlength="300" rows="2" placeholder="وضّح أكثر…"></textarea>
+    </div>
+    <button class="btn btn-warn" id="repSend" style="width:100%;padding:13px" disabled>أرسل البلاغ</button>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="wall.js"></script>
+</body>
+</html>

@@ -384,3 +384,32 @@ linear-gradient(62deg,transparent 70%,rgba(255,255,255,.12) 72%,transparent 78%)
   .cl .hero .vis{order:-1}
   .cl .hero .info{order:0}
 }
+
+/* ===== بطاقة جدار الإيديتات (برغندي — تنقل لصفحة 60day.html) ===== */
+.cl .edcta{margin-top:18px;display:flex;align-items:center;gap:18px;padding:22px 24px;border-radius:22px;border:1px solid rgba(255,157,177,.32);position:relative;overflow:hidden;
+background:radial-gradient(420px 220px at 88% -20%,rgba(255,77,126,.22),transparent 70%),radial-gradient(380px 240px at 4% 120%,rgba(234,201,168,.12),transparent 70%),linear-gradient(150deg,#3b1226,#20091a 55%,#160710);
+box-shadow:0 18px 44px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,157,177,.14);transition:transform .3s cubic-bezier(.22,1,.36,1),border-color .3s,box-shadow .3s}
+.cl .edcta:before{content:"";position:absolute;top:0;inset-inline:8%;height:2px;background:linear-gradient(90deg,transparent,#ff4d7e,#eac9a8,transparent);opacity:.8}
+.cl .edcta:hover{transform:translateY(-3px);border-color:rgba(255,157,177,.55);box-shadow:0 24px 54px -20px rgba(0,0,0,.85),0 0 44px -16px rgba(255,77,126,.5)}
+.cl .edcta .eic{width:62px;height:62px;border-radius:19px;flex:none;display:grid;place-items:center;background:linear-gradient(150deg,#8c2447,#4a1428 75%);border:1px solid rgba(255,157,177,.45);box-shadow:0 0 28px -4px rgba(255,77,126,.55),inset 0 1px 0 rgba(255,255,255,.16)}
+.cl .edcta .eic svg{width:28px;height:28px;color:#eac9a8}
+.cl .edcta .etxt{min-width:0;flex:1}
+.cl .edcta .ebdg{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;letter-spacing:.12em;color:#ff9db1;border:1px solid rgba(255,77,126,.45);background:rgba(255,77,126,.1);border-radius:99px;padding:3px 11px;margin-bottom:7px}
+.cl .edcta .ebdg i{width:6px;height:6px;border-radius:50%;background:#ff4d7e;box-shadow:0 0 8px #ff4d7e}
+.cl .edcta h3{font-size:19px;font-weight:900;margin:0 0 4px;color:#f8f0eb;display:block}
+.cl .edcta h3:after{content:none}
+.cl .edcta p{font-size:12.5px;color:#b49aa5;font-weight:600;margin:0;line-height:1.7}
+.cl .edcta p b{color:#eac9a8}
+.cl .edcta .ebtns{display:flex;gap:9px;flex:none;flex-wrap:wrap}
+.cl .edcta .ebtn{display:inline-flex;align-items:center;gap:8px;border-radius:14px;padding:11px 20px;font-size:13px;font-weight:900;font-family:inherit;cursor:pointer;transition:.28s cubic-bezier(.22,1,.36,1);text-decoration:none;white-space:nowrap}
+.cl .edcta .ebtn svg{width:16px;height:16px}
+.cl .edcta .ebtn.pri{background:linear-gradient(135deg,#8c2447,#c22a55 55%,#ff4d7e 135%);border:1px solid rgba(255,157,177,.5);color:#fff;box-shadow:0 8px 24px -8px rgba(255,77,126,.6),inset 0 1px 0 rgba(255,255,255,.18)}
+.cl .edcta .ebtn.pri:hover{transform:translateY(-2px);box-shadow:0 14px 32px -8px rgba(255,77,126,.75)}
+.cl .edcta .ebtn.sec{background:rgba(255,255,255,.04);border:1px solid rgba(234,201,168,.3);color:#eac9a8}
+.cl .edcta .ebtn.sec:hover{transform:translateY(-2px);border-color:rgba(234,201,168,.6);background:rgba(234,201,168,.09)}
+@media(max-width:820px){
+  .cl .edcta{flex-direction:column;align-items:stretch;text-align:center;gap:14px;padding:20px 18px}
+  .cl .edcta .eic{margin:0 auto}
+  .cl .edcta .ebtns{justify-content:center}
+  .cl .edcta .ebtn{flex:1;justify-content:center}
+}

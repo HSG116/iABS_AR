@@ -10,6 +10,39 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     plugins: [
+      {
+        name: 'standalone-page-routes',
+        configureServer(server) {
+          const routes = [`${server.config.base}60day/`, `${server.config.base}60day/admin/`];
+          server.middlewares.use((req, res, next) => {
+            if (!req.url || !['GET', 'HEAD'].includes(req.method || '')) return next();
+            const pathname = req.url.split('?')[0];
+            const query = req.url.slice(pathname.length);
+            const route = routes.find(route => pathname === route || pathname === route.slice(0, -1));
+            if (!route) return next();
+            if (pathname !== route) {
+              res.statusCode = 308;
+              res.setHeader('Location', route + query);
+              res.end();
+              return;
+            }
+            req.url = route + 'index.html' + query;
+            next();
+          });
+        },
+        configurePreviewServer(server) {
+          const routes = [`${server.config.base}60day/`, `${server.config.base}60day/admin/`];
+          server.middlewares.use((req, res, next) => {
+            if (!req.url || !['GET', 'HEAD'].includes(req.method || '')) return next();
+            const pathname = req.url.split('?')[0];
+            const route = routes.find(route => pathname === route.slice(0, -1));
+            if (!route) return next();
+            res.statusCode = 308;
+            res.setHeader('Location', route + req.url.slice(pathname.length));
+            res.end();
+          });
+        },
+      },
       react(),
       {
         name: 'local-api-proxy',
