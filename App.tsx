@@ -1502,9 +1502,6 @@ export default function App() {
                                     <span className="text-white/30 group-hover:text-white/55 transition-colors">· {t.ownSiteBtn}</span>
                                 </a>
                                 <p className="text-[11px] text-white/35 mt-1">{t.footer}</p>
-                                <a href="60day/admin/" className="mt-4 inline-block text-white/20 hover:text-white/60 transition-colors" aria-label="Admin">
-                                    <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                </a>
                             </div>
                         </footer>
                     </div>
