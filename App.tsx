@@ -124,10 +124,13 @@ const Reveal: React.FC<{ children: React.ReactNode; delay?: number; className?: 
     useEffect(() => {
         const el = ref.current;
         if (!el) return;
-        if (typeof IntersectionObserver === 'undefined') { el.classList.add('is-visible'); return; }
+        if (window.matchMedia('(max-width: 767px), (prefers-reduced-motion: reduce)').matches || typeof IntersectionObserver === 'undefined') {
+            el.classList.add('is-visible');
+            return;
+        }
         const obs = new IntersectionObserver((entries) => {
             entries.forEach((e) => { if (e.isIntersecting) { el.classList.add('is-visible'); obs.disconnect(); } });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        }, { threshold: 0, rootMargin: '0px 0px 100px 0px' });
         obs.observe(el);
         return () => obs.disconnect();
     }, []);
@@ -329,7 +332,7 @@ const CountUp: React.FC<{ value: number; duration?: number }> = ({ value, durati
 
 // --- Last Session Report: MISSION DEBRIEF edition (rich Kick data) ---
 const LastSessionReport: React.FC<{ lang: Language; data: any; clips: any[]; past?: any[] }> = ({ lang, data, clips, past = [] }) => {
-    if (!data && (!clips || clips.length === 0)) return null;
+    if (!data) return null;
     const timeAgo = (date: string) => {
         if (!date) return '---';
         const now = new Date(); const pastD = new Date(date);
@@ -919,44 +922,35 @@ export default function App() {
 
     const fetchPublicData = async () => {
         try {
-            // Parallel: one round-trip instead of 8 sequential ones
-            const [sponRes, clpRes, schRes, fqRes, schToggleRes, faqToggleRes, seoRes] = await Promise.all([
-                supabase.from('sponsors').select('*').order('id', { ascending: false }),
-                supabase.from('highlight_clips').select('*').order('id', { ascending: false }),
-                supabase.from('schedule').select('*').order('id', { ascending: true }),
-                supabase.from('faqs').select('*').order('id', { ascending: false }),
-                supabase.from('announcements').select('*').eq('id', 2).single(),
-                supabase.from('announcements').select('*').eq('id', 3).single(),
-                supabase.from('seo_settings').select('*').eq('id', 1).single(),
+            await Promise.all([
+                supabase.from('sponsors').select('*').order('id', { ascending: false })
+                    .then(({ data }) => setSponsors(data || [])),
+                supabase.from('highlight_clips').select('*').order('id', { ascending: false })
+                    .then(({ data }) => setClipsList(data || [])),
+                supabase.from('schedule').select('*').order('id', { ascending: true })
+                    .then(({ data }) => setSchedule(data || [])),
+                supabase.from('faqs').select('*').order('id', { ascending: false })
+                    .then(({ data }) => setFaqs(data || [])),
+                supabase.from('announcements').select('*').eq('id', 2).single()
+                    .then(({ data }) => setIsScheduleActive(!data || data.is_active === true || data.is_active === 'true')),
+                supabase.from('announcements').select('*').eq('id', 3).single()
+                    .then(({ data }) => setIsFaqActive(!data || data.is_active === true || data.is_active === 'true')),
+                supabase.from('seo_settings').select('*').eq('id', 1).single().then(({ data: seo }) => {
+                    if (!seo) return;
+                    document.title = seo.title || "iABS Stream Hub";
+                    const setMeta = (name: string, content: string, isProperty = false) => {
+                        if (!content) return;
+                        const attr = isProperty ? 'property' : 'name';
+                        let meta = document.querySelector(`meta[${attr}="${name}"]`);
+                        if (!meta) { meta = document.createElement('meta'); meta.setAttribute(attr, name); document.head.appendChild(meta); }
+                        meta.setAttribute('content', content);
+                    };
+                    setMeta('description', seo.description);
+                    setMeta('keywords', seo.keywords || 'iABS, Kick, Streamer');
+                    setMeta('og:title', seo.title, true);
+                    setMeta('og:description', seo.description, true);
+                }),
             ]);
-
-            setSponsors(sponRes.data || []);
-            setClipsList(clpRes.data || []);
-            setSchedule(schRes.data || []);
-            setFaqs(fqRes.data || []);
-
-            const schToggle = schToggleRes.data;
-            if (schToggle) setIsScheduleActive(schToggle.is_active === true || schToggle.is_active === 'true');
-            else setIsScheduleActive(true);
-            const faqToggle = faqToggleRes.data;
-            if (faqToggle) setIsFaqActive(faqToggle.is_active === true || faqToggle.is_active === 'true');
-            else setIsFaqActive(true);
-
-            const seo = seoRes.data;
-            if (seo) {
-                document.title = seo.title || "iABS Stream Hub";
-                const setMeta = (name: string, content: string, isProperty = false) => {
-                    if (!content) return;
-                    const attr = isProperty ? 'property' : 'name';
-                    let meta = document.querySelector(`meta[${attr}="${name}"]`);
-                    if (!meta) { meta = document.createElement('meta'); meta.setAttribute(attr, name); document.head.appendChild(meta); }
-                    meta.setAttribute('content', content);
-                };
-                setMeta('description', seo.description);
-                setMeta('keywords', seo.keywords || 'iABS, Kick, Streamer');
-                setMeta('og:title', seo.title, true);
-                setMeta('og:description', seo.description, true);
-            }
         } catch (e) { console.error("Public Data Fetch Exception:", e); }
     };
 
@@ -977,9 +971,9 @@ export default function App() {
                 if (todayStats) await supabase.from('daily_views').update({ views_count: todayStats.views_count + 1 }).eq('id', todayStats.id);
                 else await supabase.from('daily_views').insert([{ view_date: today, views_count: 1 }]);
             }
-            fetchPublicData();
         };
-        initData();
+        fetchPublicData();
+        initData().catch(e => console.error('Visit Tracking Exception:', e));
 
         const fetchLive = async () => {
             const [statRes, pollRes] = await Promise.all([

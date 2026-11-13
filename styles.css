@@ -93,6 +93,10 @@ body {
 }
 .reveal.is-visible { opacity: 1; transform: translateY(0) scale(1); }
 
+@media (max-width: 767px) {
+  .reveal, .reveal.is-visible { opacity: 1; transform: none; transition: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   *, *::before, *::after {

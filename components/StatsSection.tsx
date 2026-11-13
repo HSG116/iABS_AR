@@ -311,24 +311,20 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
     // جلب معلومات القناة (المتابعين)
     kickFetch(endpoints.channel).then(rawData => {
         const data = rawData?.data || rawData; // فك التغليف إن وجد
-        if (data) {
-            setChannelInfo({
-                followers_count: data.followers_count || 0,
-                subscriber_badges: data.subscriber_badges || []
-            });
-        }
+        setChannelInfo({
+            followers_count: data?.followers_count || 0,
+            subscriber_badges: data?.subscriber_badges || []
+        });
     }).catch(() => setChannelInfo({ followers_count: 0, subscriber_badges: [] }));
 
     // جلب الداعمين
     kickFetch(endpoints.leaderboard).then(rawData => {
         const data = rawData?.data || rawData; // فك التغليف
-        if (data) {
-            setLeaderboards({
-                gifts: data.gifts || [],
-                gifts_week: data.gifts_week || [],
-                gifts_month: data.gifts_month || [] 
-            });
-        }
+        setLeaderboards({
+            gifts: data?.gifts || [],
+            gifts_week: data?.gifts_week || [],
+            gifts_month: data?.gifts_month || []
+        });
     }).catch(() => setLeaderboards({ gifts: [], gifts_week: [], gifts_month: [] }));
 
     // جلب اللقطات (آخر اللقطات مع منطق استخراج قوي لضمان ظهور البيانات)

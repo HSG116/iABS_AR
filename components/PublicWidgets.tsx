@@ -66,7 +66,7 @@ export const ClipsSection = ({ clips, className = '' }: { clips: any[], classNam
                     return (
                         <div key={clip.id} className="w-full bg-[#050505]/90 border border-white/10 rounded-[32px] overflow-hidden group hover:border-[#FF2D2D]/50 transition-colors shadow-2xl flex flex-col h-fit">
                             <div className={`${isVertical ? 'aspect-[9/16]' : 'aspect-video'} bg-black relative`}>
-                                <iframe src={getEmbedUrl(clip.video_url)} className="w-full h-full" allowFullScreen></iframe>
+                                <iframe src={getEmbedUrl(clip.video_url)} title={clip.title || 'Clip'} loading="lazy" className="w-full h-full" allowFullScreen></iframe>
                             </div>
                             <div className="p-4 bg-gradient-to-t from-[#0a0a0a] to-transparent">
                                 <h3 className="text-xs md:text-sm font-bold text-white line-clamp-2 leading-relaxed" dir="auto">{clip.title}</h3>
