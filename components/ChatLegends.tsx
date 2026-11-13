@@ -126,6 +126,7 @@ export const ChatLegends: React.FC = () => {
   const timers = useRef<number[]>([]);
   const finDone = useRef(false);
   const burstTimer = useRef<number | null>(null);
+  const finHost = useRef<HTMLDivElement | null>(null);
 
   const later = (fn: () => void, ms: number) => {
     const id = window.setTimeout(fn, ms);
@@ -265,7 +266,7 @@ export const ChatLegends: React.FC = () => {
     };
     const showFinale = () => {
       const hero = heroRef.current;
-      if (!hero || hero.querySelector('.fin')) return;
+      if (!hero || finHost.current) return;
       const duo = hero.querySelector('.duo');
       if (!duo) return;
       const R = Math.random;
@@ -282,8 +283,13 @@ export const ChatLegends: React.FC = () => {
         const d = 35 + R() * 45;
         sh += `<i class="shd" style="--s:${14 + R() * 34}px;--x:${Math.cos(a) * d}vmax;--y:${Math.sin(a) * d * 0.8}vmin;--r:${(R() - 0.5) * 900}deg"></i>`;
       }
-      f.innerHTML = `<div class="r2"></div><div class="gl"></div><div class="fstage"><div class="fl"><div class="spin"><div class="in3">${duo.outerHTML}</div></div></div></div>${sh}${cf}<div class="tt">🎉 مبروك${WINNER ? ' ' + WINNER : ''}! الآيفون صار جاهز 🎉<small>انتهى التحدي · 60 يوم</small></div><button class="x" type="button">إغلاق ✕</button><div class="flash"></div>`;
-      hero.appendChild(f);
+      f.innerHTML = `<div class="r2"></div><div class="gl"></div><div class="fstage"><div class="ffl"><div class="spin"><div class="in3">${duo.outerHTML}</div></div></div></div>${sh}${cf}<div class="tt">🎉 مبروك${WINNER ? ' ' + WINNER : ''}! الآيفون صار جاهز 🎉<small>انتهى التحدي · 60 يوم</small></div><button class="x" type="button">إغلاق ✕</button><div class="flash"></div>`;
+      /* على body: أي transform في الأسلاف يحبس position:fixed داخل القسم */
+      const host = document.createElement('div');
+      host.className = 'cl';
+      host.appendChild(f);
+      document.body.appendChild(host);
+      finHost.current = host;
       const st = f.querySelector('.fstage') as HTMLElement | null;
       if (st) {
         const sc = Math.min(3.6, window.innerHeight * 0.6 / 200, window.innerWidth * 0.78 / 215);
@@ -321,7 +327,10 @@ export const ChatLegends: React.FC = () => {
         });
         f.style.transition = 'opacity .6s';
         (f as HTMLElement).style.opacity = '0';
-        window.setTimeout(() => f.remove(), 650);
+        window.setTimeout(() => {
+          host.remove();
+          if (finHost.current === host) finHost.current = null;
+        }, 650);
       };
       closeBtn?.addEventListener('click', close);
       timers.current.push(...fwTimers);
@@ -408,6 +417,8 @@ export const ChatLegends: React.FC = () => {
         window.clearInterval(t);
       });
       timers.current = [];
+      finHost.current?.remove();
+      finHost.current = null;
       delete (window as any).__clFinale;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -527,7 +538,7 @@ export const ChatLegends: React.FC = () => {
                       </div>
                       <div className="who">
                         <Avatar name={p.n} img={imgOf(p.n)} />
-                        {p.n}
+                        <span title={p.n}>{p.n}</span>
                       </div>
                     </div>
                     <div className="veil"></div>
@@ -572,7 +583,7 @@ export const ChatLegends: React.FC = () => {
                     <div key={p.n} className={`pi p${d + 1}`}>
                       {d === 0 && <div className="crown">👑</div>}
                       <Avatar name={p.n} img={imgOf(p.n)} />
-                      <b>{p.n}</b>
+                      <b title={p.n}>{p.n}</b>
                       <small>
                         Lv.{p.l} · {K(p.x)} XP
                       </small>
@@ -596,7 +607,7 @@ export const ChatLegends: React.FC = () => {
                 <span className="rk">{String(i + 4).padStart(2, '0')}</span>
                 <Avatar name={p.n} img={imgOf(p.n)} />
                 <div className="nm">
-                  <b>{p.n}</b>
+                  <b title={p.n}>{p.n}</b>
                   <small>
                     Lv.{p.l} · {K(p.x)} XP · {Math.round(p.h)}h
                   </small>
