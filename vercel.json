@@ -1,0 +1,18 @@
+{
+  "redirects": [
+    { "source": "/60day", "destination": "/60day/", "permanent": false },
+    { "source": "/60day/admin", "destination": "/60day/admin/", "permanent": false }
+  ],
+  "headers": [
+    {
+      "source": "/60day/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; connect-src https://mqegvdtuyqglxjqakfha.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://*.supabase.co https://ik.imagekit.io https://upload.imagekit.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة الإدارة — إيديتات الـ60 يوم | iABS</title>
 <meta name="robots" content="noindex, nofollow">
@@ -96,6 +96,8 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 .mcard.selected { border-color: rgba(255, 77, 126, 0.65); box-shadow: 0 0 0 1.5px rgba(255, 77, 126, 0.5), 0 14px 34px -16px rgba(255, 77, 126, 0.35); }
 .mcard .thumb { position: relative; background: var(--wine-900); overflow: hidden; }
 .mcard .thumb img, .mcard .thumb video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s var(--ease); }
+.mcard .thumb .thumb-ph { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(234, 201, 168, 0.5); background: radial-gradient(circle at 30% 25%, rgba(255, 77, 126, 0.18), transparent 55%), linear-gradient(150deg, #2a0e1b, #150710); }
+.mcard .thumb .thumb-ph svg { width: 34px; height: 34px; }
 .mcard:hover .thumb img { transform: scale(1.045); }
 .mcard .selbox { position: absolute; top: 9px; right: 9px; z-index: 3; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: rgba(10, 4, 8, 0.6); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.12); }
 .tbadge { position: absolute; bottom: 9px; right: 9px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 900; background: rgba(10, 4, 8, 0.72); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--text); }
@@ -186,6 +188,11 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 @media (max-width: 880px) { .store-grid { grid-template-columns: 1fr; } }
 .store-card { padding: 20px; border-radius: 20px; position: relative; overflow: hidden; }
 .store-card.primary { border-color: rgba(255, 77, 126, 0.4); }
+.store-card.pending { border-style: dashed; border-color: rgba(234, 201, 168, 0.24); background: linear-gradient(165deg, rgba(34, 18, 24, 0.68), rgba(20, 10, 16, 0.8)); }
+.store-card.pending:before { content: ""; position: absolute; top: 0; inset-inline: 0; height: 2px; background: linear-gradient(90deg, rgba(234, 201, 168, 0.55), transparent); }
+.store-card.pending:hover { border-color: rgba(234, 201, 168, 0.4); }
+.store-card.pending .sic { opacity: 0.72; }
+.store-card.pending .pbar { opacity: 0.45; }
 .store-card.primary:before { content: ""; position: absolute; top: 0; inset-inline: 0; height: 2.5px; background: linear-gradient(90deg, var(--rose), var(--champ)); }
 .store-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .store-head .sic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(150deg, var(--wine-500), var(--wine-800)); border: 1px solid var(--line-strong); color: var(--champ); flex: none; }
@@ -201,6 +208,14 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 .store-pct.full { color: var(--bad); }
 .store-fail { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--warn); background: rgba(255, 176, 32, 0.08); border: 1px solid rgba(255, 176, 32, 0.3); border-radius: 11px; padding: 8px 12px; margin-bottom: 13px; }
 .store-fail svg { width: 14px; height: 14px; flex: none; }
+.store-summary { display: flex; flex-wrap: wrap; gap: 18px 30px; padding: 16px 20px; border-radius: 20px; margin-bottom: 16px; }
+.store-summary .ss b { display: block; font-size: 20px; font-weight: 900; color: var(--text); line-height: 1.2; }
+.store-summary .ss b small { font-size: 12px; color: var(--muted); font-weight: 800; }
+.store-summary .ss span { font-size: 10.5px; font-weight: 800; color: var(--faint); }
+.store-summary .ss.warn b { color: var(--warn); }
+.store-title { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 14px; font-weight: 900; margin: 20px 0 12px; color: var(--text); }
+.store-title svg { width: 18px; height: 18px; color: var(--champ); }
+.store-title small { font-size: 10.5px; font-weight: 700; color: var(--faint); }
 .store-acts { display: flex; gap: 7px; flex-wrap: wrap; }
 .failover-note { padding: 18px 20px; border-radius: 20px; margin-bottom: 14px; display: flex; gap: 14px; align-items: flex-start; }
 .failover-note .ic { width: 42px; height: 42px; border-radius: 13px; flex: none; display: grid; place-items: center; background: rgba(106, 184, 255, 0.12); border: 1px solid rgba(106, 184, 255, 0.4); color: var(--info); }
@@ -208,9 +223,6 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 .failover-note b { font-size: 13.5px; font-weight: 900; display: block; margin-bottom: 3px; }
 .failover-note p { margin: 0; font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.8; }
 .failover-note p b { display: inline; font-size: inherit; color: var(--champ); }
-.store-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.store-toolbar .btn { padding: 9px 15px; font-size: 12px; border-radius: 12px; }
-.store-toolbar .btn svg { width: 15px; height: 15px; }
 
 /* ================= الإعدادات ================= */
 .set-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; align-items: start; }
@@ -346,6 +358,7 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 </div>
 
 <script src="../core.js"></script>
+<script src="../video.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

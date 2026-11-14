@@ -12,8 +12,15 @@ const sbHeaders = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-
 
 async function sbError(res) {
   const t = await res.text();
-  try { const j = JSON.parse(t); return new Error(j.message || j.hint || j.error || t); }
-  catch { return new Error(t || ('HTTP ' + res.status)); }
+  try {
+    const j = JSON.parse(t);
+    const msg = String(j.message || '');
+    if (j.code === 'PGRST202' || /could not find the function|schema cache/i.test(msg)) {
+      console.error('RPC غير موجود في القاعدة:', msg);
+      return new Error('خدمة الفيديو غير مهيّأة في القاعدة الرئيسية بعد — يلزم تفعيل إعدادات الفيديو مرة واحدة');
+    }
+    return new Error(j.message || j.hint || j.error || t);
+  } catch { return new Error(t || ('HTTP ' + res.status)); }
 }
 async function rpc(fn, args) {
   const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: sbHeaders, body: JSON.stringify(args || {}) });
@@ -48,6 +55,7 @@ const fmtBytes = (b) => {
   if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
   return (b / 1073741824).toFixed(2) + ' GB';
 };
+const fmtMB = (b) => Math.round(Number(b || 0) / 1048576).toLocaleString('en-US') + ' MB';
 function timeAgo(iso) {
   const ms = Date.now() - new Date(iso).getTime();
   if (!isFinite(ms) || ms < 45000) return 'الآن';
@@ -223,20 +231,19 @@ const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 const IK_ORIGIN = 'https://ik.imagekit.io';
 const IK_PATH = /^\/(ld5rplgcm|jco71x7fu)\/60day-edits\/[A-Za-z0-9_.-]+$/;
-/* ---------- تخزين Supabase (فيديو) ---------- */
-const SB_BUCKET = 'edits-media';
-const SB_PUBLIC = `${SB_URL}/storage/v1/object/public/${SB_BUCKET}/`;
-const SB_PATH = /^(videos|posters)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+$/;
+/* ---------- تخزين Supabase (الفيديو، مشاريع مستقلة) ----------
+   المسار: https://<ref>.supabase.co/storage/v1/object/public/edits-videos/videos|posters/<uuid>.<ext>
+   لا نعرف عدد المشاريع مسبقاً، لذلك نتعرّف على الشكل فقط ونمنع أي مسار آخر. */
+const SB_VIDEO_PATH = /^\/storage\/v1\/object\/public\/edits-videos\/(videos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|webm|mov|m4v)|posters\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp))$/;
+const SB_VIDEO_HOST = /^[a-z0-9]+\.supabase\.co$/;
 
-/* روابط الوسائط المسموح عرضها فقط (من ImageKit أو تخزين Supabase) */
+/* روابط الوسائط المسموح عرضها فقط (ImageKit للصور + تخزين الفيديو) */
 function safeMediaUrl(value) {
   try {
     const url = new URL(value);
     if (url.username || url.password || url.search || url.hash) return '';
     if (url.origin === IK_ORIGIN) return IK_PATH.test(url.pathname) ? url.href : '';
-    if (url.origin === new URL(SB_URL).origin && url.pathname.startsWith(`/storage/v1/object/public/${SB_BUCKET}/`)) {
-      return SB_PATH.test(url.pathname.slice(`/storage/v1/object/public/${SB_BUCKET}/`.length)) ? url.href : '';
-    }
+    if (url.protocol === 'https:' && SB_VIDEO_HOST.test(url.hostname) && SB_VIDEO_PATH.test(url.pathname)) return url.href;
     return '';
   } catch { return ''; }
 }
@@ -250,18 +257,20 @@ function normalizeMedia(item) {
 function fileMediaType(file) {
   if (VIDEO_EXT.test(file.name) && (!file.type || /^video\//.test(file.type))) return 'video';
   if (IMAGE_EXT.test(file.name) && (!file.type || /^image\/(jpeg|png|webp|gif|avif)$/.test(file.type))) return 'image';
-  throw new Error('اختر صورة JPG أو PNG أو WEBP أو GIF أو AVIF');
+  throw new Error('اختر صورة JPG أو PNG أو WEBP أو GIF أو AVIF، أو فيديو MP4 أو MOV أو WEBM');
 }
-/* ---------- رفع الصور فقط ----------
-   رفع الفيديوهات متوقّف حالياً: حساب ImageKit استنفد حصة معالجة الفيديو
-   فصار كل فيديو يُرفع غير قابل للتشغيل. الصور تعمل بشكل طبيعي. */
-const VIDEO_UPLOAD_ENABLED = false;
+/* ---------- قواعد اختيار الملف ----------
+   الصور: ImageKit بأي جودة حتى 20MB (بدون ضغط).
+   الفيديو: مساحات Supabase مستقلة، حد التخزين 50MB بعد الضغط التلقائي. */
+const VIDEO_INPUT_MAX = 350 * 1048576;
 function validateMediaFile(file) {
   const type = fileMediaType(file);
-  if (type === 'video' && !VIDEO_UPLOAD_ENABLED) {
-    throw new Error('رفع الفيديوهات متوقّف مؤقتاً — ارفع صورة فقط');
+  const limit = type === 'video' ? VIDEO_INPUT_MAX : 20 * 1048576;
+  if (!file.size || file.size > limit) {
+    throw new Error(type === 'video'
+      ? 'حجم الفيديو الأصلي كبير جداً (الحد 350MB) — اضغطه أو قسّمه أولاً'
+      : 'الصورة يجب أن تكون بين 1 بايت و20MB');
   }
-  if (!file.size || file.size > (type === 'video' ? 100 : 20) * 1048576) throw new Error(type === 'video' ? 'الفيديو يجب أن يكون بين 1 بايت و100MB' : 'الصورة يجب أن تكون بين 1 بايت و20MB');
   return type;
 }
 function ikThumb(url, w = 640) {
@@ -276,7 +285,12 @@ function posterOf(item) {
   const stored = item && item.poster_url ? safeMediaUrl(item.poster_url) : '';
   if (stored) return stored;
   const url = safeMediaUrl(item.media_url);
-  return url ? url + (mediaType(item) === 'video' ? '/ik-thumbnail.jpg' : '') : '';
+  if (!url) return '';
+  if (mediaType(item) === 'video') {
+    // فيديو Supabase بلا غلاف: لا نخترع مساراً — نعرض إطار الفيديو نفسه
+    return url.includes('/storage/v1/object/public/edits-videos/') ? '' : url + '/ik-thumbnail.jpg';
+  }
+  return url;
 }
 /* src جاهز لوسم img: تحويل ImageKit للصور فقط (تخزين Supabase لا يحول) */
 function posterSrc(item, w = 640) {
@@ -290,69 +304,6 @@ function mediaSources(item) {
   const push = (u) => { const s = safeMediaUrl(u); if (s && !list.includes(s)) list.push(s); };
   push(item && item.media_url);
   return list;
-}
-/* ---------- فحص صحة حساب ImageKit قبل الاعتماد عليه ----------
-   حساب ImageKit المنتهية حصة الفيديو (VPU) يرفض كل طلب فيديو بـ 403 ELIMIT،
-   بينما الصور تبقى تعمل. الفحص يستعمل مسار فيديو غير موجود: الحساب السليم يرجّع
-   404 (لا يوجد ملف) والحساب المنتهي يرجّع 403 ELIMIT. */
-const IK_HEALTH_CACHE = new Map();
-async function probeAccountHealth(endpoint) {
-  const ep = String(endpoint || '').replace(/\/$/, '');
-  if (!ep) return { ok: true };
-  const hit = IK_HEALTH_CACHE.get(ep);
-  if (hit && hit.until > Date.now()) return hit.result;
-  let result = { ok: true };
-  try {
-    const res = await fetch(ep + '/60day-edits/__health_probe__.mp4', {
-      method: 'GET', headers: { Range: 'bytes=0-0' }, cache: 'no-store',
-    });
-    if (res.status === 403) result = { ok: false, reason: 'حصة معالجة الفيديو في حساب ImageKit هذا مستنفدة' };
-  } catch { /* تعذّر الفحص: لا نمنع الرفع */ }
-  IK_HEALTH_CACHE.set(ep, { result, until: Date.now() + 60000 });
-  return result;
-}
-/* ---------- تأكيد أن الملف المرفوع قابل للتشغيل فعلاً ----------
-   الرفع ينجح حتى لو كانت حصة الفيديو منتهية، فيبدو الملف سليماً ثم يتعذّر
-   تشغيله لاحقاً. نتحقق بعد الرفع وأنقل الملف للحساب الآخر إن لزم. */
-async function verifyPlayable(url) {
-  try {
-    const res = await fetch(url, { headers: { Range: 'bytes=0-1023' }, cache: 'no-store' });
-    if (!res.ok) return false;
-    const ct = res.headers.get('content-type') || '';
-    return !ct || ct.startsWith('video/') || ct.startsWith('image/');
-  } catch { return false; }
-}
-/* ---------- معاينة الفيديو: صورة ثابتة بدل تحويل ImageKit ----------
-   poster الفيديو عبر /ik-thumbnail.jpg يستهلك وحدات معالجة فيديو، لذلك نرسم
-   إطاراً من الملف مباشرة في المتصفح ونحوّله إلى blob محلي. */
-async function clientSidePoster(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const video = document.createElement('video');
-    video.preload = 'auto'; video.muted = true; video.playsInline = true; video.src = url;
-    await new Promise((resolve, reject) => {
-      video.onloadeddata = () => resolve();
-      video.onerror = () => reject(new Error('decode'));
-      setTimeout(() => reject(new Error('timeout')), 12000);
-    });
-    const w = video.videoWidth, h = video.videoHeight;
-    if (!w || !h) throw new Error('no-dims');
-    const target = Math.min(0.6, (video.duration || 1) * 0.1);
-    await new Promise((resolve) => {
-      video.onseeked = () => resolve();
-      video.currentTime = Math.min(target, Math.max(0, (video.duration || 1) - 0.05));
-      setTimeout(() => resolve(), 4000);
-    });
-    const scale = Math.min(1, 720 / Math.max(w, h));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
-    if (!blob) throw new Error('no-blob');
-    return blob;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 function mediaError(container, type) {
   const el = document.createElement('div');
@@ -455,6 +406,7 @@ function xhrUpload(file, auth, dimensions, onProgress) {
 
 async function uploadMedia(file, onProgress) {
   const type = validateMediaFile(file);
+  if (type !== 'image') throw new Error('الفيديوهات تُرفع عبر نظام الفيديو الجديد — حدّث الصفحة');
   const dimensions = await mediaDimensions(file);
   const extension = file.name.split('.').pop().toLowerCase();
   const exclude = [];

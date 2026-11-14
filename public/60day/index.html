@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://upload.imagekit.io; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://*.supabase.co https://upload.imagekit.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>جدار الإيديتات — تحدي الـ60 يوم | iABS</title>
 <meta name="description" content="جدار إيديتات ورسائل مجتمع أساطير الشات — تحدي الـ60 يوم على آيفون 18 برو برغندي. شارك إيديتك أو اترك رسالتك.">
@@ -46,8 +46,8 @@
 .hstat b { display: block; font-size: 24px; font-weight: 900; line-height: 1.2; color: var(--champ); }
 .hstat span { font-size: 10.5px; font-weight: 800; color: var(--muted); letter-spacing: 0.04em; }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-.hero-day { max-width: 520px; }
-.hero-day .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; font-size: 11.5px; font-weight: 800; color: var(--muted); }
+/* ---------- سطر اليوم ---------- */
+.hero-day { max-width: 520px; }.hero-day .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; font-size: 11.5px; font-weight: 800; color: var(--muted); }
 .hero-day .row b { color: var(--rose-soft); font-size: 13px; }
 .hero-day .pbar { height: 8px; }
 .hero-day .note { font-size: 11px; color: var(--faint); margin-top: 7px; font-weight: 700; }
@@ -160,6 +160,8 @@
 .wcard .media img, .wcard .media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .wcard .media img.thumb { transition: transform 0.7s var(--ease); }
 .wcard:hover .media img.thumb { transform: scale(1.1); }
+.wcard .media .thumb-empty { position: absolute; inset: 0; background: radial-gradient(circle at 32% 26%, rgba(255, 77, 126, 0.22), transparent 55%), radial-gradient(circle at 74% 78%, rgba(234, 201, 168, 0.12), transparent 52%), linear-gradient(150deg, #2a0e1b, #150710); }
+.wcard .media .thumb-empty::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px); background-size: 18px 18px; opacity: 0.5; }
 .wcard .media .shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.1) 45%, transparent); pointer-events: none; }
 .wcard .playbtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(6px); border: 1.5px solid rgba(255, 77, 126, 0.55); color: #fff; opacity: 0; transition: 0.35s var(--ease); pointer-events: none; }
 .wcard .playbtn svg { width: 20px; height: 20px; margin-inline-start: 2px; }
@@ -371,18 +373,18 @@
             <div class="field">
               <label for="edCap">وصف الإيديت (اختياري)</label>
               <textarea class="inp" id="edCap" maxlength="300" rows="2" placeholder="عن ماذا يتحدث إيديتك؟"></textarea>
-              <div class="counter"><span id="edCapN">0</span> / 300</div>
+              <div class="counter" dir="ltr"><span id="edCapN">0</span> / 300</div>
             </div>
             <div class="field">
-              <label>الصورة *</label>
-              <div class="dropzone" id="dz" tabindex="0" role="button" aria-label="اختر صورة">
+              <label>الصورة أو الفيديو *</label>
+              <div class="dropzone" id="dz" tabindex="0" role="button" aria-label="اختر صورة أو فيديو">
                 <div class="dz-in" id="dzIn">
                   <div class="dz-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg></div>
-                  <b>اسحب الصورة هنا أو اضغط للاختيار</b>
-                  <small>صورة حتى 20MB · JPG أو PNG أو WEBP</small>
+                  <b>اسحب صورة أو فيديو هنا أو اضغط للاختيار</b>
+                  <small>صورة حتى 20MB · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small>
                 </div>
               </div>
-              <input type="file" id="edFile" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" class="hidden">
+              <input type="file" id="edFile" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,video/x-m4v" class="hidden">
             </div>
             <div class="upbar hidden" id="upbar">
               <div class="lbl"><span id="upLabel">جارِ الرفع…</span><span class="mono-num" id="upPct">0%</span></div>
@@ -543,6 +545,7 @@
 </div>
 
 <script src="core.js"></script>
+<script src="video.js"></script>
 <script src="wall.js"></script>
 </body>
 </html>

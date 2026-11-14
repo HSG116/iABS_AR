@@ -93,7 +93,9 @@ function mediaCardEl(sub, idx, priority) {
   const thumb = sub.media_type === 'image' ? ikThumb(sub.media_url) : posterSrc(sub, 640);
   el.innerHTML = `
     <div class="media" style="aspect-ratio:${ratio}">
-      <img class="thumb" src="${esc(thumb)}" alt="${esc(sub.caption || sub.name)}" loading="${priority ? 'eager' : 'lazy'}" decoding="async" ${priority ? 'fetchpriority="high"' : ''}>
+      ${thumb
+        ? `<img class="thumb" src="${esc(thumb)}" alt="${esc(sub.caption || sub.name)}" loading="${priority ? 'eager' : 'lazy'}" decoding="async" ${priority ? 'fetchpriority="high"' : ''}>`
+        : `<div class="thumb thumb-empty" aria-hidden="true"></div>`}
       <div class="shade"></div>
       ${sub.media_type === 'video' ? `<span class="vbadge">${IC.video} فيديو</span><span class="playbtn">${IC.play}</span>` : ''}
     </div>
@@ -105,7 +107,7 @@ function mediaCardEl(sub, idx, priority) {
       <div class="when">${timeAgo(sub.created_at)}</div>
     </div>`;
   const img = el.querySelector('img.thumb');
-  previewFallback(img, sub);
+  if (img) previewFallback(img, sub);
   /* فيديو hover — ديسكتوب فقط */
   if (sub.media_type === 'video' && hoverFine) {
     const media = el.querySelector('.media');
@@ -398,9 +400,10 @@ function pickFile(f) {
   state.file = f;
   dz.classList.add('has-file');
   const url = state.filePreviewUrl = URL.createObjectURL(f);
+  const heavy = !isImg && f.size > 46000000;
   dz.innerHTML = `<div class="dz-preview">
       ${isImg ? `<img src="${url}" alt="معاينة">` : `<video src="${url}" muted playsinline preload="metadata"></video>`}
-      <div class="dz-meta"><span class="nm">${esc(f.name)}</span><span class="chip chip-champ">${fmtBytes(f.size)}</span><button class="btn btn-sm btn-danger" type="button" id="dzClear">${IC.x} إزالة</button></div>
+      <div class="dz-meta"><span class="nm">${esc(f.name)}</span><span class="chip chip-champ" dir="ltr">${fmtBytes(f.size)}</span>${heavy ? `<span class="chip chip-warn">يُضغط تلقائياً تحت 50MB</span>` : ''}<button class="btn btn-sm btn-danger" type="button" id="dzClear">${IC.x} إزالة</button></div>
     </div>`;
   $('#dzClear').addEventListener('click', (e) => { e.stopPropagation(); clearFile(); });
 }
@@ -411,10 +414,17 @@ function clearFile() {
   state.filePreviewUrl = '';
   state.file = null; fileInput.value = '';
   dz.classList.remove('has-file');
-  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب الصورة هنا أو اضغط للاختيار</b><small>صورة حتى 20MB · JPG أو PNG أو WEBP</small></div>`;
+  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب صورة أو فيديو هنا أو اضغط للاختيار</b><small>صورة حتى 20MB · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small></div>`;
 }
 
 /* ---------- إرسال الإيديت ---------- */
+function setUploadUI(label, pct) {
+  $('#upbar').classList.remove('hidden');
+  $('#upLabel').textContent = label || 'جارِ الرفع…';
+  $('#upPct').textContent = Math.round(pct || 0) + '%';
+  $('#upFill').style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
+}
+
 $('#editForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (state.uploading) return;
@@ -422,17 +432,40 @@ $('#editForm').addEventListener('submit', async (e) => {
   const cap = $('#edCap').value.trim();
   if (!name) { toast('اكتب اسمك أولاً', 'bad'); $('#edName').focus(); return; }
   if (!state.file) { toast('اختر صورة أو فيديو', 'bad'); return; }
+  let type;
+  try { type = fileMediaType(state.file); } catch (err) { toast(err.message, 'bad'); return; }
   state.uploading = true;
   const btn = $('#edSubmit'); btn.disabled = true;
-  $('#upbar').classList.remove('hidden');
-  $('#upLabel').textContent = 'جارِ الرفع…'; $('#upPct').textContent = '0%'; $('#upFill').style.width = '0%';
+  let upTicket = '';
+  setUploadUI('جارِ التجهيز…', 0);
   try {
-    const up = await uploadMedia(state.file, (p) => { $('#upPct').textContent = p + '%'; $('#upFill').style.width = p + '%'; });
-    $('#upLabel').textContent = 'جارِ التسجيل…'; $('#upPct').textContent = '100%'; $('#upFill').style.width = '100%';
+    let payload;
+    if (type === 'image') {
+      const up = await uploadMedia(state.file, (p) => setUploadUI('رفع الصورة…', p));
+      payload = {
+        p_media_type: 'image', p_media_url: up.url, p_poster_url: up.poster,
+        p_width: up.width, p_height: up.height, p_size_bytes: up.size,
+        p_file_id: up.fileId, p_account_id: up.accountId, p_upload_ticket: up.uploadTicket,
+      };
+    } else {
+      if (!window.EditsVideo) throw new Error('نظام الفيديو غير محمّل — حدّث الصفحة');
+      const onProg = (s) => setUploadUI(s.label || 'معالجة الفيديو…', s.pct);
+      const prep = await EditsVideo.prepare(state.file, onProg);
+      const up = await EditsVideo.upload(prep, onProg);
+      upTicket = up.ticket || '';
+      payload = {
+        p_media_type: 'video', p_media_url: up.media_url, p_poster_url: up.poster_url,
+        p_width: up.width, p_height: up.height, p_size_bytes: up.size_bytes,
+        p_file_id: up.file_id, p_account_id: up.account_id, p_upload_ticket: up.ticket,
+      };
+    }
+    setUploadUI('جارِ التسجيل…', 100);
     await rpc('edits_submit', {
-      p_name: name, p_caption: cap, p_media_type: up.fileType === 'video' ? 'video' : 'image',
-      p_media_url: up.url, p_poster_url: up.poster, p_width: up.width, p_height: up.height,
-      p_size_bytes: up.size, p_file_id: up.fileId, p_account_id: up.accountId, p_upload_ticket: up.uploadTicket,
+      p_name: name, p_caption: cap,
+      p_media_type: payload.p_media_type, p_media_url: payload.p_media_url,
+      p_poster_url: payload.p_poster_url, p_width: payload.p_width, p_height: payload.p_height,
+      p_size_bytes: payload.p_size_bytes, p_file_id: payload.p_file_id,
+      p_account_id: payload.p_account_id, p_upload_ticket: payload.p_upload_ticket,
     });
     $('#editForm').classList.add('hidden');
     $('#upbar').classList.add('hidden');
@@ -442,7 +475,8 @@ $('#editForm').addEventListener('submit', async (e) => {
     toast('تم رفع الإيديت بنجاح', 'ok');
     clearFile(); $('#edCap').value = ''; $('#edCapN').textContent = '0';
   } catch (err) {
-    toast(err.message || 'فشل الرفع', 'bad', 5000);
+    if (upTicket && window.EditsVideo) EditsVideo.release(upTicket);
+    toast(err.message || 'فشل الرفع', 'bad', 6000);
     $('#upbar').classList.add('hidden');
   } finally {
     state.uploading = false; btn.disabled = false;
