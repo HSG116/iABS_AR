@@ -89,8 +89,8 @@ function mediaCardEl(sub, idx, priority) {
   el.style.setProperty('--dl', Math.min(idx, 6) * 0.05 + 's');
   const ratio = mediaRatio(sub);
   const liked = state.liked.has(sub.id);
-  const poster = ikPoster(sub);
-  const thumb = sub.media_type === 'image' ? ikThumb(sub.media_url) : ikThumb(poster);
+  const poster = posterOf(sub);
+  const thumb = sub.media_type === 'image' ? ikThumb(sub.media_url) : posterSrc(sub, 640);
   el.innerHTML = `
     <div class="media" style="aspect-ratio:${ratio}">
       <img class="thumb" src="${esc(thumb)}" alt="${esc(sub.caption || sub.name)}" loading="${priority ? 'eager' : 'lazy'}" decoding="async" ${priority ? 'fetchpriority="high"' : ''}>
@@ -112,9 +112,15 @@ function mediaCardEl(sub, idx, priority) {
     let vid = null;
     media.addEventListener('mouseenter', () => {
       if (vid) return;
+      const sources = mediaSources(sub);
+      if (!sources.length) return;
       vid = document.createElement('video');
-      vid.src = sub.media_url; vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = 'metadata';
-      vid.onerror = () => { vid.remove(); vid = null; };
+      vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = 'metadata';
+      let i = 0;
+      const tryNext = () => { if (i < sources.length) vid.src = sources[i++]; else { vid.remove(); vid = null; } };
+      vid.addEventListener('error', tryNext);
+      vid.addEventListener('loadeddata', () => { if (vid.duration > 0.1) { try { vid.currentTime = 0.1; } catch {} } }, { once: true });
+      tryNext();
       media.insertBefore(vid, media.querySelector('.shade'));
       vid.play().catch(() => {});
     });
@@ -258,9 +264,16 @@ function renderLightbox() {
   stage.querySelectorAll('img,video,.media-error').forEach(n => { if (n.tagName === 'VIDEO') n.pause(); n.remove(); });
   if (sub.media_type === 'video') {
     const v = document.createElement('video');
-    v.src = sub.media_url; v.controls = true; v.playsInline = true; v.autoplay = true; v.loop = true; v.dir = 'ltr';
-    v.poster = ikPoster(sub);
-    v.addEventListener('error', () => { v.remove(); mediaError(stage, 'video'); }, { once: true });
+    v.controls = true; v.playsInline = true; v.autoplay = true; v.loop = true; v.dir = 'ltr';
+    v.poster = posterOf(sub);
+    const sources = mediaSources(sub);
+    let i = 0;
+    const tryNext = () => {
+      if (i < sources.length) { v.src = sources[i++]; return; }
+      v.remove(); mediaError(stage, 'video');
+    };
+    v.addEventListener('error', tryNext);
+    tryNext();
     stage.insertBefore(v, stage.querySelector('.navbtn'));
   } else {
     const img = document.createElement('img');
@@ -379,7 +392,7 @@ fileInput.addEventListener('change', () => { if (fileInput.files[0]) pickFile(fi
 
 function pickFile(f) {
   let type;
-  try { type = validateMediaFile(f); } catch (e) { toast(e.message, 'bad'); return; }
+  try { type = validateMediaFile(f); } catch (e) { toast(e.message, 'bad', 5000); return; }
   const isImg = type === 'image';
   if (state.filePreviewUrl) URL.revokeObjectURL(state.filePreviewUrl);
   state.file = f;
@@ -398,7 +411,7 @@ function clearFile() {
   state.filePreviewUrl = '';
   state.file = null; fileInput.value = '';
   dz.classList.remove('has-file');
-  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب الملف هنا أو اضغط للاختيار</b><small>صورة حتى 20MB · فيديو حتى 100MB</small></div>`;
+  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب الصورة هنا أو اضغط للاختيار</b><small>صورة حتى 20MB · JPG أو PNG أو WEBP</small></div>`;
 }
 
 /* ---------- إرسال الإيديت ---------- */

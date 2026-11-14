@@ -223,11 +223,21 @@ const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 const IK_ORIGIN = 'https://ik.imagekit.io';
 const IK_PATH = /^\/(ld5rplgcm|jco71x7fu)\/60day-edits\/[A-Za-z0-9_.-]+$/;
+/* ---------- تخزين Supabase (فيديو) ---------- */
+const SB_BUCKET = 'edits-media';
+const SB_PUBLIC = `${SB_URL}/storage/v1/object/public/${SB_BUCKET}/`;
+const SB_PATH = /^(videos|posters)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+$/;
 
+/* روابط الوسائط المسموح عرضها فقط (من ImageKit أو تخزين Supabase) */
 function safeMediaUrl(value) {
   try {
     const url = new URL(value);
-    return url.origin === IK_ORIGIN && !url.username && !url.password && !url.search && !url.hash && IK_PATH.test(url.pathname) ? url.href : '';
+    if (url.username || url.password || url.search || url.hash) return '';
+    if (url.origin === IK_ORIGIN) return IK_PATH.test(url.pathname) ? url.href : '';
+    if (url.origin === new URL(SB_URL).origin && url.pathname.startsWith(`/storage/v1/object/public/${SB_BUCKET}/`)) {
+      return SB_PATH.test(url.pathname.slice(`/storage/v1/object/public/${SB_BUCKET}/`.length)) ? url.href : '';
+    }
+    return '';
   } catch { return ''; }
 }
 function mediaType(item) {
@@ -240,10 +250,17 @@ function normalizeMedia(item) {
 function fileMediaType(file) {
   if (VIDEO_EXT.test(file.name) && (!file.type || /^video\//.test(file.type))) return 'video';
   if (IMAGE_EXT.test(file.name) && (!file.type || /^image\/(jpeg|png|webp|gif|avif)$/.test(file.type))) return 'image';
-  throw new Error('اختر صورة JPG أو PNG أو WEBP أو GIF أو AVIF، أو فيديو MP4 أو WEBM أو MOV');
+  throw new Error('اختر صورة JPG أو PNG أو WEBP أو GIF أو AVIF');
 }
+/* ---------- رفع الصور فقط ----------
+   رفع الفيديوهات متوقّف حالياً: حساب ImageKit استنفد حصة معالجة الفيديو
+   فصار كل فيديو يُرفع غير قابل للتشغيل. الصور تعمل بشكل طبيعي. */
+const VIDEO_UPLOAD_ENABLED = false;
 function validateMediaFile(file) {
   const type = fileMediaType(file);
+  if (type === 'video' && !VIDEO_UPLOAD_ENABLED) {
+    throw new Error('رفع الفيديوهات متوقّف مؤقتاً — ارفع صورة فقط');
+  }
   if (!file.size || file.size > (type === 'video' ? 100 : 20) * 1048576) throw new Error(type === 'video' ? 'الفيديو يجب أن يكون بين 1 بايت و100MB' : 'الصورة يجب أن تكون بين 1 بايت و20MB');
   return type;
 }
@@ -251,18 +268,91 @@ function ikThumb(url, w = 640) {
   if (!url) return '';
   return url + (url.includes('?') ? '&' : '?') + `tr=w-${w},q-82,f-auto`;
 }
-function ikPoster(item) {
+/* ---------- صورة الغلاف (poster) ----------
+   في ImageKit، مسار /ik-thumbnail.jpg لفيديو يستهلك وحدات معالجة فيديو،
+   ولهذا يرجع 403 عند نفاد الحصة. لذلك نولّد صورة الغلاف في المتصفح
+   ونحفظها كملف صورة مستقل (لا يستهلك وحدات فيديو إطلاقاً). */
+function posterOf(item) {
+  const stored = item && item.poster_url ? safeMediaUrl(item.poster_url) : '';
+  if (stored) return stored;
   const url = safeMediaUrl(item.media_url);
   return url ? url + (mediaType(item) === 'video' ? '/ik-thumbnail.jpg' : '') : '';
 }
-function videoPreview(item) {
-  const video = document.createElement('video');
-  video.src = safeMediaUrl(item.media_url);
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = 'metadata';
-  video.addEventListener('loadeddata', () => { if (video.duration > 0.1) video.currentTime = 0.1; }, { once: true });
-  return video;
+/* src جاهز لوسم img: تحويل ImageKit للصور فقط (تخزين Supabase لا يحول) */
+function posterSrc(item, w = 640) {
+  const p = posterOf(item);
+  if (!p) return '';
+  return p.startsWith(IK_ORIGIN + '/') ? ikThumb(p, w) : p;
+}
+/* أولوية التشغيل: الملف الأساسي ثم أي مصدر بديل متاح */
+function mediaSources(item) {
+  const list = [];
+  const push = (u) => { const s = safeMediaUrl(u); if (s && !list.includes(s)) list.push(s); };
+  push(item && item.media_url);
+  return list;
+}
+/* ---------- فحص صحة حساب ImageKit قبل الاعتماد عليه ----------
+   حساب ImageKit المنتهية حصة الفيديو (VPU) يرفض كل طلب فيديو بـ 403 ELIMIT،
+   بينما الصور تبقى تعمل. الفحص يستعمل مسار فيديو غير موجود: الحساب السليم يرجّع
+   404 (لا يوجد ملف) والحساب المنتهي يرجّع 403 ELIMIT. */
+const IK_HEALTH_CACHE = new Map();
+async function probeAccountHealth(endpoint) {
+  const ep = String(endpoint || '').replace(/\/$/, '');
+  if (!ep) return { ok: true };
+  const hit = IK_HEALTH_CACHE.get(ep);
+  if (hit && hit.until > Date.now()) return hit.result;
+  let result = { ok: true };
+  try {
+    const res = await fetch(ep + '/60day-edits/__health_probe__.mp4', {
+      method: 'GET', headers: { Range: 'bytes=0-0' }, cache: 'no-store',
+    });
+    if (res.status === 403) result = { ok: false, reason: 'حصة معالجة الفيديو في حساب ImageKit هذا مستنفدة' };
+  } catch { /* تعذّر الفحص: لا نمنع الرفع */ }
+  IK_HEALTH_CACHE.set(ep, { result, until: Date.now() + 60000 });
+  return result;
+}
+/* ---------- تأكيد أن الملف المرفوع قابل للتشغيل فعلاً ----------
+   الرفع ينجح حتى لو كانت حصة الفيديو منتهية، فيبدو الملف سليماً ثم يتعذّر
+   تشغيله لاحقاً. نتحقق بعد الرفع وأنقل الملف للحساب الآخر إن لزم. */
+async function verifyPlayable(url) {
+  try {
+    const res = await fetch(url, { headers: { Range: 'bytes=0-1023' }, cache: 'no-store' });
+    if (!res.ok) return false;
+    const ct = res.headers.get('content-type') || '';
+    return !ct || ct.startsWith('video/') || ct.startsWith('image/');
+  } catch { return false; }
+}
+/* ---------- معاينة الفيديو: صورة ثابتة بدل تحويل ImageKit ----------
+   poster الفيديو عبر /ik-thumbnail.jpg يستهلك وحدات معالجة فيديو، لذلك نرسم
+   إطاراً من الملف مباشرة في المتصفح ونحوّله إلى blob محلي. */
+async function clientSidePoster(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const video = document.createElement('video');
+    video.preload = 'auto'; video.muted = true; video.playsInline = true; video.src = url;
+    await new Promise((resolve, reject) => {
+      video.onloadeddata = () => resolve();
+      video.onerror = () => reject(new Error('decode'));
+      setTimeout(() => reject(new Error('timeout')), 12000);
+    });
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w || !h) throw new Error('no-dims');
+    const target = Math.min(0.6, (video.duration || 1) * 0.1);
+    await new Promise((resolve) => {
+      video.onseeked = () => resolve();
+      video.currentTime = Math.min(target, Math.max(0, (video.duration || 1) - 0.05));
+      setTimeout(() => resolve(), 4000);
+    });
+    const scale = Math.min(1, 720 / Math.max(w, h));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+    if (!blob) throw new Error('no-blob');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 function mediaError(container, type) {
   const el = document.createElement('div');
@@ -270,15 +360,35 @@ function mediaError(container, type) {
   el.innerHTML = (type === 'video' ? IC.video : IC.image) + '<span>' + (type === 'video' ? 'تعذر تشغيل هذا الترميز — جرّب فتح الملف الأصلي' : 'تعذر تحميل المعاينة') + '</span>';
   container.append(el);
 }
+/* ---------- تشغيل فيديو مع تبديل تلقائي بين الحسابات ---------- */
+function attachVideo(container, item, opts = {}) {
+  const sources = mediaSources(item);
+  if (!sources.length) { mediaError(container, 'video'); return null; }
+  const video = document.createElement('video');
+  video.className = opts.className || 'thumb';
+  video.muted = true;
+  video.playsInline = true;
+  video.loop = true;
+  video.preload = opts.preload || 'metadata';
+  if (opts.controls) { video.controls = true; video.muted = false; video.loop = false; }
+  if (opts.poster) video.poster = opts.poster;
+  let idx = 0;
+  const next = () => {
+    if (idx >= sources.length) { video.remove(); mediaError(container, 'video'); return; }
+    video.src = sources[idx++];
+  };
+  video.addEventListener('error', () => { video.remove(); mediaError(container, 'video'); }, { once: true });
+  video.addEventListener('loadeddata', () => { if (video.duration > 0.1) { try { video.currentTime = 0.1; } catch {} } }, { once: true });
+  next();
+  container.prepend(video);
+  return video;
+}
 function previewFallback(img, item) {
   img.addEventListener('error', () => {
     const container = img.parentElement;
     img.remove();
-    if (mediaType(item) === 'video' && safeMediaUrl(item.media_url)) {
-      const video = videoPreview(item);
-      video.className = 'thumb fallback-video';
-      video.addEventListener('error', () => { video.remove(); mediaError(container, 'video'); }, { once: true });
-      container.prepend(video);
+    if (mediaType(item) === 'video') {
+      attachVideo(container, item, { className: 'thumb fallback-video' });
     } else {
       mediaError(container, 'image');
     }
@@ -349,14 +459,15 @@ async function uploadMedia(file, onProgress) {
   const extension = file.name.split('.').pop().toLowerCase();
   const exclude = [];
   let lastErr = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const auth = await rpc('imagekit_upload_auth', { p_media_type: type, p_size_bytes: file.size, p_extension: extension, p_exclude: exclude });
+    if (!auth || !auth.token) { lastErr = new Error('لا يوجد حساب تخزين متاح — راجع الإدارة'); break; }
     try {
       const res = await xhrUpload(file, auth, dimensions, onProgress);
       return { ...res, accountId: auth.account_id, accountLabel: auth.label };
     } catch (e) {
       lastErr = e;
-      if (e.quota && attempt === 0) {
+      if (e.quota && attempt < 2) {
         exclude.push(auth.account_id);
         if (onProgress) onProgress(0);
         continue; // نقل تلقائي للحساب الاحتياطي

@@ -242,7 +242,8 @@ function renderToolbar() {
         <option value="likes" ${state.sort === 'likes' ? 'selected' : ''}>الأكثر إعجاباً</option>
         <option value="reports" ${state.sort === 'reports' ? 'selected' : ''}>الأكثر بلاغات</option>
       </select>
-      <label class="sel-all"><input type="checkbox" class="ck" id="selAll"> تحديد الكل</label>`;
+      <label class="sel-all"><input type="checkbox" class="ck" id="selAll"> تحديد الكل</label>
+      ${state.tab === 'pending' ? '<button class="btn btn-sm btn-danger" id="btnRejectVideos">' + IC.video + ' رفض كل الفيديوهات</button>' : ''}`;
     $('#qInp').addEventListener('input', debounce((e) => { state.q = e.target.value; renderContent(); }, 220));
     $('#typeSel').addEventListener('change', (e) => { state.type = e.target.value; renderContent(); });
     $('#sortSel').addEventListener('change', (e) => { state.sort = e.target.value; renderContent(); });
@@ -251,6 +252,8 @@ function renderToolbar() {
       if (e.target.checked) list.forEach(s => state.sel.add(s.id)); else state.sel.clear();
       renderContent(); renderBulk();
     });
+    const rj = $('#btnRejectVideos');
+    if (rj) rj.addEventListener('click', rejectAllVideos);
   } else if (state.tab === 'messages') {
     tb.classList.remove('hidden');
     tb.innerHTML = `
@@ -337,13 +340,12 @@ function statusActions(s, compact) {
 
 function mediaCard(s, i) {
   const ratio = s.width && s.height ? Math.min(1.85, Math.max(0.5625, s.width / s.height)) : 16 / 9;
-  const poster = ikThumb(ikPoster(s), 480);
   const checked = state.sel.has(s.id);
   return `
   <div class="mcard panel ${checked ? 'selected' : ''}" style="animation-delay:${Math.min(i, 10) * 0.04}s">
     <div class="thumb" style="aspect-ratio:${ratio.toFixed(3)}">
       <label class="selbox" title="تحديد"><input type="checkbox" class="ck" data-sel="${s.id}" ${checked ? 'checked' : ''}></label>
-      <img src="${esc(poster)}" alt="${esc(s.name)}" loading="lazy" data-media-id="${s.id}">
+      <img src="${esc(posterSrc(s, 480))}" alt="${esc(s.name)}" loading="lazy" data-media-id="${s.id}">
       ${s.media_type === 'video' ? `<span class="play-ic"><i>${IC.play}</i></span>` : ''}
       <span class="tbadge">${s.media_type === 'video' ? IC.video + ' فيديو' : IC.image + ' صورة'}</span>
       ${s.reports_count > 0 ? `<span class="tbadge rep">${IC.flag} ${s.reports_count}</span>` : ''}
@@ -469,7 +471,7 @@ function renderDashboard() {
   const likedHtml = topLiked.length ? topLiked.map((s, i) => `
     <div class="rank-row">
       <span class="rank-num">${i + 1}</span>
-      <img class="th" src="${esc(ikThumb(ikPoster(s), 96))}" alt="" loading="lazy" data-rank-media="${s.id}">
+      <img class="th" src="${esc(posterSrc(s, 96))}" alt="" loading="lazy" data-rank-media="${s.id}">
       <div class="nm"><b>${esc(s.name)}</b><span>${s.media_type === 'video' ? 'فيديو' : 'صورة'} · ${timeAgo(s.created_at)}</span></div>
       <span class="val">${IC.heart} ${fmtNum(s.likes_count)}</span>
     </div>`).join('') : '<p class="muted" style="font-size:12px">لا توجد إيديتات بعد</p>';
@@ -587,7 +589,138 @@ function renderStorage() {
         <p>إذا رفض ImageKit الرفع بسبب حد التخزين، تُعاد محاولة الملف <b>تلقائياً</b> على الحساب التالي. الحساب الذي تعلّمه ممتلئاً أو توقفه من هنا يُستبعد من الاختيار. الأخطاء الأخرى لا تغيّر حالة الحساب. العدّاد تقديري وليس مزامنة لاستهلاك ImageKit. حذف المشاركة لا يحذف أصل الملف ولا يحرر مساحة؛ حذف الأصل من لوحة ImageKit. الإجمالي المسجل: <b>${fmtBytes(totalUsed)}</b> من ${fmtBytes(totalLimit)}.</p>
       </div>
     </div>
-    <div class="store-grid">${cards}</div>`;
+    <div class="failover-note panel">
+      <span class="ic">${IC.video}</span>
+      <div>
+        <b>فحص وإصلاح الفيديوهات</b>
+        <p>إذا نفدت حصة معالجة الفيديو في حساب ImageKit، يرفض الحساب كل طلب فيديو وتظهر رسالة "تعذر تشغيل هذا الترميز". اضغط <b>فحص صحة الحسابات</b> لمعرفة أي حساب متوقف، و<b>إصلاح الفيديوهات</b> لإعادة رفع الفيديوهات على حساب سليم ليعمل الجدار. الفيديوهات الجديدة تُرفع تلقائياً على الحساب السليم مع نسخة احتياطية.</p>
+      </div>
+    </div>
+    <div class="store-toolbar">
+      <button class="btn btn-sm btn-champ" id="btnCheckAccounts">${IC.shield} فحص صحة الحسابات</button>
+      <button class="btn btn-sm btn-warn" id="btnRepairVideos">${IC.video} إصلاح الفيديوهات</button>
+    </div>
+    <div id="storeGridWrap"><div class="store-grid">${cards}</div></div>`;
+}
+
+/* ============================================================
+   إصلاح الفيديوهات المعطّلة
+   ------------------------------------------------------------
+   السبب: حساب ImageKit الأساسي استنفد حصة معالجة الفيديو، فيرفض كل
+   طلب فيديو بـ 403 ELIMIT. الحل: تنزيل الملف من مكان يمكن قراءته
+   (كاش CDN) ورفعه على الحساب السليم، ثم تحديث رابط المشاركة.
+   ============================================================ */
+async function repairVideo(s) {
+  const sources = mediaSources(s);
+  let bytes = null;
+  let from = '';
+  for (const u of sources) {
+    try {
+      const res = await fetch(u);
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      if (blob.size > 100 * 1048576) continue;
+      bytes = blob; from = u;
+      break;
+    } catch { /* جرّب المصدر التالي */ }
+  }
+  if (!bytes) throw new Error('تعذّر قراءة الملف من أي مصدر — قد يكون الملف غير متاح على الحساب المنتهي');
+
+  const name = (s.media_url || '').split('/').pop() || 'video.mp4';
+  const ext = (name.split('.').pop() || 'mp4').toLowerCase();
+  const file = new File([bytes], `repaired.${ext}`, { type: bytes.type || 'video/mp4' });
+
+  // ارفع على حساب سليم (يتحقق من.health قبل الرفع)
+  const auth = await rpc('imagekit_upload_auth', { p_media_type: 'video', p_size_bytes: file.size, p_extension: ext, p_exclude: [] });
+  if (!auth || !auth.token) throw new Error('لا يوجد حساب تخزين متاح');
+  const health = await probeAccountHealth(auth.url_endpoint);
+  if (!health.ok) throw new Error(health.reason || 'حسابات التخزين كلها متوقفة عن تقديم الفيديو');
+
+  const dims = await mediaDimensions(file);
+  const up = await xhrUpload(file, auth, dims, null);
+  if (!(await verifyPlayable(up.url))) throw new Error('تعذّر تشغيل الفيديو بعد الرفع');
+
+  // صورة غلاف محلية (تستهلك صفر وحدات فيديو)
+  let posterUrl = null;
+  try {
+    const blob = await clientSidePoster(file);
+    if (blob) {
+      const pAuth = await rpc('imagekit_upload_auth', { p_media_type: 'image', p_size_bytes: blob.size, p_extension: 'jpg', p_exclude: [] });
+      if (pAuth && pAuth.token) {
+        const pFile = new File([blob], 'poster.jpg', { type: 'image/jpeg' });
+        const pUp = await xhrUpload(pFile, pAuth, { width: 0, height: 0 }, null);
+        posterUrl = pUp.url;
+      }
+    }
+  } catch { /* الغلاف اختياري */ }
+
+  await rpc('edits_admin_rehost', {
+    p_password: pw, p_id: s.id, p_media_url: up.url, p_file_id: up.fileId,
+    p_account_id: auth.account_id, p_poster_url: posterUrl,
+  });
+  return from;
+}
+
+/* إصلاح كل الفيديوهات المعطّلة */
+async function repairAllVideos() {
+  const videos = subs().filter((s) => s.media_type === 'video');
+  if (!videos.length) { toast('لا توجد فيديوهات', 'info'); return; }
+  askConfirm(`سيُعاد رفع ${videos.length} فيديو على حساب تخزين سليم لتعمل على الجدار. الملفات القديمة تبقى في حسابها ولا تُحذف. هل تريد المتابعة؟`, async () => {
+    state.busy = true;
+    let ok = 0, failed = 0;
+    for (const s of videos) {
+      try {
+        const from = await repairVideo(s);
+        ok++;
+        toast(`تم إصلاح ${s.name || 'فيديو'}`, 'ok', 1800);
+      } catch (e) {
+        failed++;
+        toast(`تعذّر إصلاح ${s.name || 'فيديو'}: ${e.message}`, 'bad', 4000);
+      }
+    }
+    state.busy = false;
+    await loadData(true);
+    toast(`انتهى الإصلاح: ${ok} ناجح · ${failed} فاشل`, failed ? 'warn' : 'ok', 5000);
+  }, 'إصلاح الفيديوهات');
+}
+
+/* فحص صحة الحسابات */
+async function checkAccounts() {
+  const accs = (state.data && state.data.accounts) || [];
+  const rows = [];
+  for (const a of accs) {
+    const health = await probeAccountHealth(a.url_endpoint);
+    rows.push(`<div class="store-card panel">
+      <div class="store-head"><span class="sic">${IC.folder}</span><b>${esc(a.label)}</b>
+      <div class="chips">${health.ok ? '<span class="chip chip-ok">يقدّم الفيديو</span>' : '<span class="chip chip-bad">حصة الفيديو مستنفدة</span>'}</div></div>
+      <div class="store-meta">${esc(a.url_endpoint)}</div>
+      <div class="store-nums"><span>${health.ok ? 'اختبار الفيديو يعمل' : 'الفيديو محجوب — استخدم زر الإصلاح'}</span></div>
+    </div>`);
+  }
+  const wrap = $('#storeGridWrap');
+  if (wrap) wrap.innerHTML = rows.join('');
+}
+
+/* ربط أزرار تبويب التخزين */
+function bindStorageTools() {
+  const chk = $('#btnCheckAccounts');
+  if (chk) chk.addEventListener('click', async () => {
+    chk.disabled = true;
+    try { await checkAccounts(); toast('تم فحص الحسابات', 'ok'); }
+    finally { chk.disabled = false; }
+  });
+  const rep = $('#btnRepairVideos');
+  if (rep) rep.addEventListener('click', () => { repairAllVideos(); });
+}
+
+/* رفض كل الفيديوهات المعلّقة (تعذّر تشغيلها بسبب نفاد حصة ImageKit) */
+async function rejectAllVideos() {
+  const videos = subs().filter((s) => s.media_type === 'video' && s.status === 'pending');
+  if (!videos.length) { toast('لا توجد فيديوهات معلّقة', 'info'); return; }
+  askConfirm(`سيتم رفض ${videos.length} فيديو من قائمة المراجعة (رفع الفيديوهات متوقّف مؤقتاً). يمكنك استعادتها لاحقاً عبر "إعادة للمراجعة". هل تريد المتابعة؟`, async () => {
+    const ids = videos.map((v) => v.id);
+    await act('edits_admin_bulk', { p_ids: ids, p_action: 'reject' }, `تم رفض ${ids.length} فيديو`);
+  }, 'رفض كل الفيديوهات');
 }
 
 /* ============================================================
@@ -628,17 +761,17 @@ function renderContent() {
   else if (isMediaTab()) c.innerHTML = renderMedia();
   else if (state.tab === 'messages') c.innerHTML = renderMessages();
   else if (state.tab === 'log') c.innerHTML = renderLog();
-  else if (state.tab === 'storage') c.innerHTML = renderStorage();
+  else if (state.tab === 'storage') { c.innerHTML = renderStorage(); bindStorageTools(); }
   else if (state.tab === 'settings') { c.innerHTML = renderSettings(); bindSettings(); }
   c.querySelectorAll('img[data-media-id]').forEach(img => previewFallback(img, subs().find(s => s.id === img.dataset.mediaId)));
   c.querySelectorAll('img[data-rank-media]').forEach(img => img.addEventListener('error', () => {
     const item = subs().find(s => s.id === img.dataset.rankMedia);
-    if (item.media_type === 'video' && item.media_url) {
-      const video = videoPreview(item);
-      video.className = 'th';
-      img.replaceWith(video);
-      video.addEventListener('error', () => video.remove(), { once: true });
-    } else img.remove();
+    if (item && item.media_type === 'video') {
+      const holder = document.createElement('div');
+      const video = attachVideo(holder, item, { className: 'th' });
+      if (video) { img.replaceWith(video); return; }
+    }
+    img.remove();
   }, { once: true }));
   if (isMediaTab()) {
     const sa = $('#selAll');
@@ -670,9 +803,21 @@ function openReview(id, focusReason) {
   state.reviewId = id;
   $('#rvSub').textContent = `${s.media_type === 'video' ? 'فيديو' : 'صورة'} · ${timeAgo(s.created_at)} · ${accLabel(s.account_id)}`;
   $('#rvMedia').innerHTML = s.media_type === 'video'
-    ? `<video controls playsinline preload="metadata" poster="${esc(ikPoster(s))}" src="${esc(s.media_url)}"></video>`
+    ? `<video controls playsinline preload="metadata" poster="${esc(posterOf(s))}"></video>`
     : `<img src="${esc(s.media_url)}" alt="${esc(s.name)}">`;
-  $('#rvMedia').firstElementChild.addEventListener('error', e => { e.target.remove(); mediaError($('#rvMedia'), s.media_type); }, { once: true });
+  if (s.media_type === 'video') {
+    const v = $('#rvMedia').firstElementChild;
+    const sources = mediaSources(s);
+    let i = 0;
+    const tryNext = () => {
+      if (i < sources.length) { v.src = sources[i++]; return; }
+      v.remove(); mediaError($('#rvMedia'), 'video');
+    };
+    v.addEventListener('error', tryNext);
+    tryNext();
+  } else {
+    $('#rvMedia').firstElementChild.addEventListener('error', e => { e.target.remove(); mediaError($('#rvMedia'), s.media_type); }, { once: true });
+  }
   $('#rvName').innerHTML = `<b>${esc(s.name)}</b> ${STATUS_CHIP[s.status]} ${s.reports_count > 0 ? `<span class="chip chip-bad">${IC.flag} ${s.reports_count} بلاغ</span>` : ''}`;
   $('#rvCap').textContent = s.caption || 'بدون وصف';
   $('#rvMeta').innerHTML = `
