@@ -355,6 +355,7 @@ export const ChatLegends: React.FC = () => {
       }, 2400);
     };
 
+    let lastMp = '';
     const tick = () => {
       const now = Date.now();
       /* كشف OG */
@@ -363,10 +364,14 @@ export const ChatLegends: React.FC = () => {
         if (!e) return;
         const left = (t0 + d * DAY_MS - now) / DAY_MS;
         const k = left <= 0 ? 1 : Math.max(0, 1 - left / 12);
-        e.style.setProperty('--bl', `${22 * (1 - k)}px`);
-        e.style.setProperty('--a', `${0.65 * (1 - k)}`);
+        const bl = `${(22 * (1 - k)).toFixed(1)}px`;
+        if (e.style.getPropertyValue('--bl') !== bl) {
+          e.style.setProperty('--bl', bl);
+          e.style.setProperty('--a', (0.65 * (1 - k)).toFixed(3));
+        }
         const small = e.querySelector('small');
-        if (small) small.textContent = left <= 0 ? '🏆 تم التسليم' : left < 1 ? 'اليوم!' : 'بعد ' + dayWord(Math.ceil(left));
+        const label = left <= 0 ? '🏆 تم التسليم' : left < 1 ? 'اليوم!' : 'بعد ' + dayWord(Math.ceil(left));
+        if (small && small.textContent !== label) small.textContent = label;
       });
       /* العدّاد */
       const ms = window.location.hash === '#celebrate' ? 0 : Math.max(0, t0 + TOTAL * DAY_MS - now);
@@ -383,32 +388,29 @@ export const ChatLegends: React.FC = () => {
       }
       /* progress = نسبة الذوبان — الثلج يذوب مع العدّاد بالضبط */
       const mp = Math.min(1, Math.max(0, (now - t0) / (TOTAL * DAY_MS)));
-      if (!(window as any).__mpLock) root.style.setProperty('--mp', `${mp}`);
-      if (pbRef.current) pbRef.current.style.width = `${mp * 100}%`;
+      /* كتابة --mp كل ثانية تعيد تشغيل transition الموروث للأبد فيعلّق الجوال؛ نكتبه فقط عند تغيّر مرئي */
+      const mpStr = mp.toFixed(4);
+      if ((window as any).__mpLock) lastMp = '';
+      else if (mpStr !== lastMp) {
+        lastMp = mpStr;
+        root.style.setProperty('--mp', mpStr);
+      }
+      if (pbRef.current) pbRef.current.style.width = `${(mp * 100).toFixed(2)}%`;
       if (noteRef.current && ms) {
-        noteRef.current.innerHTML = `الوقت المتبقي على نهاية اليوم ${TOTAL} · <b>ذاب الثلج ${Math.round(mp * 100)}%</b>`;
+        const note = `الوقت المتبقي على نهاية اليوم ${TOTAL} · <b>ذاب الثلج ${Math.round(mp * 100)}%</b>`;
+        if (noteRef.current.innerHTML !== note) noteRef.current.innerHTML = note;
       }
       if (!ms) done();
     };
 
-    /* v8: مقدمة الذوبان (على السكشن فقط) */
-    const mp0 = Math.min(1, Math.max(0, (Date.now() - t0) / (TOTAL * DAY_MS)));
-    if (mp0 < 1 && window.location.hash !== '#celebrate') {
-      root.style.transition = 'none';
-      root.style.setProperty('--mp', `${Math.max(0, mp0 - 0.14)}`);
-      void (root as HTMLElement).offsetWidth;
-      later(() => {
-        root.style.transition = '--mp 6s cubic-bezier(.3,.6,.4,1)';
-        root.style.setProperty('--mp', `${mp0}`);
-        later(() => {
-          root.style.transition = '--mp 2.5s linear';
-        }, 6200);
-      }, 700);
-    }
+    /* إيقاف حركات السكشن مؤقتاً حين يخرج من الشاشة */
+    const io = new IntersectionObserver(([en]) => root.classList.toggle('cl-idle', !en.isIntersecting), { rootMargin: '150px 0px' });
+    io.observe(root);
 
     tick();
     const tickTimer = window.setInterval(tick, 1000);
     return () => {
+      io.disconnect();
       window.clearInterval(tickTimer);
       window.clearInterval(dripsTimer);
       if (burstTimer.current) window.clearInterval(burstTimer.current);

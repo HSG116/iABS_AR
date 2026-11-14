@@ -363,6 +363,9 @@ linear-gradient(62deg,transparent 70%,rgba(255,255,255,.12) 72%,transparent 78%)
   .cl .cbn, .cl .done .duo { animation: none !important; }
 }
 
+/* السكشن خارج الشاشة: لا رسم للحركات */
+.cl.cl-idle *, .cl.cl-idle *::before, .cl.cl-idle *::after { animation-play-state: paused !important; }
+
 /* ===== تبويبات الترتيب (بنفس روح التصميم) ===== */
 .cl .cl-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:26px 0 6px}
 .cl .cl-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.08);background:#111;border-radius:99px;padding:8px 18px;font-size:13px;font-weight:800;color:#bdbdbd;cursor:pointer;transition:.25s;font-family:inherit}
