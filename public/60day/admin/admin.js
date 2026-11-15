@@ -10,7 +10,7 @@ let pw = sessionStorage.getItem(PW_KEY) || '';
 const state = {
   data: null, tab: 'dashboard', q: '', type: 'all', sort: 'newest',
   msgStatus: 'all', msgSort: 'newest', logFilter: 'all',
-  sel: new Set(), busy: false, reviewId: null,
+  sel: new Set(), busy: false, migrating: false, reviewId: null,
 };
 
 const isAuthErr = (e) => /انتهت جلسة الإدارة|invalid.*session|session.*expired/i.test(String(e && e.message || ''));
@@ -567,6 +567,8 @@ const VIDEO_PROJECTS = [
 ];
 const VIDEO_LIMIT_BYTES = 1073741824;
 const VIDEO_RESERVE_BYTES = 20971520;
+const LEGACY_IK = /^https:\/\/ik\.imagekit\.io\//;
+const isLegacyVideo = (s) => !!s && s.media_type === 'video' && LEGACY_IK.test(String(s.media_url || ''));
 
 function renderStorage() {
   const accs = state.data.accounts || [];
@@ -580,6 +582,8 @@ function renderStorage() {
   const vLimit = vidReady ? vid.reduce((t, a) => t + Number(a.storage_limit_bytes || 0), 0) : VIDEO_PROJECTS.length * VIDEO_LIMIT_BYTES;
   const vReserve = vidReady ? Math.min.apply(null, vid.map((a) => Number(a.reserve_bytes || VIDEO_RESERVE_BYTES))) : VIDEO_RESERVE_BYTES;
   const reserveLabel = Math.round(vReserve / 1048576) + 'MB';
+  const legacyVideos = subs().filter(isLegacyVideo);
+  const legacyBytes = legacyVideos.reduce((t, s) => t + Number(s.size_bytes || 0), 0);
 
   const vidCards = vidReady ? vid.map((a) => {
     const used = Number(a.used_count || 0), hold = Number(a.reserved_count || 0);
@@ -678,6 +682,21 @@ function renderStorage() {
         <p>كل مشروع سعته 1GiB ولا يوجد حد لعدد الفيديوهات — الحساب بالميغابايت الفعلية. عند امتلاء مساحة، أو حين يبقى فيها أقل من الحد الاحتياطي (<b>${reserveLabel}</b> افتراضياً)، ينتقل الرفع التالي تلقائياً إلى المساحة التالية دون أي تدخل. المساحة التي تصل للحد تُعلَّم <b>ممتلئ</b> فوراً ويُسجَّل ذلك في السجل. الفيديوهات الكبيرة تُضغط تلقائياً قبل الرفع. الصور تبقى على ImageKit بأي جودة حتى 20MB.</p>
       </div>
     </div>
+    ${legacyVideos.length ? `
+    <div class="legacy-fix">
+      <div class="lf-head">
+        <span class="ic">${IC.warn}</span>
+        <div>
+          <b>${legacyVideos.length} فيديو قديم على ImageKit</b>
+          <p>ImageKit رفض طلبات الفيديو غير المخزّنة مؤقتاً بسبب نفاد حصة المعالجة، ولهذا يعمل بعضها على جهاز ويتعذر على هاتف. نقلها إلى مساحات Supabase يجعلها تعمل من كل الأجهزة بنفس الجودة (${fmtBytes(legacyBytes)} إجمالاً).</p>
+        </div>
+      </div>
+      <div class="lf-acts">
+        <button class="btn btn-primary" data-legacy="migrate" ${state.migrating ? 'disabled' : ''}>${IC.refresh} ${state.migrating ? 'جارٍ النقل…' : 'نقل الفيديوهات الآن'}</button>
+        <span class="lf-state" id="legacyState">${state.migrating ? 'لا تغلق الصفحة حتى ينتهي النقل' : 'يُنصح بتشغيله مرة واحدة'}</span>
+      </div>
+      <div class="pbar"><i id="legacyBar" style="width:0%"></i></div>
+    </div>` : ''}
     <div class="store-title">${IC.image} حسابات الصور (ImageKit) <small>الصور بأي جودة حتى 20MB — بدون ضغط</small></div>
     <div class="store-grid">${imgCards}</div>
     <div class="failover-note panel">
@@ -908,9 +927,77 @@ async function doVideoStorageAction(actn, id) {
 }
 
 /* ============================================================
+   ترحيل فيديوهات ImageKit القديمة إلى مساحات Supabase
+   ============================================================ */
+async function migrateLegacyVideos() {
+  if (state.migrating) return;
+  const list = subs().filter(isLegacyVideo);
+  if (!list.length) { toast('لا توجد فيديوهات قديمة على ImageKit', 'info'); return; }
+  state.migrating = true;
+  const btn = document.querySelector('[data-legacy="migrate"]');
+  const stateEl = $('#legacyState'), bar = $('#legacyBar');
+  if (btn) { btn.disabled = true; btn.innerHTML = IC.refresh + ' جارٍ النقل…'; }
+  let ok = 0, fail = 0;
+  const errors = [];
+  const set = (label, msg, cls) => {
+    if (!stateEl) return;
+    stateEl.textContent = label + ' — ' + msg;
+    stateEl.className = 'lf-state' + (cls ? ' ' + cls : '');
+  };
+  try {
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      const label = `(${i + 1}/${list.length}) ${s.name}`;
+      if (bar) bar.style.width = ((i / list.length) * 100).toFixed(1) + '%';
+      let up = null;
+      try {
+        set(label, 'تنزيل الملف الأصلي…');
+        const res = await fetch(s.media_url, { mode: 'cors' });
+        if (!res.ok) throw new Error('ImageKit رفض التنزيل (' + res.status + ')');
+        const blob = await res.blob();
+        if (!blob.size) throw new Error('الملف فارغ');
+        if (blob.size > 46000000) throw new Error('الحجم أكبر من حد المساحة (50MB) — يلزم ضغط يدوي');
+        const file = new File([blob], 'legacy-' + s.id + '.mp4', { type: 'video/mp4' });
+        const prep = await EditsVideo.prepare(file, (st, pct, msg) => set(label, msg), { allowLong: true });
+        up = await EditsVideo.upload(prep, (st, pct, msg) => set(label, msg));
+        set(label, 'ربط المشاركة بالملف الجديد…');
+        await rpc('edits_admin_rehost_video', {
+          p_password: pw, p_id: s.id,
+          p_media_url: up.media_url, p_poster_url: up.poster_url,
+          p_size_bytes: up.size_bytes, p_file_id: up.file_id,
+          p_account_id: up.account_id, p_upload_ticket: up.ticket
+        });
+        ok++;
+        set(label, 'تم النقل', '');
+      } catch (err) {
+        if (up && up.ticket) await EditsVideo.release(up.ticket);
+        if (isAuthErr(err)) { toast('انتهت جلسة الإدارة — أعد الدخول ثم شغّل النقل', 'bad'); return; }
+        fail++;
+        errors.push(s.name + ': ' + String((err && err.message) || err));
+      }
+      if (bar) bar.style.width = (((i + 1) / list.length) * 100).toFixed(1) + '%';
+    }
+    await loadData(true);
+    if (fail) {
+      const live = $('#legacyState'), liveBar = $('#legacyBar');
+      if (live) { live.textContent = `نجح ${ok} وتعذّر ${fail} — ${errors.join(' · ')}`; live.className = 'lf-state err'; }
+      if (liveBar) liveBar.style.width = '100%';
+      toast(`نُقل ${ok} فيديو، وتعذّر ${fail}`, 'warn');
+    } else {
+      toast(`تم نقل ${ok} فيديو إلى مساحات Supabase`, 'ok');
+    }
+  } finally {
+    state.migrating = false;
+    const liveBtn = document.querySelector('[data-legacy="migrate"]');
+    if (liveBtn) { liveBtn.disabled = false; liveBtn.innerHTML = IC.refresh + ' إعادة المحاولة'; }
+  }
+}
+
+/* ============================================================
    تفويض الأحداث
    ============================================================ */
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-legacy="migrate"]')) { migrateLegacyVideos(); return; }
   if (e.target.closest('[data-retry]')) { loadData(); return; }
   const tabBtn = e.target.closest('[data-tab]');
   if (tabBtn) { setTab(tabBtn.dataset.tab); return; }

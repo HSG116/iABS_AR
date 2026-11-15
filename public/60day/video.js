@@ -295,7 +295,7 @@
     });
   }
 
-  async function prepare(file, onProgress) {
+  async function prepare(file, onProgress, opts) {
     if (!file || !/^video\//.test(file.type || '')) throw new Error('الملف ليس فيديو');
     if (file.size > MAX_INPUT_BYTES) throw new Error('حجم الفيديو الأصلي كبير جداً (الحد 350MB)');
     report(onProgress, 'probe', 1, 'فحص الفيديو...');
@@ -312,7 +312,7 @@
         };
       } catch (_) { /* نكمل بمدة غير معروفة */ }
     }
-    if (meta && isFinite(meta.duration) && meta.duration > MAX_DURATION) {
+    if (!(opts && opts.allowLong) && meta && isFinite(meta.duration) && meta.duration > MAX_DURATION) {
       throw new Error('الفيديو طويل — الحد دقيقة ونصف (اضغطه أو قسّمه أولاً)');
     }
     const alreadySmall = /^video\/mp4$/.test(file.type || '') && file.size <= TARGET_BYTES;

@@ -223,6 +223,16 @@ input[type="checkbox"].ck:checked:after { content: ""; position: absolute; inset
 .failover-note b { font-size: 13.5px; font-weight: 900; display: block; margin-bottom: 3px; }
 .failover-note p { margin: 0; font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.8; }
 .failover-note p b { display: inline; font-size: inherit; color: var(--champ); }
+.legacy-fix { padding: 18px 20px; border-radius: 20px; margin-bottom: 14px; border: 1px solid rgba(240, 178, 92, 0.35); background: rgba(240, 178, 92, 0.07); }
+.legacy-fix .lf-head { display: flex; gap: 14px; align-items: flex-start; }
+.legacy-fix .lf-head .ic { width: 42px; height: 42px; border-radius: 13px; flex: none; display: grid; place-items: center; background: rgba(240, 178, 92, 0.14); border: 1px solid rgba(240, 178, 92, 0.42); color: var(--warn); }
+.legacy-fix .lf-head .ic svg { width: 19px; height: 19px; }
+.legacy-fix b { font-size: 13.5px; font-weight: 900; display: block; margin-bottom: 3px; }
+.legacy-fix p { margin: 0; font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.8; }
+.legacy-fix .lf-acts { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 13px; }
+.legacy-fix .lf-state { font-size: 11.5px; color: var(--faint); font-weight: 800; }
+.legacy-fix .lf-state.err { color: var(--bad); }
+.legacy-fix .pbar { margin-top: 11px; }
 
 /* ================= الإعدادات ================= */
 .set-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; align-items: start; }
