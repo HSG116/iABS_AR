@@ -583,7 +583,6 @@ function renderStorage() {
   const vReserve = vidReady ? Math.min.apply(null, vid.map((a) => Number(a.reserve_bytes || VIDEO_RESERVE_BYTES))) : VIDEO_RESERVE_BYTES;
   const reserveLabel = Math.round(vReserve / 1048576) + 'MB';
   const legacyVideos = subs().filter(isLegacyVideo);
-  const legacyBytes = legacyVideos.reduce((t, s) => t + Number(s.size_bytes || 0), 0);
 
   const vidCards = vidReady ? vid.map((a) => {
     const used = Number(a.used_count || 0), hold = Number(a.reserved_count || 0);
@@ -688,7 +687,7 @@ function renderStorage() {
         <span class="ic">${IC.warn}</span>
         <div>
           <b>${legacyVideos.length} فيديو قديم على ImageKit</b>
-          <p>ImageKit رفض طلبات الفيديو غير المخزّنة مؤقتاً بسبب نفاد حصة المعالجة، ولهذا يعمل بعضها على جهاز ويتعذر على هاتف. نقلها إلى مساحات Supabase يجعلها تعمل من كل الأجهزة بنفس الجودة (${fmtBytes(legacyBytes)} إجمالاً).</p>
+          <p>ImageKit رفض طلبات الفيديو غير المخزّنة مؤقتاً بسبب نفاد حصة المعالجة، ولهذا يعمل بعضها على جهاز ويتعذر على هاتف. نقلها إلى مساحات Supabase يجعلها تعمل من كل الأجهزة بنفس الجودة.</p>
         </div>
       </div>
       <div class="lf-acts">
@@ -956,7 +955,7 @@ async function migrateLegacyVideos() {
         if (!res.ok) throw new Error('ImageKit رفض التنزيل (' + res.status + ')');
         const blob = await res.blob();
         if (!blob.size) throw new Error('الملف فارغ');
-        if (blob.size > 46000000) throw new Error('الحجم أكبر من حد المساحة (50MB) — يلزم ضغط يدوي');
+        if (blob.size > 46000000) throw new Error('الحجم أكبر من الحد الآمن للرفع (46MB) — يلزم ضغط يدوي');
         const file = new File([blob], 'legacy-' + s.id + '.mp4', { type: 'video/mp4' });
         const prep = await EditsVideo.prepare(file, (st, pct, msg) => set(label, msg), { allowLong: true });
         up = await EditsVideo.upload(prep, (st, pct, msg) => set(label, msg));
