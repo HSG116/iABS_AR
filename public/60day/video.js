@@ -185,11 +185,12 @@
     return [
       '-hide_banner', '-y', '-i', input,
       '-t', String(MAX_DURATION),
-      '-an', '-sn', '-dn', '-map_metadata', '-1',
+      '-sn', '-dn', '-map_metadata', '-1',
       '-vf', "scale='min(1280,iw)':'min(" + cap + ",ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
       '-r', '30',
       '-c:v', 'libx264', '-preset', 'ultrafast', '-profile:v', 'main',
       '-pix_fmt', 'yuv420p',
+      '-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-ar', '44100',
       '-b:v', kbps + 'k', '-maxrate', kbps + 'k', '-bufsize', (kbps * 2) + 'k',
       '-movflags', '+faststart', '-f', 'mp4', output
     ];
