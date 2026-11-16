@@ -134,6 +134,7 @@
 /* أفاتار الرسالة */
 .msg-avatar-row { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; padding: 12px 14px; border-radius: 15px; border: 1px solid var(--line); background: rgba(14, 6, 11, 0.5); }
 .msg-avatar-row .av { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex: none; border: 2px solid rgba(234, 201, 168, 0.35); box-shadow: 0 0 18px -4px rgba(255, 77, 126, 0.5); }
+.msg-avatar-row .av > svg { width: 100%; height: 100%; }
 .msg-avatar-row .info { flex: 1; min-width: 0; }
 .msg-avatar-row .info b { display: block; font-size: 12.5px; font-weight: 900; }
 .msg-avatar-row .info small { color: var(--faint); font-size: 10.5px; font-weight: 700; }
@@ -191,6 +192,7 @@
 .mcard:hover { transform: translateY(-6px) rotate(var(--tilt, 0deg)); border-color: rgba(255, 77, 126, 0.45); box-shadow: 0 14px 45px rgba(255, 77, 126, 0.16); }
 .mcard .head { display: flex; align-items: center; gap: 11px; margin-bottom: 11px; }
 .mcard .av { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex: none; border: 2px solid rgba(234, 201, 168, 0.3); }
+.mcard .av > svg { width: 100%; height: 100%; }
 .mcard .head .nm { min-width: 0; }
 .mcard .head b { display: block; font-size: 13px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mcard .head small { font-size: 10px; color: var(--faint); font-weight: 800; letter-spacing: 0.06em; }
