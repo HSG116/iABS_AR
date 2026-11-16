@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://*.supabase.co https://upload.imagekit.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; media-src blob: https://ik.imagekit.io/ld5rplgcm/ https://ik.imagekit.io/jco71x7fu/ https://*.supabase.co; connect-src https://mqegvdtuyqglxjqakfha.supabase.co https://*.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>جدار الإيديتات — تحدي الـ60 يوم | iABS</title>
 <meta name="description" content="جدار إيديتات ورسائل مجتمع أساطير الشات — تحدي الـ60 يوم على آيفون 18 برو برغندي. شارك إيديتك أو اترك رسالتك.">
@@ -381,7 +381,7 @@
                 <div class="dz-in" id="dzIn">
                   <div class="dz-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg></div>
                   <b>اسحب صورة أو فيديو هنا أو اضغط للاختيار</b>
-                  <small>صورة حتى 20MB · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small>
+                  <small>صورة حتى 20MB (تُضغط مع الحفاظ على الجودة) · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small>
                 </div>
               </div>
               <input type="file" id="edFile" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,video/x-m4v" class="hidden">
@@ -546,6 +546,7 @@
 
 <script src="core.js"></script>
 <script src="video.js"></script>
+<script src="image.js"></script>
 <script src="wall.js"></script>
 </body>
 </html>

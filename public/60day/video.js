@@ -381,6 +381,8 @@
     prepare: prepare,
     upload: upload,
     release: function (ticket) { return rpc('edits_video_release', { p_ticket: ticket }).catch(function () {}); },
+    rpc: rpc,
+    putObject: putObject,
     isReady: function () { return !!ffPromise; }
   };
 })();

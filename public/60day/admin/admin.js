@@ -30,7 +30,7 @@ const LOG_LABELS = {
   restore: ['إعادة للمراجعة', 'info'], dismiss_reports: ['تجاهل البلاغات', 'ok'], delete: ['حذف', 'bad'],
   hide: ['إخفاء رسالة', 'warn'], unhide: ['إظهار رسالة', 'ok'],
   mark_full: ['تعليم الحساب ممتلئ', 'warn'], mark_ok: ['تعليم الحساب متاح', 'ok'], toggle: ['تبديل تفعيل حساب', 'info'],
-  video_full: ['امتلاء مساحة فيديو تلقائياً', 'warn'], rehost: ['نقل فيديو بين المساحات', 'info'],
+  video_full: ['اقتراب امتلاء مساحة (24MB)', 'warn'], rehost: ['نقل فيديو بين المساحات', 'info'],
   change_password: ['تغيير كلمة السر', 'info'],
   bulk_approve: ['نشر جماعي', 'ok'], bulk_reject: ['رفض جماعي', 'bad'], bulk_withdraw: ['سحب جماعي', 'warn'],
   bulk_restore: ['إعادة جماعية', 'info'], bulk_delete: ['حذف جماعي', 'bad'], bulk_dismiss_reports: ['تجاهل بلاغات جماعي', 'ok'],
@@ -429,7 +429,8 @@ function renderDashboard() {
   const all = subs();
   const totalLikes = all.reduce((t, s) => t + s.likes_count, 0);
   const msgLikes = msgs().reduce((t, m) => t + m.likes_count, 0);
-  const usedBytes = (state.data.accounts || []).reduce((t, a) => t + Number(a.used_bytes || 0), 0);
+  const usedBytes = [...(state.data.accounts || []), ...(state.data.video_accounts || [])]
+    .reduce((t, a) => t + Number(a.used_bytes || 0), 0);
   const names = new Set([...all.map(s => s.name.trim().toLowerCase()), ...msgs().filter(m => !m.anonymous).map(m => m.name.trim().toLowerCase())]);
 
   /* آخر 7 أيام */
@@ -551,24 +552,26 @@ function renderLog() {
 }
 
 /* ============================================================
-   التخزين — صور ImageKit + مساحات فيديو Supabase مستقلة
+   التخزين — مساحات وسائط Supabase (صور + فيديو) وأرشيف ImageKit
    ------------------------------------------------------------
-   الصور: حسابات ImageKit (بدون ضغط، 20MB للصورة).
-   الفيديو: 5 مشاريع Supabase، السعة تُدار بالميغابايت (كل مساحة 1GiB)
-   مع حد احتياطي قبل النقل التلقائي للمساحة التالية.
+   الصور والفيديو: 5 مشاريع Supabase، السعة تُدار بالميغابايت
+   (كل مساحة 1GiB) مع حد احتياطي قبل النقل التلقائي للمساحة التالية.
+   ImageKit: أرشيف للقراءة فقط — لا يستقبل رفعاً جديداً.
    العدّاد إداري فقط: الحذف يحرر العدّاد ولا يحذف أصل الملف من Supabase.
    ============================================================ */
 const VIDEO_PROJECTS = [
-  { label: 'مساحة الفيديو ١', project_url: 'https://lolgnrfyxkwcacaeurry.supabase.co' },
-  { label: 'مساحة الفيديو ٢', project_url: 'https://ojvgpixprtuzqjvfscjg.supabase.co' },
-  { label: 'مساحة الفيديو ٣', project_url: 'https://cdpeczuzqkaoefauzyus.supabase.co' },
-  { label: 'مساحة الفيديو ٤', project_url: 'https://skcoulhrawiqemvaenwe.supabase.co' },
-  { label: 'مساحة الفيديو ٥', project_url: 'https://qajkngnnivpvijvdbbcw.supabase.co' },
+  { label: 'مساحة الوسائط ١', project_url: 'https://lolgnrfyxkwcacaeurry.supabase.co' },
+  { label: 'مساحة الوسائط ٢', project_url: 'https://ojvgpixprtuzqjvfscjg.supabase.co' },
+  { label: 'مساحة الوسائط ٣', project_url: 'https://cdpeczuzqkaoefauzyus.supabase.co' },
+  { label: 'مساحة الوسائط ٤', project_url: 'https://skcoulhrawiqemvaenwe.supabase.co' },
+  { label: 'مساحة الوسائط ٥', project_url: 'https://qajkngnnivpvijvdbbcw.supabase.co' },
 ];
 const VIDEO_LIMIT_BYTES = 1073741824;
-const VIDEO_RESERVE_BYTES = 20971520;
+const VIDEO_RESERVE_BYTES = 25165824;
 const LEGACY_IK = /^https:\/\/ik\.imagekit\.io\//;
+const SB_STORED = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/edits-videos\//;
 const isLegacyVideo = (s) => !!s && s.media_type === 'video' && LEGACY_IK.test(String(s.media_url || ''));
+const isLegacyImage = (s) => !!s && s.media_type !== 'video' && LEGACY_IK.test(String(s.media_url || ''));
 
 function renderStorage() {
   const accs = state.data.accounts || [];
@@ -583,9 +586,20 @@ function renderStorage() {
   const vReserve = vidReady ? Math.min.apply(null, vid.map((a) => Number(a.reserve_bytes || VIDEO_RESERVE_BYTES))) : VIDEO_RESERVE_BYTES;
   const reserveLabel = Math.round(vReserve / 1048576) + 'MB';
   const legacyVideos = subs().filter(isLegacyVideo);
+  const legacyImages = subs().filter(isLegacyImage);
+  const perAcc = new Map();
+  subs().forEach((s) => {
+    if (!s.account_id || !SB_STORED.test(String(s.media_url || ''))) return;
+    const row = perAcc.get(s.account_id) || { video: 0, image: 0 };
+    row[s.media_type === 'video' ? 'video' : 'image'] += 1;
+    perAcc.set(s.account_id, row);
+  });
+  const imgCount = [...perAcc.values()].reduce((t, r) => t + r.image, 0);
+  const vidCount = [...perAcc.values()].reduce((t, r) => t + r.video, 0);
 
   const vidCards = vidReady ? vid.map((a) => {
     const used = Number(a.used_count || 0), hold = Number(a.reserved_count || 0);
+    const mix = perAcc.get(a.id) || { video: 0, image: 0 };
     const by = Number(a.used_bytes || 0), lim = Math.max(1, Number(a.storage_limit_bytes || VIDEO_LIMIT_BYTES));
     const reserve = Number(a.reserve_bytes || VIDEO_RESERVE_BYTES);
     const holdB = Number(a.reserved_bytes || 0);
@@ -595,25 +609,26 @@ function renderStorage() {
     const leftChip = left < 1048576 ? 'بقي أقل من 1 MB' : `بقي ${fmtMB(left)} فقط`;
     const pctNote = a.is_full
       ? lowLeft
-        ? ' — المتبقي عند الحد الاحتياطي، التحويل للمساحة التالية تلقائياً'
+        ? ' — المتبقي عند حد 24MB، التحويل للمساحة التالية تلقائياً'
         : ' — معلّمة ممتلئة يدوياً، التحويل للمساحة التالية'
       : lowLeft
-        ? ' — المتبقي عند الحد الاحتياطي، سيُحوَّل الرفع تلقائياً'
+        ? ' — المتبقي عند حد 24MB، سيُحوَّل الرفع تلقائياً'
         : '';
     return `
     <div class="store-card panel">
       <div class="store-head">
-        <span class="sic">${IC.video}</span>
+        <span class="sic">${IC.folder}</span>
         <b>${esc(a.label)}</b>
         <div class="chips">
           ${a.is_active ? '<span class="chip chip-ok"><span class="dot pulse"></span> نشط</span>' : '<span class="chip chip-bad">موقوف</span>'}
           ${a.is_full ? '<span class="chip chip-bad">ممتلئ</span>' : `<span class="chip chip-info">متاح</span>`}
           ${!a.is_full && lowLeft ? `<span class="chip chip-warn">${leftChip}</span>` : ''}
           ${hold ? `<span class="chip chip-info">${hold} حجز رفع</span>` : ''}
-          <span class="chip chip-champ mono-num" dir="ltr">${used} فيديو</span>
+          <span class="chip chip-champ mono-num" dir="ltr">${used} ملف</span>
+          ${mix.video || mix.image ? `<span class="chip" dir="rtl">${mix.video} فيديو · ${mix.image} صورة</span>` : ''}
         </div>
       </div>
-      <div class="store-meta">${esc(a.project_url)}<br>bucket: ${esc(a.bucket)}</div>
+      <div class="store-meta">${esc(a.project_url)}<br>bucket: ${esc(a.bucket)} — videos/ · images/ · posters/</div>
       <div class="store-nums"><span>المستخدم <b class="mono-num" dir="ltr">${fmtMB(by)}</b></span><span>المتبقي <b class="mono-num" dir="ltr">${fmtMB(left)}</b></span><span>من أصل <b class="mono-num" dir="ltr">${fmtMB(lim)}</b></span></div>
       <div class="pbar"><i style="width:${Math.max(pct, by > 0 ? 1.5 : 0).toFixed(1)}%"></i></div>
       <div class="store-pct ${a.is_full ? 'full' : lowLeft ? 'hot' : ''}">${pct.toFixed(1)}%${pctNote}</div>
@@ -625,60 +640,54 @@ function renderStorage() {
   }).join('') : VIDEO_PROJECTS.map((p, i) => `
     <div class="store-card panel pending">
       <div class="store-head">
-        <span class="sic">${IC.video}</span>
+        <span class="sic">${IC.folder}</span>
         <b>${esc(p.label)}</b>
         <div class="chips">
           <span class="chip chip-warn">بانتظار التفعيل</span>
           <span class="chip chip-champ mono-num" dir="ltr">${fmtMB(VIDEO_LIMIT_BYTES)}</span>
         </div>
       </div>
-      <div class="store-meta">${esc(p.project_url)}<br>bucket: edits-videos</div>
+      <div class="store-meta">${esc(p.project_url)}<br>bucket: edits-videos — videos/ · images/ · posters/</div>
       <div class="store-nums"><span>المستخدم <b class="mono-num" dir="ltr">0 MB</b></span><span>المتبقي <b class="mono-num" dir="ltr">${fmtMB(VIDEO_LIMIT_BYTES)}</b></span><span>من أصل <b class="mono-num" dir="ltr">${fmtMB(VIDEO_LIMIT_BYTES)}</b></span></div>
       <div class="pbar"><i style="width:0%"></i></div>
       <div class="store-pct">المشروع رقم ${i + 1} — جاهز، بانتظار أول ربط</div>
     </div>`).join('');
 
-  const imgCards = accs.map((a, idx) => {
+  const archiveCards = accs.map((a) => {
     const used = Number(a.used_bytes || 0), limit = Number(a.storage_limit_bytes || 1);
     const pct = Math.min(100, (used / limit) * 100);
-    const pctCls = a.is_full ? 'full' : pct >= 85 ? 'hot' : '';
     return `
-    <div class="store-card panel ${idx === 0 ? 'primary' : ''}">
+    <div class="store-card panel">
       <div class="store-head">
         <span class="sic">${IC.image}</span>
         <b>${esc(a.label)}</b>
         <div class="chips">
-          <span class="chip ${idx === 0 ? 'chip-rose' : 'chip-champ'}">${idx === 0 ? 'الأساسي' : 'الاحتياطي'}</span>
-          ${a.is_active ? '<span class="chip chip-ok"><span class="dot pulse"></span> نشط</span>' : '<span class="chip chip-bad">موقوف</span>'}
-          ${a.is_full ? '<span class="chip chip-bad">ممتلئ</span>' : '<span class="chip chip-info">متاح</span>'}
+          <span class="chip chip-champ">أرشيف — لا يستقبل رفعاً</span>
+          ${a.is_active ? '' : '<span class="chip chip-bad">موقوف</span>'}
         </div>
       </div>
-      <div class="store-meta">${esc(a.url_endpoint)}<br>${esc(a.public_key)}</div>
+      <div class="store-meta">${esc(a.url_endpoint)}<br>الصور القديمة تبقى معروضة كما هي</div>
       <div class="store-nums"><span>المستخدم <b class="mono-num">${fmtBytes(used)}</b></span><span>السعة <b class="mono-num">${fmtBytes(limit)}</b></span></div>
       <div class="pbar"><i style="width:${Math.max(pct, used > 0 ? 1.5 : 0).toFixed(1)}%"></i></div>
-      <div class="store-pct ${pctCls}">${pct.toFixed(1)}% مستخدم${a.is_full ? ' — التحويل يتم للحساب التالي تلقائياً' : pct >= 98 ? ' — على وشك الامتلاء' : ''}</div>
-      <div class="store-acts">
-        ${!a.is_full ? `<button class="btn btn-sm btn-warn" data-act="s-full" data-id="${a.id}">${IC.warn} تعليم ممتلئ</button>` : `<button class="btn btn-sm btn-ok" data-act="s-ok" data-id="${a.id}">${IC.check} تعليم متاح</button>`}
-        <button class="btn btn-sm ${a.is_active ? 'btn-danger' : 'btn-ok'}" data-act="s-toggle" data-id="${a.id}">${a.is_active ? IC.eyeOff + ' إيقاف مؤقت' : IC.eye + ' إعادة تفعيل'}</button>
-      </div>
+      <div class="store-pct">${pct.toFixed(1)}% مستخدم</div>
     </div>`;
   }).join('');
 
   return `
     <div class="store-summary panel">
-      <div class="ss"><b class="mono-num" dir="ltr">${vUsed}</b><span>فيديو مرفوع</span></div>
-      <div class="ss"><b class="mono-num">${fmtBytes(vBytes)}</b><span>من ${fmtBytes(vLimit)} إجمالي مساحات الفيديو</span></div>
+      <div class="ss"><b class="mono-num" dir="ltr">${vUsed}</b><span>ملف على Supabase</span></div>
+      <div class="ss"><b class="mono-num">${fmtMB(vBytes)}</b><span>مستخدم من ${fmtMB(vLimit)}</span></div>
+      <div class="ss"><b>${vidCount} فيديو · ${imgCount} صورة</b><span>توزيع الملفات</span></div>
       ${vHold ? `<div class="ss warn"><b class="mono-num">${vHold}</b><span>حجز رفع جارٍ</span></div>` : ''}
-      ${!vidReady ? `<div class="ss"><b class="mono-num">${VIDEO_PROJECTS.length}</b><span>مشاريع الفيديو</span></div>` : ''}
-      <div class="ss"><b class="mono-num">${fmtBytes(imgUsed)}</b><span>صور على ImageKit من ${fmtBytes(imgLimit)}</span></div>
-    </div>
-    <div class="store-title">${IC.video} مساحات الفيديو <small>5 مشاريع × 1GiB — السعة تُدار بالميغابايت، والرفع ينتقل تلقائياً حين يبقى أقل من ${reserveLabel}</small></div>
+      ${!vidReady ? `<div class="ss"><b class="mono-num">${VIDEO_PROJECTS.length}</b><span>مشاريع الوسائط</span></div>` : ''}
+      <div class="ss"><b class="mono-num">${legacyImages.length}</b><span>صورة قديمة على ImageKit (أرشيف)</span></div>    </div>
+    <div class="store-title">${IC.folder} مساحات الصور والفيديو <small>5 مشاريع × 1GiB — السعة تُدار بالميغابايت، والرفع ينتقل تلقائياً حين يبقى أقل من ${reserveLabel}</small></div>
     <div class="store-grid">${vidCards}</div>
     <div class="failover-note panel">
       <span class="ic">${IC.refresh}</span>
       <div>
-        <b>رفع الفيديو: توزيع تلقائي بين مساحات Supabase الخمس</b>
-        <p>كل مشروع سعته 1GiB ولا يوجد حد لعدد الفيديوهات — الحساب بالميغابايت الفعلية. عند امتلاء مساحة، أو حين يبقى فيها أقل من الحد الاحتياطي (<b>${reserveLabel}</b> افتراضياً)، ينتقل الرفع التالي تلقائياً إلى المساحة التالية دون أي تدخل. المساحة التي تصل للحد تُعلَّم <b>ممتلئ</b> فوراً ويُسجَّل ذلك في السجل. الفيديوهات الكبيرة تُضغط تلقائياً قبل الرفع. الصور تبقى على ImageKit بأي جودة حتى 20MB.</p>
+        <b>صور وفيديو: توزيع تلقائي بين مساحات Supabase الخمس</b>
+        <p>كل مشروع سعته 1GiB ولا يوجد حد لعدد الملفات — الحساب بالميغابايت الفعلية. ينتقل الملف التالي تلقائياً إلى المساحة التالية حين يبقى في الحالية أقل من <b>${reserveLabel}</b> (الحد الاحتياطي 24MB)، دون أي تدخل. الصور تُضغط في المتصفح دون تغيير الوضوح، والفيديو يُضغط تلقائياً تحت 50MB. حساب ImageKit لم يعد يستقبل أي رفع — بقيت الصور القديمة معروضة فقط.</p>
       </div>
     </div>
     ${legacyVideos.length ? `
@@ -696,13 +705,13 @@ function renderStorage() {
       </div>
       <div class="pbar"><i id="legacyBar" style="width:0%"></i></div>
     </div>` : ''}
-    <div class="store-title">${IC.image} حسابات الصور (ImageKit) <small>الصور بأي جودة حتى 20MB — بدون ضغط</small></div>
-    <div class="store-grid">${imgCards}</div>
+    <div class="store-title">${IC.image} أرشيف ImageKit (قراءة فقط) <small>${legacyImages.length} صورة قديمة · ${fmtBytes(imgUsed)} — لا رفع جديد</small></div>
+    <div class="store-grid">${archiveCards}</div>
     <div class="failover-note panel">
-      <span class="ic">${IC.refresh}</span>
+      <span class="ic">${IC.shield}</span>
       <div>
-        <b>رفع الصور: نقل تلقائي بين حسابي ImageKit</b>
-        <p>إذا رفض ImageKit الرفع بسبب حد التخزين، تُعاد محاولة الملف <b>تلقائياً</b> على الحساب التالي. الحساب الذي تعلّمه ممتلئاً أو توقفه من هنا يُستبعد من الاختيار. العدّاد تقديري وليس مزامنة لاستهلاك ImageKit. حذف المشاركة لا يحذف أصل الملف ولا يحرر مساحة؛ حذف الأصل من لوحة ImageKit. الإجمالي المسجل: <b>${fmtBytes(imgUsed)}</b> من ${fmtBytes(imgLimit)}.</p>
+        <b>ImageKit أُوقف للرفع نهائياً</b>
+        <p>كل الصور الجديدة تُرفع على مساحات Supabase الخمس (صور + فيديو في نفس الـ Bucket). الحسابان القديمان يظهران هنا للاطلاع فقط: الصور السابقة تبقى معروضة بنفس الجودة، ولا تُحذف. لإدارة الأصل القديم استخدم لوحة ImageKit. الأرشيف المسجل: <b>${fmtBytes(imgUsed)}</b> من ${fmtBytes(imgLimit)}.</p>
       </div>
     </div>`;
 }
@@ -917,9 +926,9 @@ async function doStorageAction(actn, id) {
 
 async function doVideoStorageAction(actn, id) {
   const m = {
-    'v-full': ['mark_full', 'تم تعليم مساحة الفيديو ممتلئة'],
-    'v-ok': ['mark_ok', 'تم تعليم مساحة الفيديو متاحة'],
-    'v-toggle': ['toggle', 'تم تبديل حالة مساحة الفيديو'],
+    'v-full': ['mark_full', 'تم تعليم مساحة الوسائط ممتلئة'],
+    'v-ok': ['mark_ok', 'تم تعليم مساحة الوسائط متاحة'],
+    'v-toggle': ['toggle', 'تم تبديل حالة مساحة الوسائط'],
   };
   const x = m[actn];
   if (x) await act('edits_admin_video_storage', { p_account_id: id, p_action: x[0] }, x[1]);

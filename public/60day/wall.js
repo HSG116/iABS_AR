@@ -90,7 +90,7 @@ function mediaCardEl(sub, idx, priority) {
   const ratio = mediaRatio(sub);
   const liked = state.liked.has(sub.id);
   const poster = posterOf(sub);
-  const thumb = sub.media_type === 'image' ? ikThumb(sub.media_url) : posterSrc(sub, 640);
+  const thumb = sub.media_type === 'image' ? imageThumb(sub.media_url) : posterSrc(sub, 640);
   el.innerHTML = `
     <div class="media" style="aspect-ratio:${ratio}">
       ${thumb
@@ -401,9 +401,10 @@ function pickFile(f) {
   dz.classList.add('has-file');
   const url = state.filePreviewUrl = URL.createObjectURL(f);
   const heavy = !isImg && f.size > 46000000;
+  const imgHeavy = isImg && f.size > 2 * 1048576;
   dz.innerHTML = `<div class="dz-preview">
       ${isImg ? `<img src="${url}" alt="معاينة">` : `<video src="${url}" muted playsinline preload="metadata"></video>`}
-      <div class="dz-meta"><span class="nm">${esc(f.name)}</span><span class="chip chip-champ" dir="ltr">${fmtBytes(f.size)}</span>${heavy ? `<span class="chip chip-warn">يُضغط تلقائياً تحت 50MB</span>` : ''}<button class="btn btn-sm btn-danger" type="button" id="dzClear">${IC.x} إزالة</button></div>
+      <div class="dz-meta"><span class="nm">${esc(f.name)}</span><span class="chip chip-champ" dir="ltr">${fmtBytes(f.size)}</span>${heavy ? `<span class="chip chip-warn">يُضغط تلقائياً تحت 50MB</span>` : ''}${imgHeavy ? `<span class="chip chip-warn">تُضغط مع الحفاظ على الجودة</span>` : ''}<button class="btn btn-sm btn-danger" type="button" id="dzClear">${IC.x} إزالة</button></div>
     </div>`;
   $('#dzClear').addEventListener('click', (e) => { e.stopPropagation(); clearFile(); });
 }
@@ -414,7 +415,7 @@ function clearFile() {
   state.filePreviewUrl = '';
   state.file = null; fileInput.value = '';
   dz.classList.remove('has-file');
-  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب صورة أو فيديو هنا أو اضغط للاختيار</b><small>صورة حتى 20MB · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small></div>`;
+  dz.innerHTML = `<div class="dz-in"><div class="dz-ic">${IC.upload}</div><b>اسحب صورة أو فيديو هنا أو اضغط للاختيار</b><small>صورة حتى 20MB (تُضغط مع الحفاظ على الجودة) · فيديو حتى 350MB (يُضغط تلقائياً تحت 50MB)</small></div>`;
 }
 
 /* ---------- إرسال الإيديت ---------- */
@@ -441,11 +442,15 @@ $('#editForm').addEventListener('submit', async (e) => {
   try {
     let payload;
     if (type === 'image') {
-      const up = await uploadMedia(state.file, (p) => setUploadUI('رفع الصورة…', p));
+      if (!window.EditsImage) throw new Error('نظام الصور غير محمّل — حدّث الصفحة');
+      const onProg = (s) => setUploadUI(s.label || 'معالجة الصورة…', s.pct);
+      const prep = await EditsImage.prepare(state.file, onProg);
+      const up = await EditsImage.upload(prep, onProg);
+      upTicket = up.ticket || '';
       payload = {
-        p_media_type: 'image', p_media_url: up.url, p_poster_url: up.poster,
-        p_width: up.width, p_height: up.height, p_size_bytes: up.size,
-        p_file_id: up.fileId, p_account_id: up.accountId, p_upload_ticket: up.uploadTicket,
+        p_media_type: 'image', p_media_url: up.media_url, p_poster_url: null,
+        p_width: up.width, p_height: up.height, p_size_bytes: up.size_bytes,
+        p_file_id: up.file_id, p_account_id: up.account_id, p_upload_ticket: up.ticket,
       };
     } else {
       if (!window.EditsVideo) throw new Error('نظام الفيديو غير محمّل — حدّث الصفحة');

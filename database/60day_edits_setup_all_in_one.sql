@@ -6,7 +6,7 @@
 --   القاعدة الرئيسية:
 --     https://mqegvdtuyqglxjqakfha.supabase.co
 --
---   مشاريع الفيديو الخمسة (كل مشروع سعة 1GiB تُدار بالميغابايت، بلا حد لعدد الفيديوهات):
+--   مشاريع الوسائط الخمسة (كل مشروع سعة 1GiB تُدار بالميغابايت، بلا حد لعدد الملفات):
 --     1) https://lolgnrfyxkwcacaeurry.supabase.co
 --     2) https://ojvgpixprtuzqjvfscjg.supabase.co
 --     3) https://cdpeczuzqkaoefauzyus.supabase.co
@@ -15,25 +15,27 @@
 --
 -- الملف يكتشف مكانه تلقائياً:
 --   • القاعدة الرئيسية (فيها جدول edits_submissions):
---       تُنشأ جداول مساحات الفيديو والتذاكر، ودوال الحجز/الإرسال/الإدارة،
---       وتُوسَّع صلاحية رابط الفيديو في edits_submissions.
---   • مشروع فيديو (بلا edits_submissions):
+--       تُنشأ جداول مساحات الوسائط والتذاكر، ودوال الحجز/الإرسال/الإدارة،
+--       وتُوسَّع صلاحية رابط الوسائط في edits_submissions.
+--   • مشروع وسائط (بلا edits_submissions):
 --       يُنشأ Bucket باسم edits-videos بحد 50MB، وسياسات رفع آمنة
 --       للمفتاح العام، ومنع الحذف/الاستبدال من المتصفح.
 --
 -- آمن للتشغيل المتكرر (idempotent) ولا يحذف أي محتوى.
--- السعة تُحسب بالميغابايت وليس بعدد الفيديوهات: كل مساحة 1GiB، ويُترك حد احتياطي
--- (reserve_bytes، افتراضياً 20MiB). إذا لم يتّسع الفيديو الجديد مع بقاء الحد
+-- السعة تُحسب بالميغابايت وليس بعدد الملفات: كل مساحة 1GiB، ويُترك حد احتياطي
+-- (reserve_bytes، افتراضياً 24MiB). إذا لم يتّسع الملف الجديد مع بقاء الحد
 -- الاحتياطي، ينتقل الرفع تلقائياً إلى المساحة التالية حسب الأولوية.
+-- الصور والفيديو في نفس المساحات الخمس ونفس الـ Bucket:
+--   videos/<uuid>.<ext> للفيديو، images/<uuid>.<ext> للصور، posters/<uuid>.jpg لأغلفة الفيديو.
 -- إضافة مشروع جديد لاحقاً: أضف صفّه في edits_video_accounts (القسم ب-1)
--- ثم شغّل هذا الملف في مشروع الفيديو الجديد فقط.
+-- ثم شغّل هذا الملف في مشروع الوسائط الجديد فقط.
 -- المفاتيح السرية (sb_secret_...) غير مستخدمة إطلاقاً؛ الرفع من المتصفح
 -- يعتمد على المفتاح العام (sb_publishable_) وسياسات RLS.
 --
 -- كيف تعرف أن المشروع أُعدّ صح؟
 --   • الرئيسية: رسالة "تم تجهيز القاعدة الرئيسية..." + جدول edits_video_accounts
 --     فيه 5 صفوف في Table Editor.
---   • مشروع فيديو: رسالة "تم تجهيز مشروع فيديو..." + Bucket باسم edits-videos
+--   • مشروع وسائط: رسالة "تم تجهيز مشروع وسائط..." + Bucket باسم edits-videos
 --     في Storage.
 -- ============================================================
 
@@ -44,12 +46,12 @@ begin;
 create extension if not exists pgcrypto with schema extensions;
 
 -- ============================================================
--- (أ) مشاريع الفيديو: Bucket + سياسات الرفع
+-- (أ) مشاريع الوسائط: Bucket + سياسات الرفع
 --     يُنفَّذ فقط عندما لا يوجد جدول edits_submissions
 -- ============================================================
 do $route_storage$
 begin
-  -- مشروع فيديو فقط إذا لم يوجد أي أثر للقاعدة الرئيسية (حتى لو حُذف
+  -- مشروع وسائط فقط إذا لم يوجد أي أثر للقاعدة الرئيسية (حتى لو حُذف
   -- جدول المشاركات يوماً ما، لا يُنشأ Bucket داخل القاعدة الرئيسية أبداً).
   if to_regclass('public.edits_submissions') is null
      and to_regclass('public.imagekit_accounts') is null
@@ -57,14 +59,14 @@ begin
     execute $store_setup$
       create schema if not exists private;
 
-      -- 1) Bucket عام بحد 50MB
+      -- 1) Bucket عام بحد 50MB (فيديو + صور + أغلفة)
       insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
       values ('edits-videos', 'edits-videos', true, 52428800,
-        array['video/mp4','video/webm','video/quicktime','video/x-m4v','image/jpeg','image/png','image/webp'])
+        array['video/mp4','video/webm','video/quicktime','video/x-m4v','image/jpeg','image/png','image/webp','image/gif','image/avif'])
       on conflict (id) do update
       set public = true,
           file_size_limit = 52428800,
-          allowed_mime_types = array['video/mp4','video/webm','video/quicktime','video/x-m4v','image/jpeg','image/png','image/webp'];
+          allowed_mime_types = array['video/mp4','video/webm','video/quicktime','video/x-m4v','image/jpeg','image/png','image/webp','image/gif','image/avif'];
 
       -- 2) مفتاح إيقاف الرفع (اختياري)
       create table if not exists private.edits_video_lock (
@@ -94,6 +96,7 @@ begin
         bucket_id = 'edits-videos'
         and (
           name ~ '^videos/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|webm|mov|m4v)$'
+          or name ~ '^images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif|avif)$'
           or name ~ '^posters/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$'
         )
         and coalesce(current_setting('request.headers', true)::json ->> 'x-access-key', '') = 'edits-videos'
@@ -112,9 +115,9 @@ begin
       using (false);
     $store_setup$;
 
-    raise notice 'تم تجهيز مشروع فيديو: Bucket = edits-videos + سياسات الرفع الآمنة.';
+    raise notice 'تم تجهيز مشروع وسائط: Bucket = edits-videos + سياسات الرفع الآمنة.';
   else
-    raise notice 'هذه القاعدة الرئيسية — تم تخطي تهيئة Bucket الفيديو.';
+    raise notice 'هذه القاعدة الرئيسية — تم تخطي تهيئة Bucket الوسائط.';
   end if;
 end
 $route_storage$;
@@ -126,21 +129,22 @@ $route_storage$;
 do $route_main$
 begin
   -- القاعدة الرئيسية: أي جدول من جداولها الأساسية يكفي للتعرف عليها
-  -- (حتى لا يُعامل المشروع الرئيسي كمشروع فيديو بالخطأ).
+  -- (حتى لا يُعامل المشروع الرئيسي كمشروع وسائط بالخطأ).
   if to_regclass('public.edits_submissions') is not null
      or to_regclass('public.imagekit_accounts') is not null
      or to_regclass('public.edits_settings') is not null then
     execute $main_setup$
-      -- 0) السماح بروابط تخزين الفيديو الجديدة بجانب روابط ImageKit
+      -- 0) السماح بروابط تخزين الوسائط الجديدة بجانب روابط ImageKit القديمة
       --    NOT VALID: لا يفحص الصفوف القديمة (حتى لا يفشل الترحيل بسبب بيانات قديمة)،
       --    ويُطبَّق على كل إدخال جديد.
       alter table public.edits_submissions drop constraint if exists edits_submissions_media_url_check;
       alter table public.edits_submissions add constraint edits_submissions_media_url_check check (
         media_url ~ '^https://ik\.imagekit\.io/'
         or media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/videos/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|webm|mov|m4v)$'
+        or media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif|avif)$'
       ) not valid;
 
-      -- 1) مساحات الفيديو الخمس — السعة بالميغابايت (بلا حد لعدد الفيديوهات)
+      -- 1) مساحات الوسائط الخمس (صور + فيديو) — السعة بالميغابايت بلا حد لعدد الملفات
       create table if not exists public.edits_video_accounts (
         id uuid primary key default pg_catalog.gen_random_uuid(),
         label text not null,
@@ -148,7 +152,7 @@ begin
         publishable_key text not null check (publishable_key like 'sb_publishable_%'),
         bucket text not null default 'edits-videos' check (bucket ~ '^[a-z0-9-]+$'),
         storage_limit_bytes bigint not null default 1073741824 check (storage_limit_bytes > 0),
-        reserve_bytes bigint not null default 20971520 check (reserve_bytes >= 0),
+        reserve_bytes bigint not null default 25165824 check (reserve_bytes >= 0),
         used_count integer not null default 0 check (used_count >= 0),
         used_bytes bigint not null default 0 check (used_bytes >= 0),
         reserved_count integer not null default 0 check (reserved_count >= 0),
@@ -160,27 +164,32 @@ begin
         constraint edits_video_accounts_bytes_cap check (used_bytes + reserved_bytes <= storage_limit_bytes)
       );
 
-      -- ترقية تلقائية لقاعدة شُغّل عليها ملف أقدم: إلغاء حد عدد الفيديوهات
+      -- نُزيل قيد السقف مؤقتاً أثناء الترحيل (تُعاد إضافته NOT VALID بعد
+      -- مزامنة العدّادات في القسم 10) حتى لا يفشل التصحيح بسبب أرقام قديمة متضخمة.
+      alter table public.edits_video_accounts drop constraint if exists edits_video_accounts_bytes_cap;
+
+      -- ترقية تلقائية لقاعدة شُغّل عليها ملف أقدم: إلغاء حد عدد الملفات
       -- والتحويل الكامل إلى سعة بايتات + حد احتياطي (reserve_bytes) قبل النقل للمساحة التالية.
       alter table public.edits_video_accounts drop constraint if exists edits_video_accounts_count_cap;
       alter table public.edits_video_accounts drop constraint if exists edits_video_accounts_max_videos_check;
       alter table public.edits_video_accounts drop column if exists max_videos;
-      alter table public.edits_video_accounts add column if not exists reserve_bytes bigint not null default 20971520;
+      alter table public.edits_video_accounts add column if not exists reserve_bytes bigint not null default 25165824;
+      alter table public.edits_video_accounts alter column reserve_bytes set default 25165824;
+      -- الحد الاحتياطي المطلوب 24MiB بالضبط (كان 20MiB في النسخة السابقة)
+      update public.edits_video_accounts set reserve_bytes = 25165824 where reserve_bytes = 20971520;
 
-      -- ضمان سقف البايتات على قاعدة رُقّيت من نسخة قديمة (القيود لا تدعم IF NOT EXISTS)
-      do $cap$
-      begin
-        if not exists (
-          select 1 from pg_catalog.pg_constraint
-          where conname = 'edits_video_accounts_bytes_cap'
-            and conrelid = 'public.edits_video_accounts'::pg_catalog.regclass
-        ) then
-          alter table public.edits_video_accounts
-            add constraint edits_video_accounts_bytes_cap
-            check (used_bytes + reserved_bytes <= storage_limit_bytes) not valid;
-        end if;
-      end
-      $cap$;
+      -- تصحيح سعة المساحات الخمس إلى السعة الحقيقية 1GiB (كانت بعض النسخ
+      -- القديمة تكتب قيمة أصغر فتظهر "ممتلئة" بعد أول ملف رغم أن المساحة فارغة).
+      update public.edits_video_accounts
+      set storage_limit_bytes = 1073741824
+      where storage_limit_bytes <> 1073741824
+        and rtrim(project_url, '/') in (
+          'https://lolgnrfyxkwcacaeurry.supabase.co',
+          'https://ojvgpixprtuzqjvfscjg.supabase.co',
+          'https://cdpeczuzqkaoefauzyus.supabase.co',
+          'https://skcoulhrawiqemvaenwe.supabase.co',
+          'https://qajkngnnivpvijvdbbcw.supabase.co'
+        );
 
       insert into public.edits_video_accounts(label, project_url, publishable_key, priority)
       select v.label, v.project_url, v.publishable_key, v.priority
@@ -195,20 +204,32 @@ begin
         select 1 from public.edits_video_accounts a where a.project_url = v.project_url
       );
 
-      -- 2) تذاكر رفع الفيديو (تحجز السعة قبل رفع الملف)
+      update public.edits_video_accounts
+      set label = replace(label, 'مساحة الفيديو', 'مساحة الوسائط')
+      where label like 'مساحة الفيديو%';
+
+      -- 2) تذاكر رفع الوسائط (صور + فيديو) — تحجز السعة قبل رفع الملف
       create table if not exists public.edits_video_tickets (
         ticket_hash text primary key,
         account_id uuid not null references public.edits_video_accounts(id) on delete cascade,
+        kind text not null default 'video' check (kind in ('image','video')),
         video_path text not null,
         video_url text not null,
-        poster_path text not null,
-        poster_url text not null,
+        poster_path text,
+        poster_url text,
         size_bytes bigint not null check (size_bytes between 1 and 52428800),
         poster_bytes bigint not null default 262144 check (poster_bytes >= 0),
         expires_at timestamptz not null,
         consumed_at timestamptz,
         file_id text
       );
+      -- ترقية تلقائية: التذاكر القديمة كلها فيديو، والصور بلا غلاف
+      alter table public.edits_video_tickets add column if not exists kind text not null default 'video';
+      alter table public.edits_video_tickets alter column poster_path drop not null;
+      alter table public.edits_video_tickets alter column poster_url drop not null;
+      alter table public.edits_video_tickets drop constraint if exists edits_video_tickets_kind_check;
+      alter table public.edits_video_tickets add constraint edits_video_tickets_kind_check
+        check (kind in ('image','video')) not valid;
       create index if not exists edits_video_tickets_file_idx on public.edits_video_tickets(file_id);
       create index if not exists edits_video_tickets_exp_idx on public.edits_video_tickets(expires_at) where consumed_at is null;
 
@@ -232,85 +253,111 @@ begin
           where id = t.account_id;
         end loop;
 
-        -- مساحة بقي فيها أقل من الحد الاحتياطي تُعلَّم ممتلئة تلقائياً
-        -- حتى ينتقل الرفع للمساحة التالية وبدون أي تدخل يدوي.
-        -- الحجوزات المؤقتة لا تُحسب هنا كي لا تُعلَّم مساحة ممتلئة بسبب رفع فاشل أو منتهي.
-        update public.edits_video_accounts
-        set is_full = true
-        where not is_full
-          and storage_limit_bytes - used_bytes <= reserve_bytes;
+        -- لا نعلّم أي مساحة "ممتلئة" هنا ولا نمسّ العلامات اليدوية:
+        -- الاختيار في edits_media_upload_auth يتحقق من دخول الملف كاملاً
+        -- مع بقاء 24MiB حرة، وإلا ينتقل تلقائياً للمساحة التالية.
       end;
       $$;
 
-      -- 4) توقيع رفع فيديو: اختيار مساحة + حجز سعة + تذكرة
-      create or replace function public.edits_video_upload_auth(
-        p_size_bytes bigint, p_exclude uuid[] default '{}'
+      -- 4) توقيع رفع وسيط (صورة أو فيديو): اختيار مساحة + حجز سعة + تذكرة
+      create or replace function public.edits_media_upload_auth(
+        p_kind text, p_size_bytes bigint, p_ext text, p_exclude uuid[] default '{}'
       )
       returns json language plpgsql security definer set search_path = '' as $$
       declare
         acc public.edits_video_accounts%rowtype;
-        v_ticket text; v_uuid uuid; v_video_path text; v_poster_path text; v_base text;
+        v_kind text := lower(btrim(coalesce(p_kind, 'video')));
+        v_ext text := lower(btrim(coalesce(p_ext, '')));
+        v_overhead bigint;
+        v_ticket text; v_uuid uuid; v_path text; v_poster_path text; v_base text;
         v_now timestamptz := clock_timestamp(); v_expires timestamptz;
       begin
+        if v_kind = 'video' then
+          if v_ext !~ '^(mp4|webm|mov|m4v)$' then raise exception 'امتداد الفيديو غير مدعوم'; end if;
+          v_overhead := 262144;
+        elsif v_kind = 'image' then
+          if v_ext !~ '^(jpg|jpeg|png|webp|gif|avif)$' then raise exception 'امتداد الصورة غير مدعوم'; end if;
+          v_overhead := 0;
+        else
+          raise exception 'نوع الملف غير مدعوم';
+        end if;
         if p_size_bytes is null or p_size_bytes < 1 or p_size_bytes > 52428800 then
-          raise exception 'حجم الفيديو يجب أن يكون أكبر من 0 وأقل من 50MB';
+          raise exception 'حجم الملف يجب أن يكون أكبر من 0 وأقل من 50MB';
         end if;
         perform public.edits_video_reap();
         if not public.edits_take_budget('upload', '', p_size_bytes) then
           raise exception 'حد الرفع (40 ملفاً / 1GiB خلال 10 دقائق) — جرّب لاحقاً';
         end if;
 
-        -- الاختيار حسب المساحة الفعلية: يجب أن يدخل الفيديو كاملاً
-        -- مع بقاء الحد الاحتياطي حراً، وإلا ينتقل تلقائياً للمساحة التالية.
+        -- الاختيار حسب المساحة الفعلية: يجب أن يدخل الملف كاملاً
+        -- مع بقاء 24MiB حرة (reserve_bytes)، وإلا ينتقل تلقائياً للمساحة التالية.
         select * into acc
         from public.edits_video_accounts
         where is_active and not is_full
-          and used_bytes + reserved_bytes + p_size_bytes + 262144 + reserve_bytes <= storage_limit_bytes
+          and used_bytes + reserved_bytes + p_size_bytes + v_overhead + reserve_bytes <= storage_limit_bytes
           and not (id = any (coalesce(p_exclude, '{}'::uuid[])))
         order by priority, used_bytes, created_at
         limit 1
         for update skip locked;
 
         if acc.id is null then
-          raise exception 'مساحات الفيديو ممتلئة حالياً — راجع الإدارة';
+          raise exception 'مساحات الصور والفيديو ممتلئة حالياً — راجع الإدارة';
         end if;
 
         v_base := rtrim(acc.project_url, '/') || '/storage/v1/object/public/' || acc.bucket || '/';
         v_uuid := pg_catalog.gen_random_uuid();
-        v_video_path := 'videos/' || v_uuid::text || '.mp4';
-        v_poster_path := 'posters/' || v_uuid::text || '.jpg';
+        if v_kind = 'video' then
+          v_path := 'videos/' || v_uuid::text || '.' || v_ext;
+          v_poster_path := 'posters/' || v_uuid::text || '.jpg';
+        else
+          v_path := 'images/' || v_uuid::text || '.' || v_ext;
+          v_poster_path := null;
+        end if;
         v_ticket := encode(extensions.gen_random_bytes(32), 'hex');
         v_expires := v_now + interval '30 minutes';
 
         insert into public.edits_video_tickets(
-          ticket_hash, account_id, video_path, video_url, poster_path, poster_url,
-          size_bytes, expires_at
+          ticket_hash, account_id, kind, video_path, video_url, poster_path, poster_url,
+          size_bytes, poster_bytes, expires_at
         ) values (
-          encode(extensions.digest(v_ticket, 'sha256'), 'hex'), acc.id,
-          v_video_path, v_base || v_video_path, v_poster_path, v_base || v_poster_path,
-          p_size_bytes, v_expires
+          encode(extensions.digest(v_ticket, 'sha256'), 'hex'), acc.id, v_kind,
+          v_path, v_base || v_path,
+          v_poster_path, case when v_poster_path is null then null else v_base || v_poster_path end,
+          p_size_bytes, v_overhead, v_expires
         );
 
         update public.edits_video_accounts
         set reserved_count = reserved_count + 1,
-            reserved_bytes = reserved_bytes + p_size_bytes + 262144
+            reserved_bytes = reserved_bytes + p_size_bytes + v_overhead
         where id = acc.id;
 
         return json_build_object(
+          'kind', v_kind,
           'account_id', acc.id,
           'label', acc.label,
           'project_url', rtrim(acc.project_url, '/'),
           'publishable_key', acc.publishable_key,
           'bucket', acc.bucket,
-          'video_path', v_video_path,
+          'path', v_path,
+          'url', v_base || v_path,
           'poster_path', v_poster_path,
-          'video_url', v_base || v_video_path,
-          'poster_url', v_base || v_poster_path,
+          'poster_url', case when v_poster_path is null then null else v_base || v_poster_path end,
+          -- أسماء متوافقة مع عميل الفيديو القديم
+          'video_path', v_path,
+          'video_url', v_base || v_path,
           'ticket', v_ticket,
           'max_bytes', 52428800,
           'expires_at', v_expires
         );
       end;
+      $$;
+
+      -- توافق خلفي: عميل الفيديو الحالي ينادي التوقيع القديم
+      create or replace function public.edits_video_upload_auth(
+        p_size_bytes bigint, p_exclude uuid[] default '{}'
+      )
+      returns json language sql security definer set search_path = '' as $$
+        select public.edits_media_upload_auth('video', p_size_bytes, 'mp4', p_exclude);
       $$;
 
       -- تحرير الحجز فوراً عند فشل الرفع في المتصفح
@@ -327,12 +374,13 @@ begin
         delete from public.edits_video_tickets where ticket_hash = t.ticket_hash;
         update public.edits_video_accounts
         set reserved_count = greatest(0, reserved_count - 1),
-            reserved_bytes = greatest(0, reserved_bytes - t.size_bytes - t.poster_bytes)
+            reserved_bytes = greatest(0, reserved_bytes - t.size_bytes - t.poster_bytes),
+            is_full = (used_bytes + greatest(0, reserved_bytes - t.size_bytes - t.poster_bytes) + reserve_bytes >= storage_limit_bytes)
         where id = t.account_id;
       end;
       $$;
 
-      -- 5) إرسال الإيديت: صور ImageKit + فيديو Supabase بنفس التوقيع
+      -- 5) إرسال الإيديت: صور وفيديو من نفس مساحات Supabase الخمس
       create or replace function public.edits_submit(
         p_name text, p_caption text, p_media_type text, p_media_url text,
         p_poster_url text, p_width integer, p_height integer,
@@ -340,11 +388,10 @@ begin
       )
       returns uuid language plpgsql security definer set search_path = '' as $$
       declare
-        it public.edits_upload_tickets%rowtype;
         vt public.edits_video_tickets%rowtype;
         va public.edits_video_accounts%rowtype;
-        v_endpoint text; v_base text; v_id uuid;
-        v_acc_full boolean; v_acc_label text;
+        v_base text; v_id uuid;
+        v_acc_full boolean; v_acc_label text; v_remaining bigint;
       begin
         if p_name is null or char_length(btrim(p_name)) < 1 or char_length(p_name) > 40 then raise exception 'الاسم مطلوب (1-40 حرف)'; end if;
         if p_caption is not null and char_length(p_caption) > 300 then raise exception 'الوصف طويل جداً (300 حرف)'; end if;
@@ -353,55 +400,38 @@ begin
            (p_height is not null and p_height not between 1 and 20000) then raise exception 'أبعاد الملف غير صالحة'; end if;
         if p_file_id is null or char_length(btrim(p_file_id)) < 1 or char_length(p_file_id) > 200 then raise exception 'file_id مطلوب (1-200 حرف)'; end if;
         if p_upload_ticket is null or p_upload_ticket !~ '^[0-9a-f]{64}$' then raise exception 'تذكرة الرفع غير صالحة'; end if;
+        if p_size_bytes is null or p_size_bytes < 1 or p_size_bytes > 52428800 then raise exception 'حجم الملف غير صالح (حتى 50MB)'; end if;
 
-        -- ---------------- صور: ImageKit كما هو ----------------
-        if p_media_type = 'image' then
-          if p_size_bytes is null or p_size_bytes < 1 or p_size_bytes > 20971520 then raise exception 'حجم الصورة غير صالح'; end if;
-          select * into it from public.edits_upload_tickets
-          where ticket_hash = encode(extensions.digest(p_upload_ticket, 'sha256'), 'hex') for update;
-          if it.ticket_hash is null or it.consumed_at is not null or it.expires_at <= clock_timestamp() then raise exception 'تذكرة الرفع منتهية أو مستخدمة أو غير صالحة'; end if;
-          select rtrim(url_endpoint, '/') into v_endpoint from public.imagekit_accounts where id = it.account_id;
-          if p_account_id is null or p_account_id <> it.account_id or p_media_url is null or
-             p_media_url <> it.expected_url or it.media_type <> 'image' or p_size_bytes <> it.size_bytes or
-             v_endpoint is null or v_endpoint !~ '^https://ik\.imagekit\.io/[A-Za-z0-9_-]+$' or
-             left(p_media_url, length(v_endpoint) + 13) <> v_endpoint || '/60day-edits/' or
-             substring(p_media_url from length(v_endpoint) + 14) !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|gif|webp|avif)$' then
-            raise exception 'رابط الصورة أو الحساب أو بيانات الرفع لا تطابق التذكرة';
-          end if;
-          perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('edits-file-id:' || btrim(p_file_id), 0));
-          if exists (select 1 from public.edits_submissions where btrim(file_id) = btrim(p_file_id)) or
-             exists (select 1 from public.edits_upload_tickets where consumed_at is not null and file_id = btrim(p_file_id)) then raise exception 'file_id مستخدم بالفعل'; end if;
-          if not public.edits_take_budget('submit') then raise exception 'ضغط كبير على الجدار (40 / 10 دقائق) — جرّب لاحقاً'; end if;
-          insert into public.edits_submissions(name, caption, media_type, media_url, poster_url, width, height, size_bytes, file_id, account_id, status)
-          values (btrim(p_name), coalesce(btrim(p_caption), ''), 'image', p_media_url, null, p_width, p_height,
-            p_size_bytes, btrim(p_file_id), p_account_id, 'pending') returning id into v_id;
-          update public.edits_upload_tickets set consumed_at = clock_timestamp(), file_id = btrim(p_file_id) where ticket_hash = it.ticket_hash;
-          update public.imagekit_accounts set used_bytes = used_bytes + p_size_bytes where id = p_account_id;
-          return v_id;
-        end if;
-
-        -- ---------------- فيديو: Supabase Storage ----------------
-        if p_size_bytes is null or p_size_bytes < 1 or p_size_bytes > 52428800 then raise exception 'حجم الفيديو غير صالح (حتى 50MB)'; end if;
         select * into vt from public.edits_video_tickets
         where ticket_hash = encode(extensions.digest(p_upload_ticket, 'sha256'), 'hex') for update;
-        if vt.ticket_hash is null or vt.consumed_at is not null or vt.expires_at <= clock_timestamp() then raise exception 'تذكرة رفع الفيديو منتهية أو مستخدمة أو غير صالحة'; end if;
+        if vt.ticket_hash is null or vt.consumed_at is not null or vt.expires_at <= clock_timestamp() then raise exception 'تذكرة الرفع منتهية أو مستخدمة أو غير صالحة'; end if;
+        if vt.kind <> p_media_type then raise exception 'نوع الملف لا يطابق التذكرة'; end if;
         select * into va from public.edits_video_accounts where id = vt.account_id;
         v_base := rtrim(va.project_url, '/') || '/storage/v1/object/public/' || va.bucket || '/';
         if p_account_id is null or p_account_id <> vt.account_id or p_media_url is null or p_media_url <> vt.video_url or
            p_size_bytes <> vt.size_bytes or btrim(p_file_id) <> vt.video_path or
-           (p_poster_url is not null and p_poster_url <> vt.poster_url) or
-           vt.video_url <> v_base || vt.video_path or vt.poster_url <> v_base || vt.poster_path then
-          raise exception 'رابط الفيديو أو الحساب أو بيانات الرفع لا تطابق التذكرة';
+           vt.video_url <> v_base || vt.video_path then
+          raise exception 'رابط الملف أو الحساب أو بيانات الرفع لا تطابق التذكرة';
         end if;
+        if p_media_type = 'video' then
+          if (p_poster_url is not null and p_poster_url <> vt.poster_url) or
+             vt.poster_url is null or vt.poster_url <> v_base || vt.poster_path then
+            raise exception 'غلاف الفيديو لا يطابق التذكرة';
+          end if;
+        else
+          if p_poster_url is not null and btrim(p_poster_url) <> '' then raise exception 'الصور لا تحتاج غلافاً'; end if;
+          if vt.poster_path is not null then raise exception 'تذكرة صورة غير صالحة'; end if;
+        end if;
+
         perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('edits-file-id:' || btrim(p_file_id), 0));
         if exists (select 1 from public.edits_submissions where btrim(file_id) = btrim(p_file_id)) or
            exists (select 1 from public.edits_video_tickets where consumed_at is not null and file_id = btrim(p_file_id)) then raise exception 'الملف مسجل بالفعل'; end if;
         if not public.edits_take_budget('submit') then raise exception 'ضغط كبير على الجدار (40 / 10 دقائق) — جرّب لاحقاً'; end if;
 
         insert into public.edits_submissions(name, caption, media_type, media_url, poster_url, width, height, size_bytes, file_id, account_id, status)
-        values (btrim(p_name), coalesce(btrim(p_caption), ''), 'video', p_media_url,
-          nullif(btrim(coalesce(p_poster_url, '')), ''), p_width, p_height,
-          p_size_bytes, btrim(p_file_id), p_account_id, 'pending') returning id into v_id;
+        values (btrim(p_name), coalesce(btrim(p_caption), ''), p_media_type, p_media_url,
+          case when p_media_type = 'video' then nullif(btrim(coalesce(p_poster_url, '')), '') else null end,
+          p_width, p_height, p_size_bytes, btrim(p_file_id), p_account_id, 'pending') returning id into v_id;
 
         update public.edits_video_tickets set consumed_at = clock_timestamp(), file_id = btrim(p_file_id) where ticket_hash = vt.ticket_hash;
         update public.edits_video_accounts
@@ -409,79 +439,32 @@ begin
             reserved_bytes = greatest(0, reserved_bytes - vt.size_bytes - vt.poster_bytes),
             used_count = used_count + 1,
             used_bytes = used_bytes + vt.size_bytes + vt.poster_bytes,
-            is_full = (used_bytes + vt.size_bytes + vt.poster_bytes + reserve_bytes >= storage_limit_bytes)
+            is_full = (used_bytes + reserved_bytes + vt.size_bytes + vt.poster_bytes + reserve_bytes >= storage_limit_bytes)
         where id = vt.account_id
         returning is_full, label into v_acc_full, v_acc_label;
 
         if v_acc_full and not va.is_full then
+          v_remaining := greatest(0, va.storage_limit_bytes - va.used_bytes - vt.size_bytes - vt.poster_bytes);
           perform public.edits_log('video_full', 'video_account', vt.account_id::text, v_acc_label,
-            format('امتلأت المساحة تلقائياً — المتبقي %s أقل من الحد الاحتياطي',
-              pg_catalog.pg_size_pretty(greatest(0, va.storage_limit_bytes - va.used_bytes - vt.size_bytes - vt.poster_bytes))));
+            format('بقي %s فقط — وصل الحد الاحتياطي %s — الرفع التالي ينتقل تلقائياً للمساحة التالية',
+              pg_catalog.pg_size_pretty(v_remaining), pg_catalog.pg_size_pretty(va.reserve_bytes)));
         end if;
 
         return v_id;
       end;
       $$;
 
-      -- 6) ImageKit للصور فقط (بدون أي فيديو)
+      -- 6) ImageKit أُوقف لرفع الصور نهائياً — الصور القديمة تبقى معروضة كما هي
       create or replace function public.imagekit_upload_auth(
         p_media_type text, p_size_bytes bigint, p_extension text, p_exclude uuid[] default '{}'
       )
       returns json language plpgsql security definer set search_path = '' as $$
-      declare
-        acc public.imagekit_accounts%rowtype;
-        v_ext text := lower(p_extension); v_mimes text; v_fields jsonb;
-        v_iat bigint; v_exp bigint; v_header text; v_payload text; v_input text; v_jwt text;
-        v_filename text; v_ticket text;
       begin
-        if p_media_type is distinct from 'image' then
-          raise exception 'الصور فقط على ImageKit — الفيديوهات تُرفع على مساحات الفيديو الجديدة (حدّث الصفحة)';
-        end if;
-        if p_size_bytes is null or p_size_bytes < 1 or p_size_bytes > 20971520 then
-          raise exception 'حجم الصورة غير صالح (حتى 20MiB)';
-        end if;
-        case v_ext
-          when 'jpg' then v_mimes := '["image/jpeg"]';
-          when 'jpeg' then v_mimes := '["image/jpeg"]';
-          when 'png' then v_mimes := '["image/png"]';
-          when 'gif' then v_mimes := '["image/gif"]';
-          when 'webp' then v_mimes := '["image/webp"]';
-          when 'avif' then v_mimes := '["image/avif"]';
-          else raise exception 'امتداد الصورة غير مدعوم';
-        end case;
-        select * into acc from public.imagekit_accounts
-        where is_active and not is_full and not (id = any(coalesce(p_exclude, '{}'::uuid[])))
-        order by priority, created_at, id limit 1;
-        if acc.id is null then raise exception 'كل حسابات الصور ممتلئة أو متوقفة — راجع الإدارة'; end if;
-        if nullif(btrim(acc.private_key), '') is null then
-          raise exception 'ImageKit private_key is not configured; set it privately in the SQL editor';
-        end if;
-        if acc.url_endpoint !~ '^https://ik\.imagekit\.io/[A-Za-z0-9_-]+/?$' then raise exception 'ImageKit endpoint is not valid'; end if;
-        if not public.edits_take_budget('upload', '', p_size_bytes) then raise exception 'حد توقيعات الرفع (40 / 1GiB خلال 10 دقائق) — جرّب لاحقاً'; end if;
-        v_filename := pg_catalog.gen_random_uuid()::text || '.' || v_ext;
-        v_fields := jsonb_build_object('fileName', v_filename, 'folder', '/60day-edits',
-          'useUniqueFileName', 'false', 'overwriteFile', 'false',
-          'checks', '"file.size" = ' || p_size_bytes::text || ' AND "file.mime" IN ' || v_mimes);
-        v_iat := floor(extract(epoch from clock_timestamp()))::bigint;
-        v_exp := v_iat + 600;
-        v_header := rtrim(translate(replace(encode(convert_to(jsonb_build_object(
-          'alg', 'HS256', 'typ', 'JWT', 'kid', acc.public_key)::text, 'UTF8'), 'base64'), E'\n', ''), '+/', '-_'), '=');
-        v_payload := rtrim(translate(replace(encode(convert_to((v_fields || jsonb_build_object(
-          'iat', v_iat, 'exp', v_exp))::text, 'UTF8'), 'base64'), E'\n', ''), '+/', '-_'), '=');
-        v_input := v_header || '.' || v_payload;
-        v_jwt := v_input || '.' || rtrim(translate(replace(encode(
-          extensions.hmac(convert_to(v_input, 'UTF8'), convert_to(acc.private_key, 'UTF8'), 'sha256'),
-          'base64'), E'\n', ''), '+/', '-_'), '=');
-        v_ticket := encode(extensions.gen_random_bytes(32), 'hex');
-        insert into public.edits_upload_tickets(ticket_hash, account_id, expected_url, media_type, size_bytes, expires_at)
-        values (encode(extensions.digest(v_ticket, 'sha256'), 'hex'), acc.id,
-          rtrim(acc.url_endpoint, '/') || '/60day-edits/' || v_filename, 'image', p_size_bytes, clock_timestamp() + interval '30 minutes');
-        return json_build_object('account_id', acc.id, 'label', acc.label, 'url_endpoint', acc.url_endpoint,
-          'public_key', acc.public_key, 'token', v_jwt, 'upload_fields', v_fields, 'ticket', v_ticket, 'expire', v_exp);
+        raise exception 'رفع الصور عبر ImageKit أُوقف — الصور تُرفع الآن على مساحات Supabase (حدّث الصفحة)';
       end;
       $$;
 
-      -- 7) بيانات لوحة الإدارة + إدارة مساحات الفيديو
+      -- 7) بيانات لوحة الإدارة + إدارة مساحات الوسائط
       create or replace function public.edits_admin_data(p_password text)
       returns json language plpgsql security definer set search_path = '' as $$
       begin
@@ -508,7 +491,7 @@ begin
       begin
         perform public.edits_verify_password(p_password);
         select * into acc from public.edits_video_accounts where id = p_account_id for update;
-        if acc.id is null then raise exception 'مساحة الفيديو غير موجودة'; end if;
+        if acc.id is null then raise exception 'مساحة الوسائط غير موجودة'; end if;
         if p_action = 'mark_full' then update public.edits_video_accounts set is_full = true where id = p_account_id;
         elsif p_action = 'mark_ok' then update public.edits_video_accounts set is_full = false where id = p_account_id;
         elsif p_action = 'toggle' then update public.edits_video_accounts set is_active = not is_active where id = p_account_id;
@@ -534,12 +517,17 @@ begin
           delete from public.edits_reports where submission_id = p_id;
           update public.edits_submissions set reports_count = 0 where id = p_id;
         elsif p_action = 'delete' then
-          if sub.media_type = 'video' and sub.account_id is not null
-             and sub.media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/videos/' then
+          if sub.account_id is not null
+             and sub.media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/(videos|images)/' then
             update public.edits_video_accounts
             set used_count = greatest(0, used_count - 1),
-                used_bytes = greatest(0, used_bytes - sub.size_bytes - 262144),
-                is_full = (greatest(0, used_bytes - sub.size_bytes - 262144) + reserve_bytes >= storage_limit_bytes)
+                used_bytes = greatest(0, used_bytes - sub.size_bytes - case when sub.media_type = 'video' then 262144 else 0 end),
+                is_full = (greatest(0, used_bytes - sub.size_bytes - case when sub.media_type = 'video' then 262144 else 0 end) + reserved_bytes + reserve_bytes >= storage_limit_bytes)
+            where id = sub.account_id;
+          elsif sub.account_id is not null
+             and sub.media_url ~ '^https://ik\.imagekit\.io/' then
+            update public.imagekit_accounts
+            set used_bytes = greatest(0, used_bytes - sub.size_bytes)
             where id = sub.account_id;
           end if;
           delete from public.edits_submissions where id = p_id; -- NO remote file refund (ImageKit/Storage object remains)
@@ -572,6 +560,7 @@ begin
         where ticket_hash = encode(extensions.digest(p_upload_ticket, 'sha256'), 'hex') and consumed_at is null
         for update;
         if t.ticket_hash is null or t.expires_at <= clock_timestamp() then raise exception 'تذكرة الرفع منتهية أو مستخدمة'; end if;
+        if t.kind <> 'video' then raise exception 'التذكرة ليست تذكرة فيديو'; end if;
         select * into acc from public.edits_video_accounts where id = t.account_id;
         v_base := rtrim(acc.project_url, '/') || '/storage/v1/object/public/' || acc.bucket || '/';
         if p_account_id is null or p_account_id <> t.account_id or p_media_url is null or p_media_url <> t.video_url or
@@ -606,27 +595,84 @@ begin
             reserved_bytes = greatest(0, reserved_bytes - t.size_bytes - t.poster_bytes),
             used_count = used_count + 1,
             used_bytes = used_bytes + t.size_bytes + t.poster_bytes,
-            is_full = (used_bytes + t.size_bytes + t.poster_bytes + reserve_bytes >= storage_limit_bytes)
+            is_full = (used_bytes + reserved_bytes + t.size_bytes + t.poster_bytes + reserve_bytes >= storage_limit_bytes)
         where id = t.account_id
         returning is_full, label into v_acc_full, v_acc_label;
         perform public.edits_log('rehost', 'submission', p_id::text, sub.name, 'نقل الفيديو إلى مساحة Supabase');
         if v_acc_full and not acc.is_full then
           perform public.edits_log('video_full', 'video_account', t.account_id::text, v_acc_label,
-            format('امتلأت المساحة تلقائياً — المتبقي %s أقل من الحد الاحتياطي',
-              pg_catalog.pg_size_pretty(greatest(0, acc.storage_limit_bytes - acc.used_bytes - t.size_bytes - t.poster_bytes))));
+            format('بقي %s فقط — وصل الحد الاحتياطي %s — الرفع التالي ينتقل تلقائياً للمساحة التالية',
+              pg_catalog.pg_size_pretty(greatest(0, acc.storage_limit_bytes - acc.used_bytes - t.size_bytes - t.poster_bytes)),
+              pg_catalog.pg_size_pretty(acc.reserve_bytes)));
         end if;
       end;
       $$;
 
-      -- 10) الصلاحيات
+      -- 10) مزامنة الحساب مع الواقع (تذاكر منتهية + حجوزات + استهلاك فعلي)
+      --    يصلح أي أرقام قديمة متضخمة كانت تجعل المساحة تبدو ممتلئة قبل أوانها.
+      delete from public.edits_video_tickets
+      where consumed_at is null and expires_at <= clock_timestamp();
+
+      update public.edits_video_accounts a
+      set reserved_count = coalesce(r.cnt, 0),
+          reserved_bytes = coalesce(r.bytes, 0)
+      from (
+        select account_id, count(*)::int as cnt,
+               sum(size_bytes + poster_bytes)::bigint as bytes
+        from public.edits_video_tickets
+        where consumed_at is null
+        group by account_id
+      ) r
+      where a.id = r.account_id;
+
+      update public.edits_video_accounts a
+      set reserved_count = 0, reserved_bytes = 0
+      where not exists (
+        select 1 from public.edits_video_tickets t
+        where t.account_id = a.id and t.consumed_at is null
+      );
+
+      update public.edits_video_accounts a
+      set used_count = coalesce(s.cnt, 0),
+          used_bytes = coalesce(s.bytes, 0)
+      from (
+        select account_id, count(*)::int as cnt,
+               sum(size_bytes + case when media_type = 'video' then 262144 else 0 end)::bigint as bytes
+        from public.edits_submissions
+        where account_id is not null
+          and media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/(videos|images)/'
+        group by account_id
+      ) s
+      where a.id = s.account_id;
+
+      update public.edits_video_accounts a
+      set used_count = 0, used_bytes = 0
+      where not exists (
+        select 1 from public.edits_submissions s
+        where s.account_id = a.id
+          and s.media_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/edits-videos/(videos|images)/'
+      );
+
+      update public.edits_video_accounts
+      set is_full = (storage_limit_bytes - used_bytes - reserved_bytes <= reserve_bytes)
+      where is_full <> (storage_limit_bytes - used_bytes - reserved_bytes <= reserve_bytes);
+
+      -- إعادة قيد السقف بعد التصحيح (NOT VALID: لا يمسّ الصفوف الحالية)
+      alter table public.edits_video_accounts
+        add constraint edits_video_accounts_bytes_cap
+        check (used_bytes + reserved_bytes <= storage_limit_bytes) not valid;
+
+      -- 11) الصلاحيات
       revoke all on table public.edits_video_accounts, public.edits_video_tickets from public, anon, authenticated;
       revoke all on function public.edits_video_reap() from public, anon, authenticated;
-      revoke all on function public.edits_video_upload_auth(bigint, uuid[]),
+      revoke all on function public.edits_media_upload_auth(text, bigint, text, uuid[]),
+        public.edits_video_upload_auth(bigint, uuid[]),
         public.edits_video_release(text),
         public.edits_admin_video_storage(text, uuid, text),
         public.edits_admin_rehost_video(text, uuid, text, text, bigint, text, uuid, text)
         from public, anon, authenticated;
-      grant execute on function public.edits_video_upload_auth(bigint, uuid[]),
+      grant execute on function public.edits_media_upload_auth(text, bigint, text, uuid[]),
+        public.edits_video_upload_auth(bigint, uuid[]),
         public.edits_video_release(text),
         public.edits_admin_video_storage(text, uuid, text),
         public.edits_admin_rehost_video(text, uuid, text, text, bigint, text, uuid, text)
@@ -638,9 +684,9 @@ begin
         to anon, authenticated;
     $main_setup$;
 
-    raise notice 'تم تجهيز القاعدة الرئيسية: مساحات الفيديو والتذاكر والدوال جاهزة.';
+    raise notice 'تم تجهيز القاعدة الرئيسية: مساحات الصور والفيديو والتذاكر والدوال جاهزة.';
   else
-    raise notice 'هذا مشروع فيديو — تم تخطي جزء القاعدة الرئيسية.';
+    raise notice 'هذا مشروع وسائط — تم تخطي جزء القاعدة الرئيسية.';
   end if;
 end
 $route_main$;

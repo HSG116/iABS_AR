@@ -1,7 +1,7 @@
 /* ============================================================
    جدار إيديتات الـ60 يوم — النواة المشتركة
    Supabase REST + خوارزمية 60day.md حرفياً + أفاتار SVG كرتونية
-   + رفع ImageKit بحسابين ونقل تلقائي عند الامتلاء
+   + رفع الصور والفيديو إلى مساحات Supabase الخمس ونقل تلقائي عند باقي 24MB
    ============================================================ */
 
 const SB_URL = 'https://mqegvdtuyqglxjqakfha.supabase.co';
@@ -222,28 +222,26 @@ function avatarSVG(seed, size = 44) {
 const avatarName = (seed) => AVATAR_DEFS[((Number(seed) % 12) + 12) % 12].name;
 
 /* ============================================================
-   ImageKit — رفع مع نقل تلقائي للحساب الثاني عند الامتلاء
+   تخزين الوسائط — صور وفيديو على مساحات Supabase الخمس
    ============================================================ */
-const IK_UPLOAD = 'https://upload.imagekit.io/api/v2/files/upload';
-const isQuotaError = (msg) => /(?:storage|quota|capacity).*(?:limit|exceed|full)|(?:limit|exceed|full).*(?:storage|quota|capacity)/i.test(String(msg || ''));
-
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 const IK_ORIGIN = 'https://ik.imagekit.io';
 const IK_PATH = /^\/(ld5rplgcm|jco71x7fu)\/60day-edits\/[A-Za-z0-9_.-]+$/;
-/* ---------- تخزين Supabase (الفيديو، مشاريع مستقلة) ----------
-   المسار: https://<ref>.supabase.co/storage/v1/object/public/edits-videos/videos|posters/<uuid>.<ext>
+/* ---------- تخزين Supabase (صور + فيديو، مشاريع مستقلة) ----------
+   المسار: https://<ref>.supabase.co/storage/v1/object/public/edits-videos/
+           videos|images|posters/<uuid>.<ext>
    لا نعرف عدد المشاريع مسبقاً، لذلك نتعرّف على الشكل فقط ونمنع أي مسار آخر. */
-const SB_VIDEO_PATH = /^\/storage\/v1\/object\/public\/edits-videos\/(videos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|webm|mov|m4v)|posters\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp))$/;
-const SB_VIDEO_HOST = /^[a-z0-9]+\.supabase\.co$/;
+const SB_MEDIA_PATH = /^\/storage\/v1\/object\/public\/edits-videos\/(videos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(mp4|webm|mov|m4v)|images\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif|avif)|posters\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp))$/;
+const SB_MEDIA_HOST = /^[a-z0-9]+\.supabase\.co$/;
 
-/* روابط الوسائط المسموح عرضها فقط (ImageKit للصور + تخزين الفيديو) */
+/* روابط الوسائط المسموح عرضها فقط (ImageKit القديم + تخزين Supabase) */
 function safeMediaUrl(value) {
   try {
     const url = new URL(value);
     if (url.username || url.password || url.search || url.hash) return '';
     if (url.origin === IK_ORIGIN) return IK_PATH.test(url.pathname) ? url.href : '';
-    if (url.protocol === 'https:' && SB_VIDEO_HOST.test(url.hostname) && SB_VIDEO_PATH.test(url.pathname)) return url.href;
+    if (url.protocol === 'https:' && SB_MEDIA_HOST.test(url.hostname) && SB_MEDIA_PATH.test(url.pathname)) return url.href;
     return '';
   } catch { return ''; }
 }
@@ -260,8 +258,8 @@ function fileMediaType(file) {
   throw new Error('اختر صورة JPG أو PNG أو WEBP أو GIF أو AVIF، أو فيديو MP4 أو MOV أو WEBM');
 }
 /* ---------- قواعد اختيار الملف ----------
-   الصور: ImageKit بأي جودة حتى 20MB (بدون ضغط).
-   الفيديو: مساحات Supabase مستقلة، حد التخزين 50MB بعد الضغط التلقائي. */
+   الصور والفيديو: مساحات Supabase الخمس.
+   الصورة تُضغط في المتصفح مع الحفاظ على الوضوح، والفيديو حتى 350MB يُضغط تحت 50MB. */
 const VIDEO_INPUT_MAX = 350 * 1048576;
 function validateMediaFile(file) {
   const type = fileMediaType(file);
@@ -276,6 +274,11 @@ function validateMediaFile(file) {
 function ikThumb(url, w = 640) {
   if (!url) return '';
   return url + (url.includes('?') ? '&' : '?') + `tr=w-${w},q-82,f-auto`;
+}
+/* thumbnail للصور: تحويل ImageKit فقط للقديم؛ صور Supabase تُعرض كما هي */
+function imageThumb(url, w = 640) {
+  if (!url) return '';
+  return url.startsWith(IK_ORIGIN + '/') ? ikThumb(url, w) : url;
 }
 /* ---------- صورة الغلاف (poster) ----------
    في ImageKit، مسار /ik-thumbnail.jpg لفيديو يستهلك وحدات معالجة فيديو،
@@ -292,7 +295,7 @@ function posterOf(item) {
   }
   return url;
 }
-/* src جاهز لوسم img: تحويل ImageKit للصور فقط (تخزين Supabase لا يحول) */
+/* src جاهز لوسم img: تحويل ImageKit للصور القديمة فقط (تخزين Supabase لا يحول) */
 function posterSrc(item, w = 640) {
   const p = posterOf(item);
   if (!p) return '';
@@ -344,90 +347,6 @@ function previewFallback(img, item) {
       mediaError(container, 'image');
     }
   }, { once: true });
-}
-
-async function mediaDimensions(file) {
-  const type = validateMediaFile(file);
-  const url = URL.createObjectURL(file);
-  const el = document.createElement(type === 'video' ? 'video' : 'img');
-  try {
-    return await new Promise((resolve, reject) => {
-      el.addEventListener(type === 'video' ? 'loadedmetadata' : 'load', () => {
-        const width = el.videoWidth || el.naturalWidth, height = el.videoHeight || el.naturalHeight;
-        if (!width || !height || width > 20000 || height > 20000) reject(new Error('الملف لا يحتوي على صورة أو فيديو بأبعاد صالحة (حتى 20000 بكسل)'));
-        else resolve({ width, height });
-      }, { once: true });
-      el.addEventListener('error', () => reject(new Error(type === 'video' ? 'تعذر تشغيل هذا الترميز — استخدم MP4 بترميز H.264 أو WEBM' : 'تعذر قراءة الصورة — اختر ملف صورة صالح')), { once: true });
-      if (type === 'video') el.preload = 'metadata';
-      el.src = url;
-    });
-  } finally {
-    el.removeAttribute('src');
-    if (type === 'video') el.load();
-    URL.revokeObjectURL(url);
-  }
-}
-
-function xhrUpload(file, auth, dimensions, onProgress) {
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('token', auth.token);
-    for (const [key, value] of Object.entries(auth.upload_fields)) fd.append(key, value);
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', IK_UPLOAD);
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
-    xhr.onload = () => {
-      let j = null;
-      try { j = JSON.parse(xhr.responseText); } catch {}
-      if (xhr.status >= 200 && xhr.status < 300 && j && j.url) {
-        const expected = auth.url_endpoint.replace(/\/$/, '') + '/60day-edits/' + auth.upload_fields.fileName;
-        if (safeMediaUrl(j.url) !== expected || !j.fileId) { reject(new Error('استجابة الرفع غير مطابقة للتصريح')); return; }
-        const type = fileMediaType(file);
-        resolve({
-          url: j.url, fileId: j.fileId, width: j.width || dimensions.width, height: j.height || dimensions.height,
-          size: file.size, fileType: type,
-          poster: type === 'video' ? j.url + '/ik-thumbnail.jpg' : null,
-          uploadTicket: auth.ticket,
-        });
-      } else {
-        const msg = (j && (j.message || j.error)) || ('HTTP ' + xhr.status);
-        const err = new Error(msg);
-        err.quota = isQuotaError(msg);
-        reject(err);
-      }
-    };
-    xhr.onerror = () => reject(new Error('تعذر الاتصال بخادم الرفع — تحقق من الإنترنت'));
-    xhr.ontimeout = () => reject(new Error('انتهت مهلة الرفع — جرّب مرة أخرى'));
-    xhr.timeout = 300000;
-    xhr.send(fd);
-  });
-}
-
-async function uploadMedia(file, onProgress) {
-  const type = validateMediaFile(file);
-  if (type !== 'image') throw new Error('الفيديوهات تُرفع عبر نظام الفيديو الجديد — حدّث الصفحة');
-  const dimensions = await mediaDimensions(file);
-  const extension = file.name.split('.').pop().toLowerCase();
-  const exclude = [];
-  let lastErr = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const auth = await rpc('imagekit_upload_auth', { p_media_type: type, p_size_bytes: file.size, p_extension: extension, p_exclude: exclude });
-    if (!auth || !auth.token) { lastErr = new Error('لا يوجد حساب تخزين متاح — راجع الإدارة'); break; }
-    try {
-      const res = await xhrUpload(file, auth, dimensions, onProgress);
-      return { ...res, accountId: auth.account_id, accountLabel: auth.label };
-    } catch (e) {
-      lastErr = e;
-      if (e.quota && attempt < 2) {
-        exclude.push(auth.account_id);
-        if (onProgress) onProgress(0);
-        continue; // نقل تلقائي للحساب الاحتياطي
-      }
-      throw e;
-    }
-  }
-  throw lastErr || new Error('فشل الرفع');
 }
 
 /* ---------- لايكات محلية ---------- */
