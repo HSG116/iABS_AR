@@ -495,7 +495,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
           )}
         </div>
 
-        {/* --- CHAT LEGENDS (أساطير الشات — نفس تصميم 98765890.html) --- */}
+        {/* --- CHAT LEGENDS (أساطير الشات — قائمة التفاعل فقط) --- */}
         <div className="pt-8 border-t border-white/5">
           <ChatLegends />
         </div>
