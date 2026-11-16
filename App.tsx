@@ -4,7 +4,6 @@ import { SocialLink, Language } from './types';
 import { supabase } from './supabaseClient';
 import { SponsorsSection, ClipsSection, ScheduleSection, FAQSection } from './components/PublicWidgets';
 import { StreamPlayer } from './components/StreamPlayer';
-import Archive60 from './components/Archive60';
 import { DiscordWidget, YoutubeWidget } from './components/CommunityWidgets';
 
 // Heavy below-fold / on-demand chunks — split out of the first paint
@@ -1156,7 +1155,17 @@ export default function App() {
                                     <a href="#live" className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Live' : 'البث'}</a>
                                     <a href="#support" className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Support' : 'الدعم'}</a>
                                     <a href="#schedule" className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Schedule' : 'الجدول'}</a>
-                                    <a href="#archive60" className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Archive' : 'الأرشيف'}</a>
+                                    <a href="#archive60" onClick={(e) => {
+                                        e.preventDefault();
+                                        const jump = () => document.querySelector('#archive60')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        if (document.querySelector('#archive60')) { jump(); return; }
+                                        document.querySelector('#stats-area')?.scrollIntoView({ block: 'start' });
+                                        let tries = 0;
+                                        const iv = window.setInterval(() => {
+                                            if (document.querySelector('#archive60')) { window.clearInterval(iv); jump(); }
+                                            else if (++tries > 24) window.clearInterval(iv);
+                                        }, 150);
+                                    }} className="px-4 py-2 rounded-xl hover:text-white hover:bg-white/5 transition-colors">{lang === 'en' ? 'Archive' : 'الأرشيف'}</a>
                                 </div>
                                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                     <a href="60day/" title={lang === 'en' ? 'The 60-day archive' : 'أرشيف جدار الـ60'}
@@ -1195,9 +1204,6 @@ export default function App() {
                                 </div>
                             </div>
                         </header>
-
-                        {/* ===== أرشيف جدار الـ60 ===== */}
-                        <Archive60 lang={lang} />
 
                         {/* ===== HERO ===== */}
                         <section id="top" className="pt-6 md:pt-10 pb-6 md:pb-8 overflow-clip">
@@ -1468,7 +1474,7 @@ export default function App() {
                             {isFaqActive && <Reveal><FAQSection faqs={faqs} /></Reveal>}
                         </div>
 
-                        <section className="pt-12 md:pt-16">
+                        <section id="stats-area" className="pt-12 md:pt-16 scroll-mt-28">
                             <Reveal><Suspense fallback={<div className="w-full h-40 rounded-[26px] border border-white/10 bg-white/[0.02] animate-pulse" />}>
                                 <DeferredMount minHeight={180}>
                                     <StatsSection lang={lang} />

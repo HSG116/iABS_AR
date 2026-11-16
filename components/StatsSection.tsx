@@ -3,6 +3,7 @@ import Hls from 'hls.js';
 import { Language, LeaderboardData, Clip, Video, ChannelInfo, LeaderboardEntry } from '../types';
 import { KickIcon } from './Icons';
 import { ChatLegends } from './ChatLegends';
+import Archive60 from './Archive60';
 import { kickFetch } from '../utils/kickApi';
 
 interface StatsSectionProps {
@@ -498,6 +499,11 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ lang }) => {
         {/* --- CHAT LEGENDS (أساطير الشات — قائمة التفاعل فقط) --- */}
         <div className="pt-8 border-t border-white/5">
           <ChatLegends />
+        </div>
+
+        {/* --- أرشيف جدار الـ60 (قبل آخر اللقطات) --- */}
+        <div className="pt-8 border-t border-white/5">
+          <Archive60 lang={lang} />
         </div>
 
         {/* --- CLIPS & VODS GRID --- */}
